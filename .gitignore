@@ -1,0 +1,12 @@
+# Ignore environment variables
+.env
+
+# Ignore log files
+*.log
+
+# Ignore node modules
+node_modules/
+
+# Ignore system files
+.DS_Store
+Thumbs.db

@@ -4,7 +4,7 @@ const UserModel = require('../models/usersModel'); // nhớ sửa đúng đườ
 
 router.get('/', async (req, res) => {
   try {
-    const users = await UserModel.find();  // ✅ dùng "users"
+    const users = await UserModel.find();  
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Lỗi server', message: err.message });

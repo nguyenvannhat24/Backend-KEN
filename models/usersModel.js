@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email:{ type: String, required: true },
-  password: { type: String, required: true },
-  role: { type: String, default: 'user' }, // hoặc 'barber', tùy bạn
-  numberphone: { type: String },
+  email:        { type: String, required: true, unique: true },
+  username:     { type: String, unique: true },
+  password_hash:{ type: Buffer },                 // cho login local
+  full_name:    { type: String },
+  avatar_url:   { type: String },
+  status:       { type: String },
+  created_at:   { type: Date, default: Date.now },
+  updated_at:   { type: Date, default: Date.now }
+},{ collection: 'User' });
 
-});
-//  tạo ra barbetModel thừa kế từ Schema để có các getter setter
-const UserModel =new mongoose.model('user', UserSchema);
-module.exports = UserModel;
-
+module.exports = mongoose.model('User', UserSchema);

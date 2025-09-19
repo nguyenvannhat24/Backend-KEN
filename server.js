@@ -4,6 +4,8 @@ const port = 3005;
 const Keycloak = require('keycloak-connect');
 const session = require('express-session');
 const userRouter = require("./router/auth.routes");
+const user = require('./router/user.routes');
+const userRole = require('./router/userRole.router');
 
 const memoryStore = new session.MemoryStore();
 
@@ -23,7 +25,8 @@ require('./config/db');
 
 // routes
 app.use('/api', userRouter(keycloak));
-
+app.use('/user', user());
+app.use('/userRole',userRole());
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);
 });

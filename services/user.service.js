@@ -3,17 +3,30 @@ const bcrypt = require('bcrypt');
 const UserModel = require('../models/usersModel'); 
 class UserService {
 
+async validateUser(email, password) {
+    console.log(`Đang kiểm tra user: ${email}`);
 
-  async validateUser(nameOrEmail, password) {
-    // cho phép login bằng name hoặc email
-    const user = await userRepo.findByEmail(nameOrEmail) 
-              || await userRepo.findByName(nameOrEmail);
-    if (!user) return null;
+    const user = await userRepo.findByEmail(email);
+    if (!user) {
+        console.log(`Không tìm thấy user với email: ${email}`);
+        return null;
+    }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return null;
+    if (user.password_hash !== password) {
+        console.log(`Mật khẩu không đúng cho user: ${email}`);
+        return null;
+    }
 
+    console.log(`Đăng nhập thành công cho user: ${email}`);
     return user;
+}
+
+
+
+  async viewAll(){
+    // lấy tất cả người dùng 
+    const user = await userRepo.findAll();
+    return user ;
   }
 }
 

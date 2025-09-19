@@ -1,18 +1,22 @@
 const userService = require('../services/user.service');
 const jwt = require('jsonwebtoken');
-
+const userRole = require('../services/userRole.service');
+const role = require('../services/role.service')
 exports.login = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { email, password } = req.body;
 
-    const user = await userService.validateUser(name, password);
+    const user = await userService.validateUser(email, password);
+
     if (!user) {
       return res.status(401).json({ error: 'Tài khoản hoặc mật khẩu không đúng' });
     }
 
+ const roleName = await role.viewRole(user._id);
+   console.log(roleName);
     // Tạo token JWT
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, role: roleName },
       process.env.JWT_SECRET || 'your_jwt_secret_key',
       { expiresIn: '1h' } // hoặc '1d'
     );
@@ -21,11 +25,15 @@ exports.login = async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
         email: user.email,
-        role: user.role
-      }
+    
+      },
+      
+
     });
+
+  
+  
   } catch (err) {
     res.status(500).json({ error: 'Lỗi server', message: err.message });
   }

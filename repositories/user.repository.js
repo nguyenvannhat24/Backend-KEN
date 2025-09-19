@@ -11,14 +11,20 @@ class UserRepository {
     return User.findOne({ email }).exec();
   }
 
-  async findByName(name) {
-    return await UserModel.findOne({ name });
+  async findByName(email) {
+    return await UserModel.findOne({ email });
   }
 
+  async findByNumberPhone(numberphone){
+    return await UserModel.findOne({numberphone});
+  }
   async create(userData) {
     return User.create(userData);
   }
- 
+async findAll() {
+  return User.find().lean();   // lấy tất cả user
+}
+
 }
 
 module.exports = new UserRepository();

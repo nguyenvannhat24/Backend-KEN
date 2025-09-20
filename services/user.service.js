@@ -28,6 +28,38 @@ async validateUser(email, password) {
     const user = await userRepo.findAll();
     return user ;
   }
+
+   async getAllUsers() {
+    return UserRepository.findAll();
+  }
+
+  async getUserById(id) {
+    return UserRepository.findById(id);
+  }
+
+  async getUserByEmail(email) {
+    return UserRepository.findByEmail(email);
+  }
+
+  async getUserByName(name) {
+    return UserRepository.findByName(name);
+  }
+
+  async getUserByNumberPhone(numberphone) {
+    return UserRepository.findByNumberPhone(numberphone);
+  }
+
+  async createUser(data) {
+    return UserRepository.create(data);
+  }
+
+  async updateUser(id, data) {
+    return UserRepository.update(id, data);
+  }
+
+  async deleteUser(id) {
+    return UserRepository.delete(id);
+  }
 }
 
 module.exports = new UserService();

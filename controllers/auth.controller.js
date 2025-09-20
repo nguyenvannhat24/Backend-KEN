@@ -26,10 +26,7 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-    
       },
-      
-
     });
 
   
@@ -37,4 +34,5 @@ exports.login = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Lỗi server', message: err.message });
   }
+  
 };

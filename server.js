@@ -6,6 +6,12 @@ const session = require('express-session');
 const userRouter = require("./router/auth.routes");
 const user = require('./router/user.routes');
 const userRole = require('./router/userRole.router');
+const permissionRoutes = require('./router/permission.router');
+const rolePermissionRoutes = require('./router/rolePermission.routes');
+const centerRouter = require('./router/center.router');
+const userPointRouter = require('./router/userPoint.router');
+// ...
+app.use('/api/role-permissions', rolePermissionRoutes);
 
 const memoryStore = new session.MemoryStore();
 
@@ -25,8 +31,13 @@ require('./config/db');
 
 // routes
 app.use('/api', userRouter(keycloak));
-app.use('/user', user());
-app.use('/userRole',userRole());
+app.use('/user', user);
+app.use('/api/userRole',userRole);
+app.use('/api/permission',permissionRoutes);
+app.use('/api/role-permissions', rolePermissionRoutes);
+app.use('/api/centers', centerRouter);
+app.use('/api/userPoints', userPointRouter);
+
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);
 });

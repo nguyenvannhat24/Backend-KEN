@@ -1,30 +1,43 @@
 const express = require('express');
 const userController = require('../controllers/user.controller');
+const { authenticate, adminOnly, selfOrAdmin } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Lấy toàn bộ user
-router.get('/selectAll', userController.SelectAll);
+/**
+ * User Routes - Quản lý người dùng
+ * Tất cả routes đều cần authentication
+ */
 
-// Lấy theo id
-router.get('/:id', userController.getById);
+// ==================== PUBLIC ROUTES ====================
+// (Không có - tất cả đều cần đăng nhập)
 
-// Lấy theo email
-router.get('/email/:email', userController.getByEmail);
+// ==================== AUTHENTICATED ROUTES ====================
 
-// Lấy theo name
-router.get('/name/:name', userController.getByName);
+// Lấy toàn bộ user (chỉ admin)
+router.get('/selectAll', authenticate, adminOnly, userController.SelectAll);
 
-// Lấy theo số điện thoại
-router.get('/phone/:numberphone', userController.getByNumberPhone);
+// Lấy user theo ID (admin hoặc chính mình)
+router.get('/:id', authenticate, selfOrAdmin, userController.getById);
 
-// Tạo mới user
-router.post('/', userController.create);
+// Lấy user theo email (chỉ admin)
+router.get('/email/:email', authenticate, adminOnly, userController.getByEmail);
 
-// Cập nhật user
-router.put('/:id', userController.update);
+// Lấy user theo name (chỉ admin)
+router.get('/name/:name', authenticate, adminOnly, userController.getByName);
 
-// Xóa user
-router.delete('/:id', userController.delete);
+// Lấy user theo số điện thoại (chỉ admin)
+router.get('/phone/:numberphone', authenticate, adminOnly, userController.getByNumberPhone);
+
+// ==================== ADMIN ONLY ROUTES ====================
+
+// Tạo mới user (chỉ admin)
+router.post('/', authenticate, adminOnly, userController.create);
+
+// Cập nhật user (admin hoặc chính mình)
+router.put('/:id', authenticate, selfOrAdmin, userController.update);
+
+// Xóa user (chỉ admin)
+router.delete('/:id', authenticate, adminOnly, userController.delete);
 
 module.exports = router;

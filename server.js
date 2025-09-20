@@ -10,6 +10,7 @@ const permissionRoutes = require('./router/permission.router');
 const rolePermissionRoutes = require('./router/rolePermission.routes');
 const centerRouter = require('./router/center.router');
 const userPointRouter = require('./router/userPoint.router');
+const roleRouter = require('./router/role.router');
 // ...
 app.use('/api/role-permissions', rolePermissionRoutes);
 
@@ -31,12 +32,13 @@ require('./config/db');
 
 // routes
 app.use('/api', userRouter(keycloak));
-app.use('/user', user);
+app.use('/api/user', user);
 app.use('/api/userRole',userRole);
 app.use('/api/permission',permissionRoutes);
 app.use('/api/role-permissions', rolePermissionRoutes);
 app.use('/api/centers', centerRouter);
 app.use('/api/userPoints', userPointRouter);
+app.use('/api/role', roleRouter);
 
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

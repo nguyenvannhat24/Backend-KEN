@@ -1,5 +1,5 @@
-const UserRole = require("../models/UserRole.model.js");
-const Role = require("../models/Role.model.js");
+const UserRole = require("../models/userRole.model");
+const Role = require("../models/role.model");
 
 class UserRoleRepository {
     // Tìm role theo user_id

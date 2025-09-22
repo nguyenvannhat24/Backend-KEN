@@ -13,7 +13,7 @@ module.exports = function(keycloak) {
   // Đăng nhập thường (DB)
   router.post('/login', authController.login);
 
-  // Đăng nhập SSO bằng Keycloak
+  // veryfile 
   router.get('/sso', keycloak.protect(), (req, res) => {
     res.json({ 
       success: true,
@@ -31,6 +31,8 @@ module.exports = function(keycloak) {
 
   // Refresh token (cần token cũ)
   router.post('/refresh-token', authenticate, authController.refreshToken);
+  // trên clienr nếu lỗi 401 thì gọi đến router này Refresh token tự động
+  /// gửi 
 
   // Logout Keycloak (nếu cần)
   // router.get('/logout-sso', keycloak.logout(), (req, res) => {

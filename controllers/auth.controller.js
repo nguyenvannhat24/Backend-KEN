@@ -71,12 +71,23 @@ class AuthController {
         { expiresIn: '24h' } // Tăng thời gian token lên 24h
       );
 
+      const refreshToken = jwt.sign(
+        { 
+          userId: user._id, 
+          email: user.email,
+          role: roleName 
+        },
+  process.env.JWT_REFRESH_SECRET || 'your_refresh_secret_key',
+  { expiresIn: '7d' } // refresh token sống lâu hơn
+);
+
       // Response thành công
       res.json({
         success: true,
         message: 'Đăng nhập thành công',
         data: {
           token,
+          refreshToken, 
           user: {
             id: user._id,
             email: user.email,
@@ -125,6 +136,31 @@ class AuthController {
     }
   }
 
+
+ // Trong class AuthController
+ // giải mã
+async verifyKeycloakToken(req, res) {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: "Token không được để trống" });
+  }
+
+  try {
+    // Nếu muốn verify thực sự, cần lấy public key của Keycloak
+    // Ở đây tạm decode
+    const decoded = jwt.decode(token, { complete: true });
+
+    res.json({
+      success: true,
+      message: "Giải mã token Keycloak thành công",
+      data: decoded?.payload
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Token không hợp lệ" });
+  }
+}
   /**
    * Refresh token
    * POST /api/refresh-token
@@ -184,11 +220,13 @@ class AuthController {
     }
   }
 }
-
-// Export methods
 const authController = new AuthController();
+// Export methods
 module.exports = {
   login: authController.login.bind(authController),
   logout: authController.logout.bind(authController),
-  refreshToken: authController.refreshToken.bind(authController)
+  refreshToken: authController.refreshToken.bind(authController),
+  verifyKeycloakToken: authController.verifyKeycloakToken.bind(authController)
 };
+
+

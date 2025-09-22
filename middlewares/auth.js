@@ -1,174 +1,96 @@
 const jwt = require('jsonwebtoken');
+const jwksClient = require('jwks-rsa');
+
+// Keycloak JWKS client
+const keycloakClient = jwksClient({
+  jwksUri: 'https://id.dev.codegym.vn/auth/realms/codegym/protocol/openid-connect/certs'
+});
+
+// Lấy public key từ Keycloak
+function getKey(header, callback) {
+  keycloakClient.getSigningKey(header.kid, (err, key) => {
+    if (err) return callback(err);
+    const signingKey = key.getPublicKey();
+    callback(null, signingKey);
+  });
+}
 
 /**
- * Authentication Middleware - Xác thực JWT token
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware function
+ * Middleware xác thực cả Local JWT và Keycloak JWT
  */
-const authenticate = (req, res, next) => {
-  try {
-    // Lấy token từ header Authorization
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không có token',
-        message: 'Vui lòng đăng nhập để truy cập tài nguyên này'
-      });
-    }
+const authenticateAny = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-    // Kiểm tra format Bearer token
-    if (!authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Token không đúng định dạng',
-        message: 'Token phải có định dạng: Bearer <token>'
-      });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Token không tồn tại',
-        message: 'Vui lòng cung cấp token hợp lệ'
-      });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key');
-    
-    // Gắn thông tin user vào request
-    req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role
-    };
-
-    console.log(`🔐 Authenticated user: ${req.user.email} (${req.user.role})`);
-    next();
-
-  } catch (error) {
-    console.error('❌ Authentication error:', error.message);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        error: 'Token không hợp lệ',
-        message: 'Token đã bị hỏng hoặc không đúng'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        error: 'Token đã hết hạn',
-        message: 'Vui lòng đăng nhập lại'
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: 'Lỗi xác thực',
-      message: 'Có lỗi xảy ra trong quá trình xác thực'
-    });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
   }
+
+  const token = authHeader.split(' ')[1];
+
+  // Thử verify Local JWT trước
+  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key', (errLocal, decodedLocal) => {
+    if (!errLocal && decodedLocal) {
+      req.user = {
+        id: decodedLocal.userId,
+        email: decodedLocal.email,
+        role: decodedLocal.role
+      };
+      return next();
+    }
+
+    // Nếu Local JWT fail, thử Keycloak JWT
+    jwt.verify(token, getKey, { algorithms: ['RS256'] }, (errKC, decodedKC) => {
+      if (errKC) {
+        return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
+      }
+
+      // Gán thông tin user từ Keycloak
+      let roles = decodedKC.realm_access?.roles || [];
+
+      // Nếu muốn lấy thêm roles của client
+      if (decodedKC.resource_access) {
+        Object.values(decodedKC.resource_access).forEach(clientRoles => {
+          roles.push(...(clientRoles.roles || []));
+        });
+      }
+
+      req.user = {
+        id: decodedKC.sub,
+        email: decodedKC.email,
+        username: decodedKC.preferred_username,
+        roles: Array.from(new Set(roles)) // loại trùng roles
+      };
+
+      next();
+    });
+  });
 };
 
 /**
- * Authorization Middleware - Kiểm tra quyền truy cập
- * @param {...string} allowedRoles - Các role được phép truy cập
- * @returns {Function} Middleware function
+ * Middleware kiểm tra quyền (hỗn hợp Local + Keycloak)
+ * @param  {...string} allowedRoles 
  */
-const authorize = (...allowedRoles) => {
+const authorizeAny = (...allowedRoles) => {
   return (req, res, next) => {
-    try {
-      // Kiểm tra user đã được authenticate chưa
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Chưa xác thực',
-          message: 'Vui lòng đăng nhập trước'
-        });
-      }
+    if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-      // Kiểm tra role
-      if (!allowedRoles.includes(req.user.role)) {
-        console.log(`❌ Access denied for user ${req.user.email} with role ${req.user.role}`);
-        return res.status(403).json({
-          success: false,
-          error: 'Không có quyền truy cập',
-          message: `Bạn cần quyền ${allowedRoles.join(' hoặc ')} để thực hiện hành động này`
-        });
-      }
+    // Local JWT role check
+    if (req.user.role && allowedRoles.includes(req.user.role)) return next();
 
-      console.log(`✅ Authorized user: ${req.user.email} (${req.user.role})`);
-      next();
+    // Keycloak role check
+    if (req.user.roles && req.user.roles.some(r => allowedRoles.includes(r))) return next();
 
-    } catch (error) {
-      console.error('❌ Authorization error:', error.message);
-      return res.status(500).json({
-        success: false,
-        error: 'Lỗi phân quyền',
-        message: 'Có lỗi xảy ra trong quá trình kiểm tra quyền'
-      });
-    }
+    return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
   };
 };
 
 /**
- * Admin Only Middleware - Chỉ admin mới được truy cập
+ * Middleware admin only
  */
-const adminOnly = authorize('admin');
+const adminAny = authorizeAny('admin');
 
-/**
- * Self or Admin Middleware - User có thể truy cập dữ liệu của chính mình hoặc admin
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware function
- */
-const selfOrAdmin = (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Chưa xác thực',
-        message: 'Vui lòng đăng nhập trước'
-      });
-    }
-
-    const targetUserId = req.params.id || req.params.userId;
-    const isAdmin = req.user.role === 'admin';
-    const isSelf = req.user.id === targetUserId;
-
-    if (isAdmin || isSelf) {
-      console.log(`✅ Self or Admin access: ${req.user.email} (${req.user.role})`);
-      next();
-    } else {
-      console.log(`❌ Access denied: ${req.user.email} trying to access user ${targetUserId}`);
-      return res.status(403).json({
-        success: false,
-        error: 'Không có quyền truy cập',
-        message: 'Bạn chỉ có thể truy cập dữ liệu của chính mình'
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ Self or Admin check error:', error.message);
-    return res.status(500).json({
-      success: false,
-      error: 'Lỗi kiểm tra quyền',
-      message: 'Có lỗi xảy ra trong quá trình kiểm tra quyền'
-    });
-  }
-};
-
-module.exports = { 
-  authenticate, 
-  authorize, 
-  adminOnly, 
-  selfOrAdmin 
+module.exports = {
+  authenticateAny,
+  authorizeAny,
+  adminAny
 };

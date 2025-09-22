@@ -1,6 +1,6 @@
 const express = require('express');
 const roleController = require('../controllers/role.controller');
-const { authenticate, adminOnly } = require('../middlewares/auth');
+const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -12,26 +12,26 @@ const router = express.Router();
 // ==================== PUBLIC ROUTES ====================
 
 // Lấy role của user hiện tại
-router.get('/my-role', authenticate, roleController.getUserRole);
+router.get('/my-role', authenticateAny, roleController.getUserRole);
 
 // ==================== ADMIN ROUTES ====================
 
 // Lấy tất cả roles (chỉ admin)
-router.get('/', authenticate, adminOnly, roleController.getAllRoles);
+router.get('/', authenticateAny, authorizeAny('admin'), roleController.getAllRoles);
 
 // Lấy role theo ID (chỉ admin)
-router.get('/:id', authenticate, adminOnly, roleController.getRoleById);
+router.get('/:id', authenticateAny, authorizeAny('admin'), roleController.getRoleById);
 
 // Lấy role theo tên (chỉ admin)
-router.get('/name/:name', authenticate, adminOnly, roleController.getRoleByName);
+router.get('/name/:name', authenticateAny, authorizeAny('admin'), roleController.getRoleByName);
 
 // Tạo role mới (chỉ admin)
-router.post('/', authenticate, adminOnly, roleController.createRole);
+router.post('/', authenticateAny,authorizeAny('admin'), roleController.createRole);
 
 // Cập nhật role (chỉ admin)
-router.put('/:id', authenticate, adminOnly, roleController.updateRole);
+router.put('/:id', authenticateAny, authorizeAny('admin'), roleController.updateRole);
 
 // Xóa role (chỉ admin)
-router.delete('/:id', authenticate, adminOnly, roleController.deleteRole);
+router.delete('/:id', authenticateAny, authorizeAny('admin'), roleController.deleteRole);
 
 module.exports = router;

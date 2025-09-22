@@ -1,6 +1,6 @@
 const express = require('express');
 const userController = require('../controllers/user.controller');
-const { authenticate, adminOnly, selfOrAdmin } = require('../middlewares/auth');
+const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -15,29 +15,29 @@ const router = express.Router();
 // ==================== AUTHENTICATED ROUTES ====================
 
 // Lấy toàn bộ user (chỉ admin)
-router.get('/selectAll', authenticate, adminOnly, userController.SelectAll);
+router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
 
 // Lấy user theo ID (admin hoặc chính mình)
-router.get('/:id', authenticate, selfOrAdmin, userController.getById);
+router.get('/:id', authenticateAny,  authorizeAny('admin','user'), userController.getById);
 
 // Lấy user theo email (chỉ admin)
-router.get('/email/:email', authenticate, adminOnly, userController.getByEmail);
+router.get('/email/:email', authenticateAny,  authorizeAny('admin'), userController.getByEmail);
 
 // Lấy user theo name (chỉ admin)
-router.get('/name/:name', authenticate, adminOnly, userController.getByName);
+router.get('/name/:name', authenticateAny, authorizeAny('admin'), userController.getByName);
 
 // Lấy user theo số điện thoại (chỉ admin)
-router.get('/phone/:numberphone', authenticate, adminOnly, userController.getByNumberPhone);
+router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
 
 // ==================== ADMIN ONLY ROUTES ====================
 
 // Tạo mới user (chỉ admin)
-router.post('/', authenticate, adminOnly, userController.create);
+router.post('/', authenticateAny, authorizeAny('admin'), userController.create);
 
 // Cập nhật user (admin hoặc chính mình)
-router.put('/:id', authenticate, selfOrAdmin, userController.update);
+router.put('/:id', authenticateAny,  authorizeAny('admin'), userController.update);
 
 // Xóa user (chỉ admin)
-router.delete('/:id', authenticate, adminOnly, userController.delete);
+router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
 
 module.exports = router;

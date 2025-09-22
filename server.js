@@ -55,13 +55,13 @@ app.use(cors({
 app.use('/api', userRouter(keycloak));
 
 // Routes cần bảo vệ bằng Keycloak
-app.use('/api/user', keycloak.protect(), user);
-app.use('/api/userRole', keycloak.protect(), userRole);
-app.use('/api/permission', keycloak.protect(), permissionRoutes);
-app.use('/api/role-permissions', keycloak.protect(), rolePermissionRoutes);
-app.use('/api/centers', keycloak.protect(), centerRouter);
-app.use('/api/userPoints', keycloak.protect(), userPointRouter);
-app.use('/api/role', keycloak.protect(), roleRouter);
+app.use('/api/user', user);
+app.use('/api/userRole', userRole);
+app.use('/api/permission', permissionRoutes);
+app.use('/api/role-permissions', rolePermissionRoutes);
+app.use('/api/centers', centerRouter);
+app.use('/api/userPoints', userPointRouter);
+app.use('/api/role', roleRouter);
 
 
 // --- Start server ---

@@ -20,7 +20,11 @@ const UserSchema = new mongoose.Schema({
     trim: true,
     sparse: true // Cho phép null nhưng unique khi có giá trị
   },
-  
+  auth_provider: {
+   type : String,
+   enum: ['local', 'CodeGymID'],
+   default: 'active'
+  },
   // Mật khẩu (đã hash)
   password_hash: {
     type: String,

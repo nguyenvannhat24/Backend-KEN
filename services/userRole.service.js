@@ -65,23 +65,27 @@ class UserRoleService {
    * @param {Object} userRoleData - Dữ liệu user-role
    * @returns {Promise<Object>} User-role đã tạo
    */
-  async create(userRoleData) {
-    try {
-      console.log('🔍 Creating new user-role...', userRoleData);
-      
-      // Validate required fields
-      if (!userRoleData.user_id || !userRoleData.role_id) {
-        throw new Error('user_id và role_id là bắt buộc');
-      }
-
-      const newUserRole = await userRoleRepo.create(userRoleData);
-      console.log('✅ Created user-role successfully:', newUserRole._id);
-      return newUserRole;
-    } catch (error) {
-      console.error('❌ Error in create userRole:', error);
-      throw error;
+async create(userRoleData) {
+  try {
+    console.log('🔍 Creating new user-role...', userRoleData);
+    
+    // Kiểm tra từng field và ném lỗi rõ ràng
+    if (!userRoleData.user_id) {
+      throw new Error('❌ user_id bị thiếu');
     }
+    if (!userRoleData.role_id) {
+      throw new Error('❌ role_id bị thiếu');
+    }
+
+    const newUserRole = await userRoleRepo.create(userRoleData);
+    console.log('✅ Created user-role successfully:', newUserRole._id);
+    return newUserRole;
+  } catch (error) {
+    console.error('❌ Error in create userRole:', error.message);
+    throw error;
   }
+}
+
 
   /**
    * Cập nhật role của user-role record

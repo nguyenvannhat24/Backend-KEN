@@ -2,7 +2,7 @@ const userService = require('../services/user.service');
 const jwt = require('jsonwebtoken');
 const userRole = require('../services/userRole.service');
 const role = require('../services/role.service');
-
+require('dotenv').config(); // đọc file .env
 /**
  * Auth Controller - Xử lý các request liên quan đến authentication
  */
@@ -67,7 +67,7 @@ class AuthController {
           email: user.email,
           role: roleName 
         },
-        process.env.JWT_SECRET || 'your_jwt_secret_key',
+        process.env.JWT_SECRET ,
         { expiresIn: '24h' } // Tăng thời gian token lên 24h
       );
 
@@ -77,7 +77,7 @@ class AuthController {
           email: user.email,
           role: roleName 
         },
-  process.env.JWT_REFRESH_SECRET || 'your_refresh_secret_key',
+     process.env.JWT_REFRESH_SECRET ,
   { expiresIn: '7d' } // refresh token sống lâu hơn
 );
 

@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
-
+require('dotenv').config(); // đọc file .env
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
-  jwksUri: 'https://id.dev.codegym.vn/auth/realms/codegym/protocol/openid-connect/certs'
+  jwksUri: 'https://id.dev.codegym.vn/auth/realms/codegym-software-nhom-6/protocol/openid-connect/certs'
 });
 
 // Lấy public key từ Keycloak
@@ -28,7 +28,7 @@ const authenticateAny = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   // Thử verify Local JWT trước
-  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key', (errLocal, decodedLocal) => {
+  jwt.verify(token, process.env.JWT_SECRET, (errLocal, decodedLocal) => {
     if (!errLocal && decodedLocal) {
       req.user = {
         id: decodedLocal.userId,

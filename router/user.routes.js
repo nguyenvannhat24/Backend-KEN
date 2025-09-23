@@ -18,7 +18,7 @@ const router = express.Router();
 router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
 
 // Lấy user theo ID (admin hoặc chính mình)
-router.get('/:id', authenticateAny,  authorizeAny('admin','user'), userController.getById);
+router.get('/:id', authenticateAny,  authorizeAny('admin','manage-account'), userController.getById);
 
 // Lấy user theo email (chỉ admin)
 router.get('/email/:email', authenticateAny,  authorizeAny('admin'), userController.getByEmail);

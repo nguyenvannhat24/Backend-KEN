@@ -197,6 +197,18 @@ class RoleRepository {
       throw error;
     }
   }
+  async getIdByName(nameRole){
+    try {
+       const Role = await this.findByName(nameRole);
+       const RoleId = Role._id;
+  return RoleId ;
+    } catch (error) {
+      console.error('❌ [RoleRepository] getbyID - Error:', error);
+       throw error;
+    }
+ 
+  }
 }
+
 
 module.exports = new RoleRepository();

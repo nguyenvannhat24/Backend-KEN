@@ -1,5 +1,6 @@
 const userService = require('../services/user.service');
-
+const userRoleService = require('../services/userRole.service');
+const roleSevive = require('../services/role.service');
 exports.SelectAll = async (req, res) => {
   try {
     const userAll = await userService.viewAll();
@@ -57,9 +58,25 @@ exports.getByNumberPhone = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
+    // Tạo user trên bảng user
     const user = await userService.createUser(req.body);
+
+    // Lấy role_id của quyền 'user' từ bảng role
+    const roleId  = await roleSevive.getIdByName('user'); // nếu getIdByName là async
+
+    if (!roleId ) {
+      return res.status(400).json({ message: 'Role "user" không tồn tại' });
+    }
+
+    // Thêm quyền cho user mới
+    await userRoleService.create({
+      user_id: user._id,
+      role_id: roleId , // tùy thuộc hàm trả về chỉ id hay object
+    });
+
     res.status(201).json(user);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ message: err.message });
   }
 };

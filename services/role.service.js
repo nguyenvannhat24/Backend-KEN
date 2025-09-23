@@ -190,6 +190,15 @@ class RoleService {
     console.log('⚠️ [RoleService] viewRole - This method is deprecated, use getUserRole instead');
     return this.getUserRole(userId);
   }
+  async getIdByName(nameRole){
+    try {
+         return await RoleRepository.getIdByName(nameRole);
+
+    } catch (error) {
+      console.error('lỗi ở getIDByName service' + error);
+      throw error;
+    }
+  };
 }
 
 module.exports = new RoleService();

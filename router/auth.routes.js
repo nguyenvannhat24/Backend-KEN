@@ -27,14 +27,6 @@ router.post('/keycloak/decode',authController.verifyKeycloakToken);
   router.post('/refresh-token', authenticateAny, authController.refreshToken);
   // trên clienr nếu lỗi 401 thì gọi đến router này Refresh token tự động
   /// gửi 
- router.post('/verifi',authController.verifyKeycloakToken);
-  // Logout Keycloak (nếu cần)
-  // router.get('/logout-sso', keycloak.logout(), (req, res) => {
-  //   res.json({ 
-  //     success: true,
-  //     message: 'Đăng xuất Keycloak thành công' 
-  //   });
-  // });
 
   return router;
 };

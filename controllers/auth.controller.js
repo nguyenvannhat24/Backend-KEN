@@ -2,6 +2,7 @@ const userService = require('../services/user.service');
 const jwt = require('jsonwebtoken');
 const userRole = require('../services/userRole.service');
 const role = require('../services/role.service');
+const tokenBlacklist = require('../middlewares/tokenBlacklist');
 require('dotenv').config(); // đọc file .env
 /**
  * Auth Controller - Xử lý các request liên quan đến authentication
@@ -117,24 +118,39 @@ class AuthController {
    * @param {Object} req - Request object
    * @param {Object} res - Response object
    */
-  async logout(req, res) {
-    try {
-      // Trong thực tế, có thể lưu token vào blacklist
-      // Hoặc sử dụng Redis để quản lý session
+
       
-      res.json({
-        success: true,
-        message: 'Đăng xuất thành công'
-      });
-    } catch (error) {
-      console.error('❌ Logout error:', error);
-      res.status(500).json({
+async logout(req, res) {
+  try {
+    // Lấy token từ header Authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
         success: false,
-        error: 'Lỗi server',
-        message: 'Có lỗi xảy ra trong quá trình đăng xuất'
+        message: "Token không hợp lệ hoặc không cung cấp"
       });
     }
+
+    const token = authHeader.split(' ')[1];
+
+    // Lưu token vào blacklist
+    tokenBlacklist.add(token);
+
+    res.json({
+      success: true,
+      message: 'Đăng xuất thành công'
+    });
+  } catch (error) {
+    console.error('❌ Logout error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Lỗi server',
+      message: 'Có lỗi xảy ra trong quá trình đăng xuất'
+    });
   }
+}
+
+
 
 
  // Trong class AuthController

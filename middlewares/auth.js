@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 require('dotenv').config(); // đọc file .env
+const tokenBlacklist = require('./tokenBlacklist');
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
   jwksUri: 'https://id.dev.codegym.vn/auth/realms/codegym-software-nhom-6/protocol/openid-connect/certs'
@@ -24,8 +25,13 @@ const authenticateAny = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
   }
+  
 
   const token = authHeader.split(' ')[1];
+
+  if (tokenBlacklist.has(token)) {
+  return res.status(401).json({ message: "Token đã bị đăng xuất" });
+}
 
   // Thử verify Local JWT trước
   jwt.verify(token, process.env.JWT_SECRET, (errLocal, decodedLocal) => {

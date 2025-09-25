@@ -4,7 +4,7 @@ require('dotenv').config(); // đọc file .env
 const tokenBlacklist = require('./tokenBlacklist');
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
-  jwksUri: 'https://id.dev.codegym.vn/auth/realms/codegym-software-nhom-6/protocol/openid-connect/certs'
+  jwksUri: process.env.KEYCLOAK_JWKS_URI || 'https://id.dev.codegym.vn/auth/realms/codegym-software-nhom-6/protocol/openid-connect/certs'
 });
 
 // Lấy public key từ Keycloak

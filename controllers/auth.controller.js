@@ -17,6 +17,17 @@ class AuthController {
    */
   async login(req, res) {
     try {
+      // Validate JWT secrets
+      const jwtSecret = process.env.JWT_SECRET;
+      const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+      if (!jwtSecret || !jwtRefreshSecret) {
+        console.error('❌ JWT secrets missing. Please set JWT_SECRET and JWT_REFRESH_SECRET in .env');
+        return res.status(500).json({
+          success: false,
+          error: 'Server misconfigured',
+          message: 'JWT secrets are missing. Please configure JWT_SECRET and JWT_REFRESH_SECRET.'
+        });
+      }
       // Kiểm tra req.body
       if (!req.body) {
         return res.status(400).json({
@@ -68,7 +79,7 @@ class AuthController {
           email: user.email,
           role: roleName 
         },
-        process.env.JWT_SECRET ,
+        jwtSecret,
         { expiresIn: '24h' } // Tăng thời gian token lên 24h
       );
 
@@ -78,7 +89,7 @@ class AuthController {
           email: user.email,
           role: roleName 
         },
-     process.env.JWT_REFRESH_SECRET ,
+     jwtRefreshSecret ,
   { expiresIn: '7d' } // refresh token sống lâu hơn
 );
 
@@ -185,45 +196,51 @@ async verifyKeycloakToken(req, res) {
    */
   async refreshToken(req, res) {
     try {
-      const { token } = req.body;
+      const { refreshToken } = req.body;
 
-      if (!token) {
+      if (!refreshToken) {
         return res.status(400).json({
           success: false,
-          error: 'Token là bắt buộc',
-          message: 'Vui lòng cung cấp token để refresh'
+          error: 'refreshToken là bắt buộc',
+          message: 'Vui lòng cung cấp refreshToken để cấp mới access token'
         });
       }
 
-      // Verify token hiện tại
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key');
-      
-      // Tạo token mới
-      const newToken = jwt.sign(
-        { 
+      // Verify refresh token bằng JWT_REFRESH_SECRET
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+      // Tạo access token mới
+      const newAccessToken = jwt.sign(
+        {
           userId: decoded.userId,
           email: decoded.email,
           role: decoded.role
         },
-        process.env.JWT_SECRET || 'your_jwt_secret_key',
+        process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
       res.json({
         success: true,
-        message: 'Refresh token thành công',
+        message: 'Cấp mới access token thành công',
         data: {
-          token: newToken
+          token: newAccessToken
         }
       });
-
     } catch (error) {
       console.error('❌ Refresh token error:', error);
-      
+
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          error: 'Refresh token hết hạn',
+          message: 'Vui lòng đăng nhập lại'
+        });
+      }
       if (error.name === 'JsonWebTokenError') {
         return res.status(401).json({
           success: false,
-          error: 'Token không hợp lệ',
+          error: 'Refresh token không hợp lệ',
           message: 'Vui lòng đăng nhập lại'
         });
       }

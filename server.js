@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
-const port = 3005;
+require('dotenv').config();
+const port = process.env.PORT || 3005;
 const Keycloak = require('keycloak-connect');
 const session = require('express-session');
 const cors = require("cors");
@@ -13,6 +14,7 @@ const rolePermissionRoutes = require('./router/rolePermission.routes');
 const centerRouter = require('./router/center.router');
 const userPointRouter = require('./router/userPoint.router');
 const roleRouter = require('./router/role.router');
+const boardRouter = require('./router/board.router');
 
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
@@ -23,14 +25,14 @@ app.use(session({
   store: memoryStore
 }));
 
-// Khởi tạo Keycloak
+// Khởi tạo Keycloak (đọc từ ENV)
 const keycloakConfig = {
-  "realm": "myrealm",
-  "auth-server-url": "http://localhost:9090/auth",
-  "ssl-required": "external",
-  "resource": "my-app",
-  "public-client": true,
-  "confidential-port": 0
+  realm: process.env.KEYCLOAK_REALM || 'myrealm',
+  'auth-server-url': process.env.KEYCLOAK_AUTH_URL || 'http://localhost:9090/auth',
+  'ssl-required': process.env.KEYCLOAK_SSL_REQUIRED || 'external',
+  resource: process.env.KEYCLOAK_RESOURCE || 'my-app',
+  'public-client': (process.env.KEYCLOAK_PUBLIC_CLIENT || 'true') === 'true',
+  'confidential-port': Number(process.env.KEYCLOAK_CONFIDENTIAL_PORT || 0)
 };
 const keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
 
@@ -46,7 +48,7 @@ require('./config/db');
 
 // --- Routes ---
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true
 }));
 //
@@ -62,6 +64,7 @@ app.use('/api/role-permissions', rolePermissionRoutes);
 app.use('/api/centers', centerRouter);
 app.use('/api/userPoints', userPointRouter);
 app.use('/api/role', roleRouter);
+app.use('/api/boards', boardRouter);
 
 
 // --- Start server ---

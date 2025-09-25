@@ -23,8 +23,8 @@ router.post('/keycloak/decode',authController.verifyKeycloakToken);
   // Đăng xuất (cần token)
   router.post('/logout', authenticateAny, authController.logout);
 
-  // Refresh token (cần token cũ)
-  router.post('/refresh-token', authenticateAny, authController.refreshToken);
+  // Refresh token: KHÔNG yêu cầu access token, dùng refreshToken trong body
+  router.post('/refresh-token', authController.refreshToken);
   // trên clienr nếu lỗi 401 thì gọi đến router này Refresh token tự động
   /// gửi 
 

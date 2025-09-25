@@ -267,14 +267,14 @@ class RoleController {
    */
   async getUserRole(req, res) {
     try {
-      const { userId } = req.params;
+      const userId = req.user?.id || req.user?.userId || req.params.userId;
       console.log(`📋 [RoleController] getUserRole - Getting role for user ID: ${userId}`);
       
       if (!userId) {
         return res.status(400).json({
           success: false,
           error: 'Bad Request',
-          message: 'ID user là bắt buộc'
+          message: 'Không xác định được user từ token'
         });
       }
 

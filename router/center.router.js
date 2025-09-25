@@ -2,11 +2,13 @@ const express = require('express');
 const centerController = require('../controllers/center.controller');
 
 const router = express.Router();
+const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 
-router.get('/', centerController.getAllCenters);
-router.get('/:id', centerController.getCenterById);
-router.post('/', centerController.createCenter);
-router.put('/:id', centerController.updateCenter);
-router.delete('/:id', centerController.deleteCenter);
+// Centers: read for authenticated users, write for admin
+router.get('/', authenticateAny, centerController.getAllCenters);
+router.get('/:id', authenticateAny, centerController.getCenterById);
+router.post('/', authenticateAny, authorizeAny('admin'), centerController.createCenter);
+router.put('/:id', authenticateAny, authorizeAny('admin'), centerController.updateCenter);
+router.delete('/:id', authenticateAny, authorizeAny('admin'), centerController.deleteCenter);
 
 module.exports = router;

@@ -1,0 +1,144 @@
+{
+  "info": {
+    "name": "Backend-KEN Boards",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "f5d5d1e2-0f0c-4b5a-8c3a-boards-collection"
+  },
+  "item": [
+    {
+      "name": "Auth - Login (Local)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/login",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "login" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"your@email\",\n  \"password\": \"your_password\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res && res.data) {",
+              "  if (res.data.token) pm.collectionVariables.set('token', res.data.token);",
+              "  if (res.data.refreshToken) pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+              "}",
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Boards - Get My Boards",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/boards/my",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "boards", "my" ]
+        }
+      }
+    },
+    {
+      "name": "Boards - Create Board",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/boards",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "boards" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Board Demo\",\n  \"description\": \"Mo ta ngan\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res && res.data && res.data._id) { pm.collectionVariables.set('boardId', res.data._id); }",
+              "pm.test('Created', function () { pm.response.to.have.status(201); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Boards - Get Board Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/boards/{{boardId}}",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "boards", "{{boardId}}" ]
+        }
+      }
+    },
+    {
+      "name": "Boards - Update Board",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/boards/{{boardId}}",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "boards", "{{boardId}}" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"New title\",\n  \"description\": \"Updated\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Boards - Delete Board",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/boards/{{boardId}}",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "boards", "{{boardId}}" ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3005" },
+    { "key": "token", "value": "" },
+    { "key": "boardId", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ]
+}
+
+

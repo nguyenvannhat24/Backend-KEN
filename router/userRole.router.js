@@ -2,12 +2,14 @@ const express = require('express');
 const userRoleController = require('../controllers/userRole.controller');
 
 const router = express.Router();
+const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 
-router.get('/all', userRoleController.SelectAlluserRole);
-router.get('/user/:userId', userRoleController.getRoleByUser);
-router.post('/', userRoleController.createUserRole);
-router.put('/:id', userRoleController.updateUserRole);
-router.delete('/:id', userRoleController.deleteUserRole);
-router.delete('/user/:userId', userRoleController.deleteRolesByUser);
+// Admin only for managing user-role assignments
+router.get('/all', authenticateAny, authorizeAny('admin'), userRoleController.SelectAlluserRole);
+router.get('/user/:userId', authenticateAny, authorizeAny('admin'), userRoleController.getRoleByUser);
+router.post('/', authenticateAny, authorizeAny('admin'), userRoleController.createUserRole);
+router.put('/:id', authenticateAny, authorizeAny('admin'), userRoleController.updateUserRole);
+router.delete('/:id', authenticateAny, authorizeAny('admin'), userRoleController.deleteUserRole);
+router.delete('/user/:userId', authenticateAny, authorizeAny('admin'), userRoleController.deleteRolesByUser);
 
 module.exports = router;

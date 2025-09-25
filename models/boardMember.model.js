@@ -1,11 +1,11 @@
 const mongoose_bm = require('mongoose');
-const { Schema: Schema_bm } = require('./_shared');
+const { Schema } = mongoose_bm;
 
 
-const BoardMemberSchema = new Schema_bm({
-user_id: { type: String, ref: 'User', required: true, index: true },
-board_id: { type: String, ref: 'Board', required: true, index: true },
-role_in_board: { type: String, maxlength: 30 },
+const BoardMemberSchema = new Schema({
+  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  board_id: { type: Schema.Types.ObjectId, ref: 'Board', required: true, index: true },
+  role_in_board: { type: String, maxlength: 30 },
 }, { collection: 'board_members', timestamps: true });
 
 

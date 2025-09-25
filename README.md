@@ -63,6 +63,17 @@ mongodb+srv://nhat:123@cluster0.ajpeazo.mongodb.net/CodeGym?retryWrites=true&w=m
 
 ---
 
+## ## 🎭 Boards Routes (/api/boards)
+
+|Method	 | Endpoint|	Mô tả	Quyền|
+|GET	|/api/boards/my	|Lấy danh sách board m|
+|POST	|/api/boards	|Tạo board mới. Body: { title, description?, center_id? }	|
+|GET	|/api/boards/:id|	Xem chi tiết board theo id	|
+|PUT	|/api/boards/:id	|Cập nhật board. Body: { title?, description?, center_id? }|
+|DELETE	|/api/boards/:id|	Xóa board theo id	|
+
+
+
 ## 🔹 Usage Notes
 - Tất cả các route ngoài `/api/auth/login` và `/api/auth/keycloak/decode` đều yêu cầu **authentication**.
 - Role-based access control (RBAC) được áp dụng cho user/admin.

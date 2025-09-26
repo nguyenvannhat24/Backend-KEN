@@ -75,6 +75,7 @@ async create(userRoleData) {
     }
     if (!userRoleData.role_id) {
       throw new Error('❌ role_id bị thiếu');
+    
     }
 
     const newUserRole = await userRoleRepo.create(userRoleData);

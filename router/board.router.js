@@ -3,8 +3,10 @@ const router = express.Router();
 const { authenticateAny } = require('../middlewares/auth');
 const boardController = require('../controllers/board.controller');
 
-// Xem danh sách board mà user có quyền (member hoặc creator)
+// Xem danh tất cả các bảng có trogn database
 router.get('/my', authenticateAny, boardController.selectedAll);
+
+
 
 // Tạo board mới (user đã đăng nhập)
 router.post('/', authenticateAny, boardController.createBoard);
@@ -21,3 +23,4 @@ router.delete('/:id', authenticateAny, boardController.deleteBoard);
 module.exports = router;
 
 
+    

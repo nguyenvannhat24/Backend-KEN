@@ -19,7 +19,27 @@ class UserRepository {
       throw error;
     }
   }
-  
+
+/**
+ * Lấy profile user theo ID, loại bỏ các trường nhạy cảm
+ * @param {string} id - ObjectId của user
+ * @returns {Promise<Object|null>} User profile hoặc null
+ */
+
+async getProfileById(id) {
+  try {
+    const user = await User.findById(id).lean();
+    if (!user) return null;
+
+    // Loại bỏ các trường nhạy cảm
+    const { password, password_hash, ...profile } = user;
+    return profile;
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    throw error;
+  }
+}
+
   /**
    * Tìm user theo email
    * @param {string} email - Email của user

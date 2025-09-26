@@ -16,6 +16,9 @@ const userPointRouter = require('./router/userPoint.router');
 const roleRouter = require('./router/role.router');
 const boardRouter = require('./router/board.router');
 const boardMemberRouter = require('./router/boardMember.routes');
+const groupRoutes = require('./router/group.routes');
+const groupMemberRoutes = require('./router/groupMember.routes');
+
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
 app.use(session({
@@ -66,8 +69,8 @@ app.use('/api/userPoints', userPointRouter);
 app.use('/api/role', roleRouter);
 app.use('/api/boards', boardRouter);
 app.use('/api/boardMember',boardMemberRouter );
-
-
+app.use('/api/groups', groupRoutes);
+app.use('/api/groupMember',groupMemberRoutes);
 // --- Start server ---
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

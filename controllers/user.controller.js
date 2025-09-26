@@ -99,4 +99,23 @@ exports.delete = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+
+
+};
+exports.viewProfile = async (req, res) => {
+  try {
+    const { userId } = req.body; // Lấy userId từ body
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "userId là bắt buộc" });
+    }
+
+    const profile = await userService.getProfile(userId);
+    if (!profile) {
+      return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
+    }
+
+    res.json({ success: true, data: profile });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

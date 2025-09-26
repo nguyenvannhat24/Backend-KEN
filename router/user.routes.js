@@ -40,6 +40,9 @@ router.put('/:id', authenticateAny,  authorizeAny('admin'), userController.updat
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
 
+// router xem profive chính người đăng nhập
+
+router.post('/getprofile',authenticateAny ,userController.viewProfile);
 
 
 module.exports = router;

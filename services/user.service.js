@@ -305,6 +305,12 @@ class UserService {
       throw error;
     }
   }
+
+async getProfile(userId) {
+  if (!userId) throw new Error("UserId là bắt buộc");
+  return await userRepo.getProfileById(userId);
+}
+
 }
 
 module.exports = new UserService();

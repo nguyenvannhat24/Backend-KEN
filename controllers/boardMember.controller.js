@@ -1,0 +1,82 @@
+const boardMemberService = require("../services/boardMember.service");
+
+class BoardMemberController {
+
+// Xem danh sách board mà user có quyền
+  // Xem danh sách board mà user có quyền (dùng POST)
+async getBoardsByUser(req, res) {
+  try {
+    const { user_id, roles = [] } = req.body;
+
+    const boards = await boardMemberService.getBoardsByUser(
+      user_id,
+      Array.isArray(roles) ? roles : []
+    );
+
+    // Trả raw JSON danh sách board
+    res.json(boards);
+  } catch (error) {
+    console.error("❌ Lỗi getBoardsByUser:", error);
+    res.status(400).json({ error: error.message });
+  }
+}
+
+
+
+  async selectAll(req, res) {
+    try {
+   
+      const member = await boardMemberService.selectAll();
+      res.status(201).json({ success: true, data: member });
+    } catch (err) {
+      console.error("❌ select error:", err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  async addMember(req, res) {
+    try {
+      const { user_id, board_id, role_in_board } = req.body;
+      const member = await boardMemberService.addMember({ user_id, board_id, role_in_board });
+      res.status(201).json({ success: true, data: member });
+    } catch (err) {
+      console.error("❌ addMember error:", err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  async getMembers(req, res) {
+    try {
+      const { boardId } = req.body;
+      const members = await boardMemberService.getMembers(boardId);
+      res.json({ success: true, data: members });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  async updateRole(req, res) {
+    try {
+      const { user_id, board_id, role_in_board } = req.body;
+      const member = await boardMemberService.updateRole(user_id, board_id, role_in_board);
+      res.json({ success: true, data: member });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  async removeMember(req, res) {
+    try {
+      const { user_id, board_id } = req.body;
+      await boardMemberService.removeMember(user_id, board_id);
+      res.json({ success: true, message: "Xoá thành viên thành công" });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  
+
+}
+
+module.exports = new BoardMemberController();

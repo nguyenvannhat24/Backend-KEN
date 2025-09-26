@@ -1,6 +1,25 @@
 const boardService = require('../services/board.service');
 
 class BoardController {
+  // đang xem theo kiêu người dùng 
+  // selectALl
+
+
+   async selectedAll (req, res)  {
+  try {
+    const boards = await boardService.selectedAll();   // gọi service
+    res.json({
+      success: true,
+      data: boards
+    });
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy danh sách board:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server"
+    });
+  }
+  };
   async listMyBoards(req, res) {
     try {
       const userId = req.user?.id || req.user?.userId;
@@ -14,9 +33,12 @@ class BoardController {
 
   async createBoard(req, res) {
     try {
-      const userId = req.user?.id || req.user?.userId;
-      const { title, description, center_id } = req.body;
-      const board = await boardService.createBoard({ title, description, center_id, created_by: userId });
+     
+      const { title, description, is_template , userId} = req.body;
+      const board = await boardService.createBoard({ title, description, is_template ,userId});// tao\j bảng vừa lưu vừa lấy id của bảng
+
+      // add chính nó vào boardMember 
+      // id user id bảng
       res.status(201).json({ success: true, data: board });
     } catch (err) {
       console.error('❌ createBoard error:', err);
@@ -68,6 +90,8 @@ class BoardController {
       res.status(500).json({ success: false, message: 'Lỗi server' });
     }
   }
+
+  
 }
 
 module.exports = new BoardController();

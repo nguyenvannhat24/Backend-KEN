@@ -59,6 +59,7 @@ const authenticateAny = (req, res, next) => {
           roles.push(...(clientRoles.roles || []));
         });
       }
+      // role 
 
       req.user = {
         id: decodedKC.sub,

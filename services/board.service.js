@@ -1,6 +1,13 @@
 const boardRepo = require('../repositories/board.repository');
+const boardMemberRepo = require( "../repositories/boardMember.repository"); 
+const mongoose = require("mongoose");
 
 class BoardService {
+
+async selectedAll(){
+  return boardRepo.selectedAll();
+}
+
   async listBoardsForUser(userId) {
     const memberships = await boardRepo.findMembersByUser(userId);
     const memberBoardIds = memberships.map(m => m.board_id);
@@ -13,12 +20,51 @@ class BoardService {
     return boardRepo.findByIds(Array.from(allBoardIds));
   }
 
-  async createBoard({ title, description, center_id, created_by }) {
-    if (!title || !created_by) {
-      throw new Error('title và created_by là bắt buộc');
+  async createBoard({ title, description, userId, is_template }) {
+    if (!title || !userId) {
+      throw new Error("title và userId là bắt buộc");
     }
-    return boardRepo.create({ title, description, center_id, created_by });
+
+    // Kiểm tra trùng tên
+    const existingBoard = await boardRepo.findByTitleAndUser(title, userId);
+    if (existingBoard) {
+      throw new Error("Bạn đã có board với tên này rồi!");
+    }
+
+    // Bắt đầu session transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Tạo mới board
+      const board = await boardRepo.createWithSession(
+        { title, description, is_template },
+        session
+      );
+
+      // Thêm vào BoardMembers
+      await boardMemberRepo.addMember(
+        {
+          board_id: board._id,
+          user_id: userId,
+          role_in_board: "Người tạo",
+        },
+        session
+      );
+
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      return board;
+    } catch (err) {
+      // Rollback
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
   }
+
 
   async getBoardIfPermitted(boardId, userId) {
     const board = await boardRepo.findById(boardId);

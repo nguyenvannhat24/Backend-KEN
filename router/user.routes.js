@@ -40,4 +40,6 @@ router.put('/:id', authenticateAny,  authorizeAny('admin'), userController.updat
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
 
+
+
 module.exports = router;

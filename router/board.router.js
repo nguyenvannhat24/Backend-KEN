@@ -4,7 +4,7 @@ const { authenticateAny } = require('../middlewares/auth');
 const boardController = require('../controllers/board.controller');
 
 // Xem danh sách board mà user có quyền (member hoặc creator)
-router.get('/my', authenticateAny, boardController.listMyBoards);
+router.get('/my', authenticateAny, boardController.selectedAll);
 
 // Tạo board mới (user đã đăng nhập)
 router.post('/', authenticateAny, boardController.createBoard);

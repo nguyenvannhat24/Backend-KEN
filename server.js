@@ -19,28 +19,14 @@ const boardMemberRouter = require('./router/boardMember.routes');
 const groupRoutes = require('./router/group.routes');
 const groupMemberRoutes = require('./router/groupMember.routes');
 
-// --- Keycloak setup ---
+// --- Session setup (for future use) ---
 const memoryStore = new session.MemoryStore();
 app.use(session({
-  secret: 'some secret',
+  secret: process.env.SESSION_SECRET || 'default_session_secret',
   resave: false,
   saveUninitialized: true,
   store: memoryStore
 }));
-
-// Khởi tạo Keycloak (đọc từ ENV)
-const keycloakConfig = {
-  realm: process.env.KEYCLOAK_REALM || 'myrealm',
-  'auth-server-url': process.env.KEYCLOAK_AUTH_URL || 'http://localhost:9090/auth',
-  'ssl-required': process.env.KEYCLOAK_SSL_REQUIRED || 'external',
-  resource: process.env.KEYCLOAK_RESOURCE || 'my-app',
-  'public-client': (process.env.KEYCLOAK_PUBLIC_CLIENT || 'true') === 'true',
-  'confidential-port': Number(process.env.KEYCLOAK_CONFIDENTIAL_PORT || 0)
-};
-const keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
-
-// Middleware Keycloak
-app.use(keycloak.middleware());
 
 // --- Body parser ---
 app.use(express.json());
@@ -51,15 +37,15 @@ require('./config/db');
 
 // --- Routes ---
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  origin: process.env.CORS_ORIGIN,
   credentials: true
 }));
 //
 
 // Route public (không cần login)
-app.use('/api', userRouter(keycloak));
+app.use('/api', userRouter());
 
-// Routes cần bảo vệ bằng Keycloak
+// Routes cần bảo vệ bằng JWT
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
 app.use('/api/permission', permissionRoutes);

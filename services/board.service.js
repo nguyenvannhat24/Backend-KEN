@@ -1,12 +1,12 @@
 const boardRepo = require('../repositories/board.repository');
-const boardMemberRepo = require( "../repositories/boardMember.repository"); 
+const boardMemberRepo = require("../repositories/boardMember.repository");
 const mongoose = require("mongoose");
 
 class BoardService {
 
-async selectedAll(){
-  return boardRepo.selectedAll();
-}
+  async selectedAll() {
+    return boardRepo.selectedAll();
+  }
 
   async listBoardsForUser(userId) {
     const memberships = await boardRepo.findMembersByUser(userId);
@@ -47,7 +47,7 @@ async selectedAll(){
         {
           board_id: board._id,
           user_id: userId,
-          role_in_board: "Người tạo",
+          role_in_board: "Người tạo"
         },
         session
       );
@@ -69,7 +69,8 @@ async selectedAll(){
   async getBoardIfPermitted(boardId, userId) {
     const board = await boardRepo.findById(boardId);
     if (!board) return null;
-    const permitted = (String(board.created_by) === String(userId)) || await boardRepo.isMember(userId, boardId);
+    const permitted = (String(board.created_by) === String(userId)) || 
+                     await boardRepo.isMember(userId, boardId);
     return permitted ? board : 'forbidden';
   }
 
@@ -92,5 +93,3 @@ async selectedAll(){
 }
 
 module.exports = new BoardService();
-
-

@@ -25,8 +25,7 @@ const RoleSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes để tối ưu hóa truy vấn
-RoleSchema.index({ name: 1 });
+// Indexes để tối ưu hóa truy vấn (name đã có unique nên không cần thêm index)
 RoleSchema.index({ createdAt: -1 });
 
 // Virtual để lấy số lượng users có role này

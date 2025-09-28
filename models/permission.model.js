@@ -26,8 +26,7 @@ const PermissionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes để tối ưu hóa truy vấn
-PermissionSchema.index({ code: 1 });
+// Indexes để tối ưu hóa truy vấn (code đã có unique nên không cần thêm index)
 PermissionSchema.index({ createdAt: -1 });
 
 // Virtual để lấy số lượng roles có permission này

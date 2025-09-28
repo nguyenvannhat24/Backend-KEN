@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 /**
  * Auth Routes - Xử lý authentication và authorization
  */
-module.exports = function(keycloak) {
+module.exports = function() {
   const router = express.Router();
 
   // ==================== PUBLIC ROUTES ====================
@@ -14,9 +14,8 @@ module.exports = function(keycloak) {
   // Đăng nhập thường (DB)
   router.post('/login', authController.login);
 
-  // veryfile 
- // Route nhận token từ client
-router.post('/keycloak/decode',authController.verifyKeycloakToken);
+  // Verify Keycloak token
+  router.post('/keycloak/decode', authController.verifyKeycloakToken);
 
   // ==================== AUTHENTICATED ROUTES ====================
   
@@ -25,8 +24,6 @@ router.post('/keycloak/decode',authController.verifyKeycloakToken);
 
   // Refresh token: KHÔNG yêu cầu access token, dùng refreshToken trong body
   router.post('/refresh-token', authController.refreshToken);
-  // trên clienr nếu lỗi 401 thì gọi đến router này Refresh token tự động
-  /// gửi 
 
   return router;
 };

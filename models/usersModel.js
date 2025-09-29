@@ -62,9 +62,7 @@ const UserSchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-// Indexes để tối ưu hóa truy vấn
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
+// Indexes để tối ưu hóa truy vấn (email và username đã có unique nên không cần thêm index)
 UserSchema.index({ status: 1 });
 
 // Middleware để cập nhật updated_at trước khi save

@@ -2,8 +2,8 @@ const BoardMember = require("../models/boardMember.model");
 
 class BoardMemberRepository {
   // Thêm 1 thành viên vào board
-async addMember({ user_id, board_id, role_in_board }, session) {
-    const boardMember = new BoardMember({ user_id, board_id, role_in_board });
+async addMember({ user_id, board_id, role_in_board, Creator = false }, session) {
+    const boardMember = new BoardMember({ user_id, board_id, role_in_board, Creator });
     return await boardMember.save({ session });
   }
 
@@ -42,6 +42,13 @@ async addMember({ user_id, board_id, role_in_board }, session) {
     return BoardMember.find(filter)
       .populate("board_id")   // populate sang bảng Board
       .exec();
+  }
+
+  // Lấy tất cả board mà user là thành viên
+  async getBoardsByUser(user_id) {
+    return await BoardMember.find({ user_id })
+      .populate("board_id", "title description created_at updated_at is_template")
+      .lean();
   }
 }
 

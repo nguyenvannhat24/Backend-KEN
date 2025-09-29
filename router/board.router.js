@@ -3,8 +3,8 @@ const router = express.Router();
 const { authenticateAny } = require('../middlewares/auth');
 const boardController = require('../controllers/board.controller');
 
-// Xem danh tất cả các bảng có trogn database
-router.get('/my', authenticateAny, boardController.selectedAll);
+// Xem danh sách board của user (member)
+router.get('/my', authenticateAny, boardController.listMyBoards);
 
 
 

@@ -2,21 +2,25 @@ const express = require("express");
 const router = express.Router();
 const boardMemberController = require("../controllers/boardMember.controller");
 const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
-// Thêm user vào board
-router.post("/", authenticateAny, boardMemberController.addMember);
 
-// Lấy danh sách thành viên trong board
-router.post("/viewUser",authenticateAny, boardMemberController.getMembers);
+// ==================== BOARD MEMBERS API ====================
 
-// Cập nhật role của thành viên
-router.put("/:board_id/:user_id",authenticateAny , boardMemberController.updateRole);
+// Lấy tất cả board members (admin only)
+router.get("/all", authenticateAny, boardMemberController.selectAll);
 
-// Xoá thành viên khỏi board
-router.delete("/:board_id/:user_id",authenticateAny, boardMemberController.removeMember);
+// Lấy members của board cụ thể  
+router.get("/board/:board_id", authenticateAny, boardMemberController.getMembers);
 
-// xem các bảng mà người dùng có quyền kiểu như người tạo ...
-router.post("/boards-by-user", authenticateAny, boardMemberController.getBoardsByUser);
+// Thêm member vào board
+router.post("/board/:board_id", authenticateAny, boardMemberController.addMember);
 
-// xem bảng
-router.get("/select",boardMemberController.selectAll);
+// Cập nhật role member trong board
+router.put("/board/:board_id/user/:user_id", authenticateAny, boardMemberController.updateRole);
+
+// Xóa member khỏi board
+router.delete("/board/:board_id/user/:user_id", authenticateAny, boardMemberController.removeMember);
+
+// Lấy boards mà user có quyền
+router.get("/user/:user_id/boards", authenticateAny, boardMemberController.getBoardsByUser);
+
 module.exports = router;

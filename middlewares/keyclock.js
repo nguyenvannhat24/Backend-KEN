@@ -7,7 +7,7 @@ require('dotenv').config();
  * Thay URL bằng realm của bạn
  */
 const keycloakClient = jwksClient({
-  jwksUri: process.env.KEYCLOAK_JWKS_URI || 'https://id.dev.codegym.vn/auth/realms/codegym/protocol/openid-connect/certs'
+  jwksUri: process.env.KEYCLOAK_JWKS_URI
 });
 
 /**

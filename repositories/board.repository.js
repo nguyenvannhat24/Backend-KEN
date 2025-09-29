@@ -13,9 +13,10 @@ class BoardRepository {
     return Board.find({ _id: { $in: boardIds } }).lean();
   }
 
-  async findByCreator(userId) {
-    return Board.find({ created_by: userId }).lean();
-  }
+  // Hàm này không còn cần thiết vì không có created_by trong Board
+  // async findByCreator(userId) {
+  //   return Board.find({ created_by: userId }).lean();
+  // }
 
   async create(boardData) {
     const board = await Board.create(boardData);
@@ -36,8 +37,13 @@ class BoardRepository {
     return !!doc;
   }
 
-  async isCreator(userId, boardId) {
-    const doc = await Board.findOne({ _id: boardId, created_by: userId }).select('_id').lean();
+  // Kiểm tra user có phải creator thông qua BoardMember
+  async isCreatorFromMember(userId, boardId) {
+    const doc = await BoardMember.findOne({ 
+      user_id: userId, 
+      board_id: boardId, 
+      Creator: true 
+    }).select('_id').lean();
     return !!doc;
   }
 

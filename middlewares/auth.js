@@ -4,7 +4,7 @@ require('dotenv').config(); // đọc file .env
 const tokenBlacklist = require('./tokenBlacklist');
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
-  jwksUri: process.env.KEYCLOAK_JWKS_URI || 'https://id.dev.codegym.vn/auth/realms/codegym-software-nhom-6/protocol/openid-connect/certs'
+  jwksUri: process.env.KEYCLOAK_JWKS_URI
 });
 
 // Lấy public key từ Keycloak
@@ -20,9 +20,11 @@ function getKey(header, callback) {
  * Middleware xác thực cả Local JWT và Keycloak JWT
  */
 const authenticateAny = (req, res, next) => {
+  console.log('🔍 [AUTH DEBUG] Headers:', req.headers.authorization);
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('❌ [AUTH] No valid authorization header');
     return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
   }
   
@@ -41,6 +43,7 @@ const authenticateAny = (req, res, next) => {
         email: decodedLocal.email,
         role: decodedLocal.role
       };
+      console.log(`🔐 [AUTH] Local JWT verified: ${decodedLocal.email} (${decodedLocal.role})`);
       return next();
     }
 
@@ -67,6 +70,8 @@ const authenticateAny = (req, res, next) => {
         username: decodedKC.preferred_username,
         roles: Array.from(new Set(roles)) // loại trùng roles
       };
+      
+      console.log(`🔑 [AUTH] Keycloak JWT verified: ${decodedKC.email} (${roles.join(', ')})`);
 
       next();
     });

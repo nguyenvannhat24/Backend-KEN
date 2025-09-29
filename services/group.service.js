@@ -62,15 +62,30 @@ class GroupService {
     return group;
   }
 
-  // Lấy tất cả group
+  // Lấy tất cả group (chỉ admin)
   async getAllGroups() {
     return await groupRepo.findAll();
   }
 
-  // Cập nhật group
-  async updateGroup(id, data) {
+  // Lấy groups mà user là thành viên
+  async getUserGroups(userId) {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("userId không hợp lệ");
+    }
+
+    return await groupMemberRepo.getGroupsByUser(userId);
+  }
+
+  // Cập nhật group (chỉ group owner)
+  async updateGroup(id, data, userId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
+    }
+
+    // Kiểm tra quyền - chỉ group owner mới được cập nhật
+    const groupMember = await groupMemberRepo.findMember(userId, id);
+    if (!groupMember || groupMember.role_in_group !== 'Người tạo') {
+      throw new Error("Chỉ người tạo group mới được cập nhật group");
     }
 
     const updateData = {};
@@ -104,10 +119,16 @@ class GroupService {
     return updated;
   }
 
-  // Xoá group
-  async deleteGroup(id) {
+  // Xoá group (chỉ group owner)
+  async deleteGroup(id, userId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
+    }
+
+    // Kiểm tra quyền - chỉ group owner mới được xóa
+    const groupMember = await groupMemberRepo.findMember(userId, id);
+    if (!groupMember || groupMember.role_in_group !== 'Người tạo') {
+      throw new Error("Chỉ người tạo group mới được xóa group");
     }
 
     const deleted = await groupRepo.delete(id);

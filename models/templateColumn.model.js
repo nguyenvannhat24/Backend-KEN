@@ -1,14 +1,11 @@
-const mongoose_tc = require('mongoose');
-const { uuidString: uuid_tc, Schema: Schema_tc } = require('./_shared');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-
-const TemplateColumnSchema = new Schema_tc({
-_id: uuid_tc,
-template_id: { type: String, ref: 'Template', required: true, index: true },
+const TemplateColumnSchema = new Schema({
+template_id: {type: Schema.Types.ObjectId, ref: 'Template', required: true, index: true },
 name: { type: String, maxlength: 100 },
 order_index: { type: Number },
-}, { collection: 'template_columns', timestamps: true });
+}, { collection: 'TemplateColumns', timestamps: true });
 
 
-const TemplateColumn = mongoose_tc.model('TemplateColumn', TemplateColumnSchema);
-module.exports = TemplateColumn;
+module.exports = mongoose.model('TemplateColumn', TemplateColumnSchema);

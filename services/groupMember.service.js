@@ -81,6 +81,15 @@ class GroupMemberService {
     if (!groupMembers) throw new Error("Không thể truy xuất dữ liệu");
     return groupMembers;
   }
+
+  // lấy danh sách group mà người dùng có
+  async getGroupbyUser(id){
+    const groupUser = await groupMemberRepo.getByGroupMembers(id);
+    if(!groupUser){
+      throw new Error("Không thể truy xuất dữ liệu");
+    };
+    return groupUser;
+  }
 }
 
 module.exports = new GroupMemberService();

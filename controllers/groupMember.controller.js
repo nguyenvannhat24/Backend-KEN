@@ -74,6 +74,17 @@ class GroupMemberController {
       res.status(400).json({ success: false, message: err.message });
     }
   }
+
+  // tìm người dùng đang có bao nhiêu group
+  async selecGroupUser(req,res){
+    try{
+      const {id_user} = req.body;
+     const Group = await groupMemberService.getGroupbyUser(id_user);
+     res.json({success: true, data: Group });
+    }catch(err){
+     res.status(400).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new GroupMemberController();

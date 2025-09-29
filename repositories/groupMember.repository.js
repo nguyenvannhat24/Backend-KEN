@@ -41,6 +41,16 @@ async findMember(user_id, group_id) {
 async selectAll() {
     return await GroupMember.find().lean();
   }
+
+  // lấy danh sách group theo id người dùng
+
+  async getByGroupMembers(user_id){
+
+     return await GroupMember.find({ user_id })
+      .populate("group_id", "id name description ")
+      .lean();
+    
+  }
 }
 
 module.exports = new GroupMemberRepository();

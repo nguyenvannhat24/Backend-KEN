@@ -81,15 +81,18 @@ const authorizeAny = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-    // Local JWT role check
-    if (req.user.role && allowedRoles.includes(req.user.role)) return next();
+    // Nếu là Local JWT (có field role)
+    if (req.user.role) {
+      if (allowedRoles.includes(req.user.role)) return next();
+      return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
+    }
 
-    // Keycloak role check
-    if (req.user.roles && req.user.roles.some(r => allowedRoles.includes(r))) return next();
-
-    return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
+    // Nếu là Keycloak JWT (không có role field riêng, chỉ token hợp lệ)
+    // Mặc định coi là "user", không check role
+    return next();
   };
 };
+
 
 /**
  * Middleware admin only

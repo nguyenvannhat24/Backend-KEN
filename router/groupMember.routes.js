@@ -15,7 +15,12 @@ router.put("/update", authenticateAny, groupMemberController.updateRole);
 // Xóa thành viên
 router.delete("/remove", authenticateAny, groupMemberController.removeMember);
 
+// kiểm tra mình đang ở group nào
+
+
 // xem bảng groupmember
 router.get("/",groupMemberController.selectAll );
 
+//
+router.post("/getGroupUser",authenticateAny ,groupMemberController.selecGroupUser);
 module.exports = router;

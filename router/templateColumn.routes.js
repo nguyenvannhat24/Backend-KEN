@@ -1,12 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const templateColumnController = require('../controllers/templateColumn.controller');
+const templateColumnController = require("../controllers/templateColumn.controller");
 
 // CRUD routes
-router.post('/', templateColumnController.create.bind(templateColumnController));
-router.get('/template/:templateId', templateColumnController.getByTemplate.bind(templateColumnController));
-router.get('/:id', templateColumnController.getById.bind(templateColumnController));
-router.put('/:id', templateColumnController.update.bind(templateColumnController));
-router.delete('/:id', templateColumnController.delete.bind(templateColumnController));
+router.post("/", (req, res) => templateColumnController.create(req, res));
+router.get("/", (req, res) => templateColumnController.getAll(req, res));
+router.get("/:id", (req, res) => templateColumnController.getById(req, res));
+router.get("/template/:templateId", (req, res) => templateColumnController.getByTemplate(req, res));
+router.put("/:id", (req, res) => templateColumnController.update(req, res));
+router.delete("/:id", (req, res) => templateColumnController.delete(req, res));
 
 module.exports = router;

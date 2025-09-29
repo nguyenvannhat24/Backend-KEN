@@ -5,30 +5,29 @@ class TemplateColumnRepository {
     return await TemplateColumn.create(data);
   }
 
-  async findAllByTemplate(templateId) {
-    return await TemplateColumn.find({ template_id: templateId }).sort({ order_index: 1 });
+  async findAll() {
+    return await TemplateColumn.find().lean();
   }
 
   async findById(id) {
-    return await TemplateColumn.findById(id).populate('template_id', 'name');
+    return await TemplateColumn.findById(id).lean();
+  }
+
+  async findByTemplate(templateId) {
+    return await TemplateColumn.find({ template_id: templateId }).lean();
+  }
+
+  async findByName(templateId, name) {
+    return await TemplateColumn.findOne({ template_id: templateId, name }).lean();
   }
 
   async update(id, data) {
-    return await TemplateColumn.findByIdAndUpdate(id, data, { new: true });
+    return await TemplateColumn.findByIdAndUpdate(id, data, { new: true }).lean();
   }
 
   async delete(id) {
-    return await TemplateColumn.findByIdAndDelete(id);
+    return await TemplateColumn.findByIdAndDelete(id).lean();
   }
-
-async findByName(templateId, name) {
-  return await TemplateColumn.findOne({
-    template_id: templateId,
-    name: name
-  });
-}
-
-
 }
 
 module.exports = new TemplateColumnRepository();

@@ -91,6 +91,54 @@ class BoardController {
     }
   }
 
+  async cloneBoard(req, res) {
+    try {
+      const { templateId } = req.params; // lấy id template từ URL
+      const { title, description, userId } = req.body; // dữ liệu tạo board mới
+
+      // Validate input
+      if (!templateId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu templateId'
+        });
+      }
+
+      if (!title || title.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên board không được để trống'
+        });
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu userId'
+        });
+      }
+
+      // Gọi service clone
+      const result = await boardService.cloneBoard(templateId, {
+        title,
+        description,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Clone board thành công',
+        data: result
+      });
+    } catch (error) {
+      console.error('❌ Clone board error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Clone board thất bại',
+        error: error.message
+      });
+    }
+  }
   
 }
 

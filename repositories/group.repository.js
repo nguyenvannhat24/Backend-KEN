@@ -24,6 +24,13 @@ class GroupRepository {
   async findbyName(name){
     return await Group.findOne({name});
   }
+  
+ async findOne(center_id, name) {
+    return await Group.findOne({
+      center_id: center_id,
+      name: name
+    }).lean(); // lean() để trả về object thuần JS
+  }
 }
 
 module.exports = new GroupRepository();

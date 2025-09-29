@@ -23,7 +23,7 @@ class GroupMemberService {
 
   // Thêm thành viên vào group (mặc định role là "Người xem")
   async addMember({ requester_id, user_id, group_id, role_in_group = "Người xem" }) {
-    await this.checkOwner(requester_id, group_id);
+    await this.checkOwner(requester_id, group_id); // người tạo k
 
     const user = await userRepo.findById(user_id);
     if (!user) throw new Error("Người dùng không tồn tại");

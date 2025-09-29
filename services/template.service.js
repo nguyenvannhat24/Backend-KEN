@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const templateRepository = require('../repositories/template.repository');
-
+const templateColumnRepository = require('../repositories/templateColumn.repository');
+const templateSwimlaneRepository = require('../repositories/templateSwimlane.repository');
 class TemplateService {
   async createTemplate(data) {
     const check = await templateRepository.findByName(data.name , data.created_by);
@@ -37,6 +38,14 @@ class TemplateService {
   async findAll(){
     return await templateRepository.findAll();
   }
+
+  async ColumbyTemplateId(id){
+   return await templateColumnRepository.findByTemplateId(id);
+  }
+  async swinlaneByTemplateId(id){
+    return await templateSwimlaneRepository.findByTemplateId(id);
+  }
+  
 }
 
 module.exports = new TemplateService();

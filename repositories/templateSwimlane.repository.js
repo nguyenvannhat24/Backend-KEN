@@ -28,6 +28,10 @@ class TemplateSwimlaneRepository {
   async delete(id) {
     return await TemplateSwimlane.findByIdAndDelete(id).lean();
   }
+
+    async findByTemplateId(templateId) {
+      return await TemplateSwimlane.find({ template_id: templateId }).lean();
+    }
 }
 
 module.exports = new TemplateSwimlaneRepository();

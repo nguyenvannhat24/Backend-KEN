@@ -47,6 +47,8 @@ class TemplateColumnService {
     }
     return await templateColumnRepository.delete(id);
   }
+
+  
 }
 
 module.exports = new TemplateColumnService();

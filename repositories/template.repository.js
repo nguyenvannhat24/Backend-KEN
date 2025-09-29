@@ -6,7 +6,7 @@ class TemplateRepository {
   }
 
   async findAll() {
-    return await Template.find().populate('created_by', 'username email');
+    return await Template.find().populate('created_by', 'username email full_name');
   }
 
   async findById(id) {

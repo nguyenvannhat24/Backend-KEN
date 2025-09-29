@@ -1,5 +1,8 @@
 const boardRepo = require('../repositories/board.repository');
 const boardMemberRepo = require( "../repositories/boardMember.repository"); 
+const templateService = require("./template.service");
+const columnRepo = require('../repositories/column.repository');
+const swimlaneRepo = require('../repositories/swimlane.repository');
 const mongoose = require("mongoose");
 
 class BoardService {
@@ -89,6 +92,73 @@ async selectedAll(){
     if (!isCreator) throw new Error('FORBIDDEN');
     return boardRepo.deleteById(boardId);
   }
+
+ async cloneBoard(id_template, { title, description, userId }) {
+  try {
+    // 0. Validate input
+    if (!id_template) {
+      throw new Error('Thiếu id_template');
+    }
+    if (!title || title.trim() === '') {
+      throw new Error('Tên board không được để trống');
+    }
+    if (!userId) {
+      throw new Error('Thiếu userId');
+    }
+
+    
+
+    // 2. Lấy cấu trúc từ template
+    const columns = (await templateService.ColumbyTemplateId(id_template)) || [];
+    const swimlanes = (await templateService.swinlaneByTemplateId(id_template)) || [];
+
+    if (!Array.isArray(columns) || !Array.isArray(swimlanes)) {
+      throw new Error('Template không hợp lệ: dữ liệu không phải mảng');
+    }
+
+    // 3. Tạo board mới (board thật, không phải template)
+    const newBoard = await this.createBoard({
+      title,
+      description,
+      userId,
+      is_template: false
+    });
+
+    // 4. Clone nhiều column 1 lúc
+    let newColumns = [];
+    if (columns.length > 0) {
+      newColumns = await columnRepo.insertMany(
+        columns.map(col => ({
+          board_id: newBoard._id,
+          name: col.name,
+          order_index: col.order_index
+        }))
+      );
+    }
+
+    // 5. Clone nhiều swimlane 1 lúc
+    let newSwimlanes = [];
+    if (swimlanes.length > 0) {
+      newSwimlanes = await swimlaneRepo.insertMany(
+        swimlanes.map(lane => ({
+          board_id: newBoard._id,
+          name: lane.name,
+          order_index: lane.order_index
+        }))
+      );
+    }
+
+    return {
+      board: newBoard,
+      columns: newColumns,
+      swimlanes: newSwimlanes
+    };
+  } catch (error) {
+    throw new Error(`Clone board failed: ${error.message}`);
+  }
+}
+
+
 }
 
 module.exports = new BoardService();

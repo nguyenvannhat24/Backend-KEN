@@ -31,6 +31,12 @@ class GroupService {
      if (userId && !mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("center_id không hợp lệ");
     }
+
+        // ❌ Kiểm tra trùng tên group trong cùng center
+    const existing = await groupRepo.findOne({ center_id, name: name.trim() });
+    if (existing) {
+      throw new Error("Tên group đã tồn tại trong center này");
+    }
     
     // Tạo group mới
     const group = await groupRepo.create({ center_id, name, description });

@@ -28,6 +28,10 @@ class TemplateColumnRepository {
   async delete(id) {
     return await TemplateColumn.findByIdAndDelete(id).lean();
   }
+
+  async findByTemplateId(templateId) {
+    return await TemplateColumn.find({ template_id: templateId }).lean();
+  }
 }
 
 module.exports = new TemplateColumnRepository();

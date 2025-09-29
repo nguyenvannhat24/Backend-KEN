@@ -1,14 +1,12 @@
-const mongoose_col = require('mongoose');
-const { uuidString: uuid_col, Schema: Schema_col } = require('./_shared');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
+const ColumnSchema = new Schema({
 
-const ColumnSchema = new Schema_col({
-_id: uuid_col,
-board_id: { type: String, ref: 'Board', required: true, index: true },
+board_id: {type: Schema.Types.ObjectId, ref: 'Board', required: true, index: true },
 name: { type: String, required: true, maxlength: 100 },
 order_index: { type: Number, required: true },
-}, { collection: 'columns', timestamps: true });
+}, { collection: 'Columns', timestamps: true });
 
 
-const Column = mongoose_col.model('Column', ColumnSchema);
-module.exports = Column;
+  module.exports = mongoose.model('Column', ColumnSchema);

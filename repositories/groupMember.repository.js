@@ -19,7 +19,7 @@ async findMember(user_id, group_id) {
   // Lấy danh sách thành viên theo group
   async getMembersByGroup(group_id) {
     return await GroupMember.find({ group_id })
-      .populate("user_id", "username email")
+      .populate("user_id", "username email full_name")
       .lean();
   }
 

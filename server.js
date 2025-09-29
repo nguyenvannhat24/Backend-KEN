@@ -21,6 +21,9 @@ const groupMemberRoutes = require('./router/groupMember.routes');
 const templateRoters = require('./router/template.routes');
 const templateColumn = require('./router/templateColumn.routes');
 const templateSwimlaneRouter = require('./router/templateSwimlane.routes');
+const columnRouter = require('./router/column.routes');
+const swimlaneRoutes = require('./router/swimlane.routes');
+
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
 app.use(session({
@@ -76,6 +79,8 @@ app.use('/api/groupMember',groupMemberRoutes);
 app.use('/api/template',templateRoters);
 app.use('/api/templateColumn',templateColumn);
 app.use('/api/templateSwimlane',templateSwimlaneRouter);
+app.use('/api/column',columnRouter);
+app.use('/api/swimlanes', swimlaneRoutes);
 // --- Start server ---
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

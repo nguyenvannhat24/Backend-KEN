@@ -20,6 +20,8 @@ router.put('/:id', authenticateAny, boardController.updateBoard);
 // Xóa board (chỉ creator)
 router.delete('/:id', authenticateAny, boardController.deleteBoard);
 
+router.post('/clone/:templateId', boardController.cloneBoard);
+
 module.exports = router;
 
 

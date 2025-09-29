@@ -8,8 +8,12 @@
      role_in_board: { 
     type: String, 
     enum:["Người tạo", "Thành viên", "Khách"], 
-    default: "member", 
+    default: "Khách", 
    
+  },
+  Creator: {
+    type: Boolean,
+    default: false
   },
     
   }, { collection: 'BoardMembers', timestamps: true });

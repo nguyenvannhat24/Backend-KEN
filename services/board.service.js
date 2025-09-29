@@ -9,15 +9,11 @@ class BoardService {
   }
 
   async listBoardsForUser(userId) {
+    // Chỉ lấy boards mà user là thành viên
     const memberships = await boardRepo.findMembersByUser(userId);
     const memberBoardIds = memberships.map(m => m.board_id);
-    const createdBoards = await boardRepo.findByCreator(userId);
-    const allBoardIds = new Set([
-      ...memberBoardIds.map(id => String(id)),
-      ...createdBoards.map(b => String(b._id))
-    ]);
-    if (allBoardIds.size === 0) return [];
-    return boardRepo.findByIds(Array.from(allBoardIds));
+    if (memberBoardIds.length === 0) return [];
+    return boardRepo.findByIds(memberBoardIds);
   }
 
   async createBoard({ title, description, userId, is_template }) {
@@ -47,7 +43,8 @@ class BoardService {
         {
           board_id: board._id,
           user_id: userId,
-          role_in_board: "Người tạo"
+          role_in_board: "Người tạo",
+          Creator: true
         },
         session
       );
@@ -69,8 +66,7 @@ class BoardService {
   async getBoardIfPermitted(boardId, userId) {
     const board = await boardRepo.findById(boardId);
     if (!board) return null;
-    const permitted = (String(board.created_by) === String(userId)) || 
-                     await boardRepo.isMember(userId, boardId);
+    const permitted = await boardRepo.isMember(userId, boardId);
     return permitted ? board : 'forbidden';
   }
 
@@ -86,7 +82,7 @@ class BoardService {
   }
 
   async deleteBoard(boardId, userId) {
-    const isCreator = await boardRepo.isCreator(userId, boardId);
+    const isCreator = await boardRepo.isCreatorFromMember(userId, boardId);
     if (!isCreator) throw new Error('FORBIDDEN');
     return boardRepo.deleteById(boardId);
   }

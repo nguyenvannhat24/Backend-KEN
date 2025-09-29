@@ -23,7 +23,18 @@ class GroupMemberService {
 
   // Thêm thành viên vào group (mặc định role là "Người xem")
   async addMember({ requester_id, user_id, group_id, role_in_group = "Người xem" }) {
-    await this.checkOwner(requester_id, group_id);
+    console.log('🔍 [DEBUG] addMember params:', { requester_id, user_id, group_id, role_in_group });
+    
+    // Validate ObjectId trước
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+      throw new Error("user_id không hợp lệ");
+    }
+    if (!mongoose.Types.ObjectId.isValid(group_id)) {
+      throw new Error("group_id không hợp lệ");
+    }
+    if (!mongoose.Types.ObjectId.isValid(requester_id)) {
+      throw new Error("requester_id không hợp lệ");
+    }
 
     const user = await userRepo.findById(user_id);
     if (!user) throw new Error("Người dùng không tồn tại");
@@ -33,6 +44,9 @@ class GroupMemberService {
 
     const existing = await groupMemberRepo.findMember(user_id, group_id);
     if (existing) throw new Error("User đã là thành viên trong group này");
+
+    // Kiểm tra quyền sau khi validate
+    await this.checkOwner(requester_id, group_id);
 
     return await groupMemberRepo.addMember({ user_id, group_id, role_in_group });
   }
@@ -45,7 +59,7 @@ class GroupMemberService {
     if (!mongoose.Types.ObjectId.isValid(user_id)) throw new Error("user_id không hợp lệ");
     if (!mongoose.Types.ObjectId.isValid(group_id)) throw new Error("group_id không hợp lệ");
 
-    const validRoles = ["Người tạo", "Người quản lý", "Người xem"];
+    const validRoles = ["Người tạo", "Quản trị viên", "Người xem"];
     if (!role_in_group || !validRoles.includes(role_in_group.trim())) 
         throw new Error("role_in_group không hợp lệ");
 

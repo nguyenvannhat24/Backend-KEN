@@ -20,9 +20,11 @@ function getKey(header, callback) {
  * Middleware xác thực cả Local JWT và Keycloak JWT
  */
 const authenticateAny = (req, res, next) => {
+  console.log('🔍 [AUTH DEBUG] Headers:', req.headers.authorization);
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('❌ [AUTH] No valid authorization header');
     return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
   }
   

@@ -22,7 +22,7 @@ class BoardController {
   };
   async listMyBoards(req, res) {
     try {
-      const userId = req.user?.id || req.user?.userId;
+      const userId = req.user?.id;
       const boards = await boardService.listBoardsForUser(userId);
       res.json({ success: true, count: boards.length, data: boards });
     } catch (err) {
@@ -33,12 +33,10 @@ class BoardController {
 
   async createBoard(req, res) {
     try {
-     
-      const { title, description, is_template , userId} = req.body;
-      const board = await boardService.createBoard({ title, description, is_template ,userId});// tao\j bảng vừa lưu vừa lấy id của bảng
+      const userId = req.user?.id;
+      const { title, description, is_template } = req.body;
+      const board = await boardService.createBoard({ title, description, is_template, userId });
 
-      // add chính nó vào boardMember 
-      // id user id bảng
       res.status(201).json({ success: true, data: board });
     } catch (err) {
       console.error('❌ createBoard error:', err);
@@ -48,7 +46,7 @@ class BoardController {
 
   async getBoardDetail(req, res) {
     try {
-      const userId = req.user?.id || req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
       const board = await boardService.getBoardIfPermitted(id, userId);
       if (board === null) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
@@ -62,7 +60,7 @@ class BoardController {
 
   async updateBoard(req, res) {
     try {
-      const userId = req.user?.id || req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
       const updated = await boardService.updateBoard(id, req.body, userId);
       if (updated === null) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
@@ -78,7 +76,7 @@ class BoardController {
 
   async deleteBoard(req, res) {
     try {
-      const userId = req.user?.id || req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
       await boardService.deleteBoard(id, userId);
       res.json({ success: true, message: 'Xóa board thành công' });

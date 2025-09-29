@@ -4,7 +4,12 @@ class GroupMemberController {
   // Thêm thành viên
   async addMember(req, res) {
     try {
-      const { requester_id, user_id, group_id, role_in_group } = req.body;
+      const requester_id = req.user?.id; // Lấy từ token
+      const { user_id, group_id, role_in_group } = req.body;
+
+      console.log('🔍 [DEBUG] addMember - requester_id:', requester_id);
+      console.log('🔍 [DEBUG] addMember - user_id:', user_id);
+      console.log('🔍 [DEBUG] addMember - group_id:', group_id);
 
       const member = await groupMemberService.addMember({
         requester_id,
@@ -15,6 +20,7 @@ class GroupMemberController {
 
       res.status(201).json({ success: true, data: member });
     } catch (err) {
+      console.error('❌ [addMember ERROR]:', err.message);
       res.status(400).json({ success: false, message: err.message });
     }
   }
@@ -33,7 +39,8 @@ class GroupMemberController {
   // Cập nhật role
   async updateRole(req, res) {
     try {
-      const { requester_id, user_id, group_id, role_in_group } = req.body;
+      const requester_id = req.user?.id; // Lấy từ token
+      const { user_id, group_id, role_in_group } = req.body;
 
       const member = await groupMemberService.updateRole({
         requester_id,
@@ -51,7 +58,8 @@ class GroupMemberController {
   // Xóa thành viên
   async removeMember(req, res) {
     try {
-      const { requester_id, user_id, group_id } = req.body;
+      const requester_id = req.user?.id; // Lấy từ token
+      const { user_id, group_id } = req.body;
 
       await groupMemberService.removeMember({
         requester_id,

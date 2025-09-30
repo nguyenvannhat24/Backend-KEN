@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateAny } = require('../middlewares/auth');
+const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
+
 const boardController = require('../controllers/board.controller');
 
 // Xem danh sách board của user (member)

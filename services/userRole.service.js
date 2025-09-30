@@ -147,6 +147,12 @@ async create(userRoleData) {
       throw error;
     }
   }
+  async findByUserAndRole(user_id, role_id) {
+    if (!user_id) throw new Error('❌ user_id bị thiếu');
+    if (!role_id) throw new Error('❌ role_id bị thiếu');
+
+    return await userRoleRepo.findByUserAndRole(user_id, role_id);
+  }
 }
 
 module.exports = new UserRoleService();

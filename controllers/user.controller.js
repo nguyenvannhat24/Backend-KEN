@@ -254,3 +254,24 @@ exports.viewProfile = async (req, res) => {
   }
 };
 
+// user.controller.js
+exports.getMe = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Chưa xác thực' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        _id: req.user._id,
+        username: req.user.username,
+        email: req.user.email,
+        roles: req.user.roles
+      }
+    });
+  } catch (err) {
+    console.error('❌ getMe error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

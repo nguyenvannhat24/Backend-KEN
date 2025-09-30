@@ -223,6 +223,26 @@ class UserService {
 
 async createUserSSO({ username, email, full_name, idSSO }) {
   try {
+    if (!email) {
+      throw new Error('Email là bắt buộc');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const emailExists = await userRepo.isEmailExists(email);
+    if (emailExists) {
+      // Nếu tồn tại, trả về user hiện tại, không tạo mới
+      console.log(`⚠️ User SSO với email ${email} đã tồn tại, dùng user hiện tại`);
+      return await userRepo.findByEmail(email);
+    }
+
+    // Kiểm tra username tồn tại chưa
+    if (username) {
+      const usernameExists = await userRepo.isUsernameExists(username);
+      if (usernameExists) {
+        console.log(`⚠️ Username ${username} đã tồn tại, sẽ tiếp tục tạo user theo email`);
+      }
+    }
+
     console.log(`➕ Creating new userSSO: ${username}`);
     return await userRepo.createSSO({ username, email, full_name, idSSO });
   } catch (error) {
@@ -230,6 +250,7 @@ async createUserSSO({ username, email, full_name, idSSO }) {
     throw error;
   }
 }
+
 
 
   /**
@@ -323,6 +344,11 @@ async createUserSSO({ username, email, full_name, idSSO }) {
 async getProfile(userId) {
   if (!userId) throw new Error("UserId là bắt buộc");
   return await userRepo.getProfileById(userId);
+}
+
+async getbyIdSOO(id){
+  if(!id) throw new Error("idSSO là bắt buộc");
+  return await userRepo.findbyIdSSO(id);
 }
 
 }

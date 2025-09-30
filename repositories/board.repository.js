@@ -13,10 +13,10 @@ class BoardRepository {
     return Board.find({ _id: { $in: boardIds } }).lean();
   }
 
-  // Hàm này không còn cần thiết vì không có created_by trong Board
-  // async findByCreator(userId) {
-  //   return Board.find({ created_by: userId }).lean();
-  // }
+  
+  async findByCreator(userId) {
+    return Board.find({ created_by: userId }).lean();
+  }
 
   async create(boardData) {
     const board = await Board.create(boardData);

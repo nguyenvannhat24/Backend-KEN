@@ -235,6 +235,16 @@ async createSSO({ username, email, full_name, idSSO }) {
       throw error;
     }
   }
+
+
+  async findbyIdSSO(idSSO){
+   try {
+    return await User.findOne({idSSO : idSSO}) ;
+   } catch (error) {
+      console.error('Error checking username exists:', error);
+      throw error;
+   }
+  }
 }
 
 module.exports = new UserRepository();

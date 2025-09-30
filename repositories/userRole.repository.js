@@ -42,6 +42,10 @@ class UserRoleRepository {
     async deleteByUser(userId) {
         return await UserRole.deleteMany({ user_id: userId.toString() });
     }
+
+    async  findByUserAndRole(user_id, role_id){
+        return await UserRole.findOne({ user_id, role_id });
+    }
 }
 
 module.exports = new UserRoleRepository();

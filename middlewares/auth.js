@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
-require('dotenv').config(); // đọc file .env
+require('dotenv').config();
 const tokenBlacklist = require('./tokenBlacklist');
+const userService = require('../services/user.service');
+const { getUserByUsername } = require('../services/keycloak.service');
+const userRoleService = require('../services/userRole.service');
+const roleService = require('../services/role.service');
+
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
   jwksUri: process.env.KEYCLOAK_JWKS_URI
@@ -11,93 +16,111 @@ const keycloakClient = jwksClient({
 function getKey(header, callback) {
   keycloakClient.getSigningKey(header.kid, (err, key) => {
     if (err) return callback(err);
-    const signingKey = key.getPublicKey();
-    callback(null, signingKey);
+    callback(null, key.getPublicKey());
   });
 }
 
 /**
  * Middleware xác thực cả Local JWT và Keycloak JWT
  */
-const authenticateAny = (req, res, next) => {
-  console.log('🔍 [AUTH DEBUG] Headers:', req.headers.authorization);
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('❌ [AUTH] No valid authorization header');
-    return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
-  }
-  
-
-  const token = authHeader.split(' ')[1];
-
-  if (tokenBlacklist.has(token)) {
-  return res.status(401).json({ message: "Token đã bị đăng xuất" });
-}
-
-  // Thử verify Local JWT trước
-  jwt.verify(token, process.env.JWT_SECRET, (errLocal, decodedLocal) => {
-    if (!errLocal && decodedLocal) {
-      req.user = {
-        id: decodedLocal.userId,
-        email: decodedLocal.email,
-        role: decodedLocal.role
-      };
-      console.log(`🔐 [AUTH] Local JWT verified: ${decodedLocal.email} (${decodedLocal.role})`);
-      return next();
+const authenticateAny = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc không cung cấp' });
     }
 
-    // Nếu Local JWT fail, thử Keycloak JWT
-    jwt.verify(token, getKey, { algorithms: ['RS256'] }, (errKC, decodedKC) => {
-      if (errKC) {
-        return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
+    const token = authHeader.split(' ')[1];
+    if (tokenBlacklist.has(token)) {
+      return res.status(401).json({ success: false, message: 'Token đã bị đăng xuất' });
+    }
+
+    // Thử verify Local JWT trước
+    jwt.verify(token, process.env.JWT_SECRET, (errLocal, decodedLocal) => {
+      if (!errLocal && decodedLocal) {
+        req.user = {
+          id: decodedLocal.userId,
+          email: decodedLocal.email,
+          role: decodedLocal.role
+        };
+        console.log(`🔐 [AUTH] Local JWT verified: ${decodedLocal.email} (${decodedLocal.role})`);
+        return next();
       }
 
-      // Gán thông tin user từ Keycloak
-      let roles = decodedKC.realm_access?.roles || [];
+      // Nếu Local JWT fail, tiếp tục với Keycloak
+      jwt.verify(token, getKey, { algorithms: ['RS256'] }, async (errKC, decodedKC) => {
+        if (errKC) {
+          return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
+        }
 
-      // Nếu muốn lấy thêm roles của client
-      if (decodedKC.resource_access) {
-        Object.values(decodedKC.resource_access).forEach(clientRoles => {
-          roles.push(...(clientRoles.roles || []));
-        });
-      }
-      // role 
+        const username = decodedKC.preferred_username;
+        if (!username) {
+          return res.status(400).json({ message: 'Keycloak token không có username' });
+        }
 
-      req.user = {
-        id: decodedKC.sub,
-        email: decodedKC.email,
-        username: decodedKC.preferred_username,
-        roles: Array.from(new Set(roles)) // loại trùng roles
-      };
-      
-      console.log(`🔑 [AUTH] Keycloak JWT verified: ${decodedKC.email} (${roles.join(', ')})`);
+        // Kiểm tra user đã có trong DB chưa
+        let user = await userService.getUserByUsername(username);
+        if (!user) {
+          // Lấy thông tin từ Keycloak
+          const kcUsers = await getUserByUsername(username);
+          const kcUser = kcUsers[0];
+          if (!kcUser) return res.status(404).json({ message: 'User not found in Keycloak' });
 
-      next();
+          // Tạo user mới
+          user = await userService.createUserSSO({
+            username: kcUser.username,
+            email: kcUser.email,
+            full_name: `${kcUser.lastName} ${kcUser.firstName}`,
+            idSSO: kcUser.id
+          });
+
+          // Thêm quyền mặc định "user"
+          const roleId = await roleService.getIdByName('user');
+                if (roleId) {
+            const existingUserRole = await userRoleService.findByUserAndRole(user._id, roleId);
+            if (!existingUserRole) {
+              await userRoleService.create({ user_id: user._id, role_id: roleId });
+              console.log(`✅ Assigned role "user" to ${user.email}`);
+            } else {
+              console.log(`⚠️ User ${user.email} đã có role "user", bỏ qua tạo mới`);
+            }
+          }
+
+        }
+    
+
+        // Gán thông tin user vào req
+      const dbRoles = await userRoleService.getRoles(user._id); 
+req.user = {
+  id: user._id,
+  email: user.email,
+  username: user.username,
+  roles: dbRoles.map(r => r.role_id.name) // nếu r.role_id là object Role
+};
+
+        console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${user.email}`);
+        next();
+      });
     });
-  });
+  } catch (err) {
+    console.error('❌ [AUTH] Error in authenticateAny:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 /**
- * Middleware kiểm tra quyền (hỗn hợp Local + Keycloak)
- * @param  {...string} allowedRoles 
+ * Middleware kiểm tra quyền
  */
-const authorizeAny = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
+const authorizeAny = (...allowedRoles) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-    // Nếu là Local JWT (có field role)
-    if (req.user.role) {
-      if (allowedRoles.includes(req.user.role)) return next();
-      return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
-    }
+  if (req.user.role && allowedRoles.includes(req.user.role)) return next();
 
-    // Nếu là Keycloak JWT (không có role field riêng, chỉ token hợp lệ)
-    // Mặc định coi là "user", không check role
-    return next();
-  };
+  if (req.user.roles && req.user.roles.some(r => allowedRoles.includes(r))) return next();
+
+
+  return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
 };
-
 
 /**
  * Middleware admin only

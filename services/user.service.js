@@ -13,44 +13,43 @@ class UserService {
    * @param {string} password - Mật khẩu (plain text)
    * @returns {Promise<Object|null>} User object nếu hợp lệ, null nếu không
    */
-  async validateUser(email, password) {
-    try {
-      console.log(`🔍 Validating user: ${email}`);
+async validateUser(login, password) {
+  try {
+    console.log(`🔍 Validating user: ${login}`);
 
-      // Validate input
-      if (!email || !password) {
-        console.log('❌ Email hoặc password không được để trống');
-        return null;
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        console.log('❌ Email không đúng định dạng');
-        return null;
-      }
-
-      // Tìm user theo email
-      const user = await userRepo.findByEmail(email);
-      if (!user) {
-        console.log(`❌ Không tìm thấy user với email: ${email}`);
-        return null;
-      }
-
-      // Kiểm tra mật khẩu (hỗ trợ cả password_hash và password field)
-      const isPasswordValid = this._validatePassword(password, user);
-      if (!isPasswordValid) {
-        console.log(`❌ Mật khẩu không đúng cho user: ${email}`);
-        return null;
-      }
-
-      console.log(`✅ Đăng nhập thành công cho user: ${email}`);
-      return user;
-    } catch (error) {
-      console.error('❌ Lỗi trong validateUser:', error.message);
+    // Validate input
+    if (!login || !password) {
+      console.log('❌ Email/username hoặc password không được để trống');
       return null;
     }
+
+    // Tìm user theo email hoặc username
+   let user = await userRepo.findByEmail(login);
+if (!user) {
+  user = await userRepo.findByUsername(login);
+}
+
+    if (!user) {
+      console.log(`❌ Không tìm thấy user với login: ${login}`);
+      return null;
+    }
+
+    // Kiểm tra mật khẩu
+    const isPasswordValid = this._validatePassword(password, user);
+    if (!isPasswordValid) {
+      console.log(`❌ Mật khẩu không đúng cho user: ${login}`);
+      return null;
+    }
+
+    console.log(`✅ Đăng nhập thành công cho user: ${user.email || user.username}`);
+    return user;
+
+  } catch (error) {
+    console.error('❌ Lỗi trong validateUser:', error.message);
+    return null;
   }
+}
+
 
   /**
    * Validate password (hỗ trợ nhiều format)

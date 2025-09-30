@@ -15,113 +15,101 @@ class AuthController {
    * @param {Object} req - Request object
    * @param {Object} res - Response object
    */
-  async login(req, res) {
-    try {
-      // Validate JWT secrets
-      const jwtSecret = process.env.JWT_SECRET;
-      const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
-      if (!jwtSecret || !jwtRefreshSecret) {
-        console.error('❌ JWT secrets missing');
-        return res.status(500).json({
-          success: false,
-          error: 'Server misconfigured',
-          message: 'JWT secrets are missing'
-        });
-      }
-
-      const { email, password } = req.body;
-
-      // Validate input
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Email và password là bắt buộc',
-          message: 'Vui lòng nhập đầy đủ thông tin đăng nhập'
-        });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Email không đúng định dạng',
-          message: 'Vui lòng nhập email hợp lệ'
-        });
-      }
-
-      // Log attempt đăng nhập
-      console.log(`🔍 [LOGIN ATTEMPT] Email: ${email}`);
-      
-      // Validate user credentials
-      const user = await userService.validateUser(email, password);
-      if (!user) {
-        console.log(`❌ [LOGIN FAILED] Email không tồn tại hoặc mật khẩu sai: ${email}`);
-        return res.status(401).json({ 
-          success: false,
-          error: 'Tài khoản hoặc mật khẩu không đúng',
-          message: 'Vui lòng kiểm tra lại thông tin đăng nhập'
-        });
-      }
-
-      // Lấy role của user
-      const roleName = await role.viewRole(user._id);
-      
-      // Log thông tin đăng nhập
-      console.log(`🔐 [LOGIN] User đăng nhập thành công: ${user.email} (${user.full_name || user.username}) - Role: ${roleName}`);
-      
-      // Tạo JWT token
-      const token = jwt.sign(
-        { 
-          userId: user._id, 
-          email: user.email,
-          role: roleName 
-        },
-        jwtSecret,
-        { expiresIn: '24h' } // Tăng thời gian token lên 24h
-      );
-
-      const refreshToken = jwt.sign(
-        { 
-          userId: user._id, 
-          email: user.email,
-          role: roleName 
-        },
-        jwtRefreshSecret,
-        { expiresIn: '7d' } // refresh token sống lâu hơn
-      );
-
-      // Response thành công
-      res.json({
-        success: true,
-        message: 'Đăng nhập thành công',
-        data: {
-          token,
-          refreshToken, 
-          user: {
-            id: user._id,
-            email: user.email,
-            username: user.username,
-            full_name: user.full_name,
-            avatar_url: user.avatar_url,
-            status: user.status,
-            role: roleName
-          }
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Login error:', error);
-      res.status(500).json({ 
+  async login(req, res) { 
+  try {
+    const jwtSecret = process.env.JWT_SECRET;
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+    if (!jwtSecret || !jwtRefreshSecret) {
+      console.error('❌ JWT secrets missing');
+      return res.status(500).json({
         success: false,
-        error: 'Lỗi server', 
-        message: 'Có lỗi xảy ra trong quá trình đăng nhập. Vui lòng thử lại sau.',
-        details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        error: 'Server misconfigured',
+        message: 'JWT secrets are missing'
       });
     }
-  }
 
-  /**
+    const { login, password } = req.body;
+
+    // Validate input
+    if (!login || !password) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Login và password là bắt buộc',
+        message: 'Vui lòng nhập đầy đủ thông tin đăng nhập'
+      });
+    }
+
+    console.log(`🔍 [LOGIN ATTEMPT] Login: ${login}`);
+
+    // Validate user credentials (login có thể là email hoặc username)
+    const user = await userService.validateUser(login, password);
+    if (!user) {
+      console.log(`❌ [LOGIN FAILED] Login không tồn tại hoặc mật khẩu sai: ${login}`);
+      return res.status(401).json({ 
+        success: false,
+        error: 'Tài khoản hoặc mật khẩu không đúng',
+        message: 'Vui lòng kiểm tra lại thông tin đăng nhập'
+      });
+    }
+
+    // Lấy tất cả role của user từ DB
+    const userRoles = await role.getUserRoles(user._id); // trả về array ['admin','user',...]
+
+    console.log(`🔐 [LOGIN] User đăng nhập thành công: ${user.email || user.username} - Roles: ${userRoles.join(', ')}`);
+
+    // Tạo JWT token với nhiều role
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email,
+        username: user.username,
+        roles: userRoles 
+      },
+      jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    const refreshToken = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email,
+        username: user.username,
+        roles: userRoles 
+      },
+      jwtRefreshSecret,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Đăng nhập thành công',
+      data: {
+        token,
+        refreshToken, 
+        user: {
+          id: user._id,
+          email: user.email,
+          username: user.username,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url,
+          status: user.status,
+          roles: userRoles
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Lỗi server', 
+      message: 'Có lỗi xảy ra trong quá trình đăng nhập. Vui lòng thử lại sau.',
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+}
+
+/*
    * Đăng xuất user (invalidate token)
    * POST /api/logout
    * @param {Object} req - Request object

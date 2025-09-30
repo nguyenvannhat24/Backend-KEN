@@ -164,21 +164,17 @@ class RoleService {
    * @param {String} userId - ID của user
    * @returns {String|null} Tên role hoặc null
    */
-  async getUserRole(userId) {
-    try {
-      console.log(`📋 [RoleService] getUserRole - Getting role for user ID: ${userId}`);
-      const roleName = await RoleRepository.GetRole(userId);
-      if (roleName) {
-        console.log(`✅ [RoleService] getUserRole - User ${userId} has role: ${roleName}`);
-      } else {
-        console.log(`⚠️ [RoleService] getUserRole - User ${userId} has no role assigned`);
-      }
-      return roleName;
-    } catch (error) {
-      console.error('❌ [RoleService] getUserRole - Error:', error);
-      throw error;
-    }
+async getUserRoles(userId) {
+  try {
+    console.log(`📋 [RoleService] getUserRoles - Getting roles for user ID: ${userId}`);
+    const roles = await RoleRepository.GetRoles(userId);
+    return roles;
+  } catch (error) {
+    console.error('❌ [RoleService] getUserRoles - Error:', error);
+    throw error;
   }
+}
+
 
   /**
    * Lấy role của user (legacy method - deprecated)

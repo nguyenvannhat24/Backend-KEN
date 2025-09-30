@@ -136,33 +136,31 @@ class RoleRepository {
    * @param {String} userId - ID của user
    * @returns {String|null} Tên role hoặc null
    */
-  async GetRole(userId) {
-    try {
-      console.log(`📋 [RoleRepository] GetRole - Getting role for user ID: ${userId}`);
-      
-      // Tìm trong UserRole để lấy role_id
-      const userRole = await userRoleModel.findOne({ user_id: userId }).lean();
-      if (!userRole) {
-        console.log('⚠️ [RoleRepository] GetRole - User not found in userRole table');
-        return null;
-      }
+  async GetRoles(userId) {
+  try {
+    console.log(`📋 [RoleRepository] GetRoles - Getting roles for user ID: ${userId}`);
 
-      // Tìm role theo role_id
-      const role = await roleModel.findById(userRole.role_id).select('name').lean();
-      const roleName = role ? role.name : null;
-      
-      if (roleName) {
-        console.log(`✅ [RoleRepository] GetRole - User ${userId} has role: ${roleName}`);
-      } else {
-        console.log(`⚠️ [RoleRepository] GetRole - User ${userId} has no role assigned`);
-      }
-      
-      return roleName;
-    } catch (error) {
-      console.error('❌ [RoleRepository] GetRole - Error:', error);
-      throw error;
+    // Lấy tất cả role_id của user
+    const userRoles = await userRoleModel.find({ user_id: userId }).lean();
+    if (!userRoles || userRoles.length === 0) {
+      console.log('⚠️ [RoleRepository] GetRoles - User has no roles');
+      return [];
     }
+
+    // Lấy thông tin name của từng role
+    const roleIds = userRoles.map(ur => ur.role_id);
+    const roles = await roleModel.find({ _id: { $in: roleIds } }).select('name').lean();
+
+    const roleNames = roles.map(r => r.name);
+    console.log(`✅ [RoleRepository] GetRoles - User ${userId} has roles: ${roleNames.join(', ')}`);
+    return roleNames;
+
+  } catch (error) {
+    console.error('❌ [RoleRepository] GetRoles - Error:', error);
+    throw error;
   }
+}
+
 
   /**
    * Kiểm tra role có tồn tại không

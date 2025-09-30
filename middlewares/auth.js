@@ -35,73 +35,80 @@ const authenticateAny = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Token đã bị đăng xuất' });
     }
 
+    let user = null;
+
     // Thử verify Local JWT trước
-    jwt.verify(token, process.env.JWT_SECRET, (errLocal, decodedLocal) => {
-      if (!errLocal && decodedLocal) {
-        req.user = {
-          id: decodedLocal.userId,
-          email: decodedLocal.email,
-          role: decodedLocal.role
-        };
-        console.log(`🔐 [AUTH] Local JWT verified: ${decodedLocal.email} (${decodedLocal.role})`);
-        return next();
+    try {
+      const decodedLocal = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Lấy user từ DB
+      user = await userService.getUserById(decodedLocal.userId);
+
+      // Lấy roles của user
+      const dbRoles = await userRoleService.getRoles(user._id);
+      const roleNames = dbRoles?.map(r => r.role_id?.name).filter(Boolean) || [];
+
+      req.user = {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        roles: roleNames
+      };
+
+      console.log(`🔐 [AUTH] Local JWT verified: ${user.email} (${roleNames.join(', ')})`);
+      return next();
+    } catch (errLocal) {
+      // Nếu Local JWT fail, sẽ thử Keycloak
+    }
+
+    // Nếu Local JWT fail, tiếp tục với Keycloak
+    jwt.verify(token, getKey, { algorithms: ['RS256'] }, async (errKC, decodedKC) => {
+      if (errKC) {
+        return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
       }
 
-      // Nếu Local JWT fail, tiếp tục với Keycloak
-      jwt.verify(token, getKey, { algorithms: ['RS256'] }, async (errKC, decodedKC) => {
-        if (errKC) {
-          return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
-        }
+      const username = decodedKC.preferred_username;
+      if (!username) {
+        return res.status(400).json({ message: 'Keycloak token không có username' });
+      }
 
-        const username = decodedKC.preferred_username;
-        if (!username) {
-          return res.status(400).json({ message: 'Keycloak token không có username' });
-        }
+      // Kiểm tra user đã có trong DB chưa
+      user = await userService.getUserByUsername(username);
+      if (!user) {
+        const kcUsers = await getUserByUsername(username);
+        const kcUser = kcUsers[0];
+        if (!kcUser) return res.status(404).json({ message: 'User not found in Keycloak' });
 
-        // Kiểm tra user đã có trong DB chưa
-        let user = await userService.getUserByUsername(username);
-        if (!user) {
-          // Lấy thông tin từ Keycloak
-          const kcUsers = await getUserByUsername(username);
-          const kcUser = kcUsers[0];
-          if (!kcUser) return res.status(404).json({ message: 'User not found in Keycloak' });
+        user = await userService.createUserSSO({
+          username: kcUser.username,
+          email: kcUser.email,
+          full_name: `${kcUser.lastName} ${kcUser.firstName}`,
+          idSSO: kcUser.id
+        });
 
-          // Tạo user mới
-          user = await userService.createUserSSO({
-            username: kcUser.username,
-            email: kcUser.email,
-            full_name: `${kcUser.lastName} ${kcUser.firstName}`,
-            idSSO: kcUser.id
-          });
-
-          // Thêm quyền mặc định "user"
-          const roleId = await roleService.getIdByName('user');
-                if (roleId) {
-            const existingUserRole = await userRoleService.findByUserAndRole(user._id, roleId);
-            if (!existingUserRole) {
-              await userRoleService.create({ user_id: user._id, role_id: roleId });
-              console.log(`✅ Assigned role "user" to ${user.email}`);
-            } else {
-              console.log(`⚠️ User ${user.email} đã có role "user", bỏ qua tạo mới`);
-            }
+        // Thêm quyền mặc định "user"
+        const roleId = await roleService.getIdByName('user');
+        if (roleId) {
+          const existingUserRole = await userRoleService.findByUserAndRole(user._id, roleId);
+          if (!existingUserRole) {
+            await userRoleService.create({ user_id: user._id, role_id: roleId });
+            console.log(`✅ Assigned role "user" to ${user.email}`);
           }
-
         }
-    
+      }
 
-        // Gán thông tin user vào req
-      const dbRoles = await userRoleService.getRoles(user._id); 
-req.user = {
-  id: user._id,
-  email: user.email,
-  username: user.username,
-  roles: dbRoles.map(r => r.role_id.name) // nếu r.role_id là object Role
-};
+      const dbRoles = await userRoleService.getRoles(user._id);
+      req.user = {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        roles: dbRoles?.map(r => r.role_id?.name).filter(Boolean) || []
+      };
 
-        console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${user.email}`);
-        next();
-      });
+      console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${user.email}`);
+      next();
     });
+
   } catch (err) {
     console.error('❌ [AUTH] Error in authenticateAny:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -114,10 +121,7 @@ req.user = {
 const authorizeAny = (...allowedRoles) => (req, res, next) => {
   if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-  if (req.user.role && allowedRoles.includes(req.user.role)) return next();
-
   if (req.user.roles && req.user.roles.some(r => allowedRoles.includes(r))) return next();
-
 
   return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
 };

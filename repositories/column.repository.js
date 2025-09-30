@@ -21,8 +21,16 @@ class ColumnRepository {
     return await Column.findByIdAndDelete(id);
   }
   
-    async insertMany(dataArray) {
+  async insertMany(dataArray, session = null) {
+    if (session) {
+      return await Column.insertMany(dataArray, { session });
+    }
     return await Column.insertMany(dataArray);
+  }
+
+  async deleteManyByBoard(boardId, session = null) {
+    const query = Column.deleteMany({ board_id: boardId });
+    return session ? query.session(session) : query;
   }
 
 }

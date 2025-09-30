@@ -50,6 +50,11 @@ async addMember({ user_id, board_id, role_in_board, Creator = false }, session) 
       .populate("board_id", "title description created_at updated_at is_template")
       .lean();
   }
+
+  async deleteManyByBoard(board_id, session = null) {
+    const query = BoardMember.deleteMany({ board_id });
+    return session ? query.session(session) : query;
+  }
 }
 
 module.exports = new BoardMemberRepository();

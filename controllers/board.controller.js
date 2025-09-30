@@ -91,8 +91,9 @@ class BoardController {
 
   async cloneBoard(req, res) {
     try {
+      const userId = req.user?.id;
       const { templateId } = req.params; // lấy id template từ URL
-      const { title, description, userId } = req.body; // dữ liệu tạo board mới
+      const { title, description } = req.body || {}; // dữ liệu tạo board mới
 
       // Validate input
       if (!templateId) {
@@ -109,31 +110,20 @@ class BoardController {
         });
       }
 
+      // userId lấy từ token
       if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Thiếu userId'
-        });
+        return res.status(401).json({ success: false, message: 'Không xác thực' });
       }
 
       // Gọi service clone
-      const result = await boardService.cloneBoard(templateId, {
-        title,
-        description,
-        userId
-      });
+      const result = await boardService.cloneBoard(templateId, { title, description, userId });
 
-      return res.status(201).json({
-        success: true,
-        message: 'Clone board thành công',
-        data: result
-      });
+      return res.status(201).json({ success: true, data: result });
     } catch (error) {
       console.error('❌ Clone board error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Clone board thất bại',
-        error: error.message
+        message: error.message || 'Clone board thất bại'
       });
     }
   }

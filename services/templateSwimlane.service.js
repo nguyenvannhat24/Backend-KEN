@@ -1,51 +1,34 @@
-const mongoose = require("mongoose");
-const templateSwimlaneRepository = require("../repositories/templateSwimlane.repository");
+const mongoose = require('mongoose');
+const TemplateSwimlane = require('../models/templateSwimlane.model');
 
 class TemplateSwimlaneService {
-  async createSwimlane(data) {
-    if (!mongoose.Types.ObjectId.isValid(data.template_id)) {
-      throw new Error("Invalid template_id");
-    }
-
-    // kiểm tra trùng tên trong cùng 1 template
-    const exists = await templateSwimlaneRepository.findByName(data.template_id, data.name);
-    if (exists) {
-      throw new Error("Tên swimlane đã tồn tại trong template này");
-    }
-
-    return await templateSwimlaneRepository.create(data);
+  async list(template_id) {
+    if (!mongoose.Types.ObjectId.isValid(template_id)) throw new Error('template_id không hợp lệ');
+    return TemplateSwimlane.find({ template_id }).sort({ order_index: 1 }).lean();
   }
 
-  async getSwimlanes() {
-    return await templateSwimlaneRepository.findAll();
+  async create(template_id, { name, order_index }) {
+    if (!mongoose.Types.ObjectId.isValid(template_id)) throw new Error('template_id không hợp lệ');
+    if (!name || !name.trim()) throw new Error('name là bắt buộc');
+    const doc = await TemplateSwimlane.create({ template_id, name: name.trim(), order_index: Number(order_index) || 0 });
+    return doc;
   }
 
-  async getSwimlaneById(id) {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid id");
-    }
-    return await templateSwimlaneRepository.findById(id);
+  async update(id, data) {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
+    const update = {};
+    if (typeof data.name === 'string') update.name = data.name.trim();
+    if (data.order_index !== undefined) update.order_index = Number(data.order_index) || 0;
+    const doc = await TemplateSwimlane.findByIdAndUpdate(id, update, { new: true }).lean();
+    if (!doc) throw new Error('Không tìm thấy TemplateSwimlane');
+    return doc;
   }
 
-  async getSwimlanesByTemplate(templateId) {
-    if (!mongoose.Types.ObjectId.isValid(templateId)) {
-      throw new Error("Invalid templateId");
-    }
-    return await templateSwimlaneRepository.findByTemplate(templateId);
-  }
-
-  async updateSwimlane(id, data) {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid id");
-    }
-    return await templateSwimlaneRepository.update(id, data);
-  }
-
-  async deleteSwimlane(id) {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid id");
-    }
-    return await templateSwimlaneRepository.delete(id);
+  async remove(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
+    const res = await TemplateSwimlane.findByIdAndDelete(id).lean();
+    if (!res) throw new Error('Không tìm thấy TemplateSwimlane');
+    return true;
   }
 }
 

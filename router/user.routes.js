@@ -44,5 +44,16 @@ router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.del
 
 router.post('/getprofile',authenticateAny ,userController.viewProfile);
 
+// Keycloak CRUD routes
+router.get('/keycloak', userController.getAllKeycloakUsers);
+// lấy theo id
+
+router.get('/keycloak/id/:id',userController.getKeycloakUserById);
+router.get('/keycloak/username/:username', userController.getKeycloakUserByName);
+router.get('/keycloak/email/:email', userController.getKeycloakUserByMail);
+
+router.post('/keycloak', userController.createKeycloakUser);
+router.put('/keycloak/:id', userController.updateKeycloakUser);
+router.delete('/keycloak/:id', userController.deleteKeycloakUser);
 
 module.exports = router;

@@ -9,8 +9,8 @@ const cors = require("cors");
 const userRouter = require("./router/auth.routes");
 const user = require('./router/user.routes');
 const userRole = require('./router/userRole.router');
-const permissionRoutes = require('./router/permission.router');
-const rolePermissionRoutes = require('./router/rolePermission.routes');
+
+
 const centerRouter = require('./router/center.router');
 const userPointRouter = require('./router/userPoint.router');
 const roleRouter = require('./router/role.router');
@@ -54,6 +54,13 @@ app.use(express.urlencoded({ extended: true }));
 // --- Database connection ---
 require('./config/db');
 
+
+//keycloack
+const { initKeycloak, testConnection } = require('./services/keycloak.service');
+(async () => {
+  await initKeycloak();
+  await testConnection(); // test kết nối
+})();
 // --- Routes ---
 app.use(cors({
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
@@ -67,8 +74,7 @@ app.use('/api', userRouter(keycloak));
 // Routes cần bảo vệ bằng Keycloak
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
-app.use('/api/permission', permissionRoutes);
-app.use('/api/role-permissions', rolePermissionRoutes);
+
 app.use('/api/centers', centerRouter);
 app.use('/api/userPoints', userPointRouter);
 app.use('/api/role', roleRouter);

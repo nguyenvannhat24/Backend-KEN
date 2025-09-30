@@ -146,6 +146,13 @@ async getProfileById(id) {
     }
   }
 
+async createSSO({ username, email, full_name, idSSO }) {
+  const typeAccount = "SSO";
+  const userSSO = new User({ username, email, full_name, typeAccount, idSSO });
+  return await User.create(userSSO);
+}
+
+
   /**
    * Cập nhật user theo ID
    * @param {string} id - ObjectId của user

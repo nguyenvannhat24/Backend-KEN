@@ -71,7 +71,7 @@ app.use(cors({
 // Route public (không cần login)
 app.use('/api', userRouter(keycloak));
 
-// Routes cần bảo vệ bằng Keycloak
+//k
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
 

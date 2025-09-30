@@ -55,5 +55,6 @@ router.get('/keycloak/email/:email', userController.getKeycloakUserByMail);
 router.post('/keycloak', userController.createKeycloakUser);
 router.put('/keycloak/:id', userController.updateKeycloakUser);
 router.delete('/keycloak/:id', userController.deleteKeycloakUser);
-
+// tạo mới user từ thông tin của keycloack
+router.post('/cloneUser', userController.cloneUser);
 module.exports = router;

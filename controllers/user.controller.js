@@ -169,31 +169,40 @@ exports.create = async (req, res) => {
     console.error(err);
     res.status(400).json({ message: err.message });
   }
-};
+}
 exports.cloneUser = async (req, res) => {
   try {
-    // Tạo user trên bảng user
-    const user = await userService.createUser(req.body);
+    const username = req.body.username;
 
-    // Lấy role_id của quyền 'user' từ bảng role
-    const roleId  = await roleSevive.getIdByName('user'); // nếu getIdByName là async
-
-    if (!roleId ) {
-      return res.status(400).json({ message: 'Role "user" không tồn tại' });
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
     }
 
-    // Thêm quyền cho user mới
-    await userRoleService.create({
-      user_id: user._id,
-      role_id: roleId , // tùy thuộc hàm trả về chỉ id hay object
+    // lấy thông tin user từ Keycloak
+const users = await getUserByUsername(username);
+const inforUser = users[0]; // lấy user đầu tiên
+
+     
+    if (!inforUser) {
+      return res.status(404).json({ message: "User not found in Keycloak" });
+    }
+
+    // tạo user trong DB
+    const user = await userService.createUserSSO({
+      username : inforUser.username,
+      email    : inforUser.email,
+      full_name: `${inforUser.lastName} ${inforUser.firstName}`,
+      idSSO    : inforUser.id
     });
 
     res.status(201).json(user);
   } catch (err) {
-    console.error(err);
+    console.error("❌ cloneUser error:", err);
     res.status(400).json({ message: err.message });
   }
 };
+
+
 exports.update = async (req, res) => {
   try {
     const user = await userService.updateUser(req.params.id, req.body);

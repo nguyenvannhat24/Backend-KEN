@@ -220,6 +220,20 @@ class UserService {
     }
   }
 
+
+async createUserSSO({ username, email, full_name, idSSO }) {
+  try {
+    console.log(`➕ Creating new userSSO: ${username}`);
+    return await userRepo.createSSO({ username, email, full_name, idSSO });
+  } catch (error) {
+    console.error('❌ Error in createUserSSO:', error.message);
+    throw error;
+  }
+}
+
+
+  /**
+
   /**
    * Cập nhật user
    * @param {string} id - ObjectId của user

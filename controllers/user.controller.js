@@ -179,10 +179,9 @@ exports.cloneUser = async (req, res) => {
     }
 
     // lấy thông tin user từ Keycloak
-const users = await getUserByUsername(username);
-const inforUser = users[0]; // lấy user đầu tiên
+    const users = await getUserByUsername(username);
+    const inforUser = users[0]; // lấy user đầu tiên
 
-     
     if (!inforUser) {
       return res.status(404).json({ message: "User not found in Keycloak" });
     }
@@ -195,12 +194,25 @@ const inforUser = users[0]; // lấy user đầu tiên
       idSSO    : inforUser.id
     });
 
+    // Lấy role_id của quyền 'user'
+    const roleId = await roleSevive.getIdByName('user');
+    if (!roleId) {
+      return res.status(400).json({ message: 'Role "user" không tồn tại' });
+    }
+
+    // Thêm quyền cho user SSO mới
+    await userRoleService.create({
+      user_id: user._id,
+      role_id: roleId
+    });
+
     res.status(201).json(user);
   } catch (err) {
     console.error("❌ cloneUser error:", err);
     res.status(400).json({ message: err.message });
   }
 };
+
 
 
 exports.update = async (req, res) => {
@@ -241,3 +253,4 @@ exports.viewProfile = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+

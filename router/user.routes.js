@@ -20,11 +20,8 @@ router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account')
 // Lấy user theo ID (admin hoặc chính mình)
 router.get('/:id', authenticateAny,  authorizeAny('admin','manage-account'), userController.getById);
 
-// Lấy user theo email (chỉ admin)
-router.get('/email/:email', authenticateAny,  authorizeAny('admin'), userController.getByEmail);
 
-// Lấy user theo name (chỉ admin)
-router.get('/name/:name', authenticateAny, authorizeAny('admin'), userController.getByName);
+
 
 // Lấy user theo số điện thoại (chỉ admin)
 router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
@@ -48,13 +45,18 @@ router.post('/getprofile',authenticateAny ,userController.viewProfile);
 router.get('/keycloak', userController.getAllKeycloakUsers);
 // lấy theo id
 
-router.get('/keycloak/id/:id',userController.getKeycloakUserById);
-router.get('/keycloak/username/:username', userController.getKeycloakUserByName);
-router.get('/keycloak/email/:email', userController.getKeycloakUserByMail);
+router.get('/keycloak/id/:id',authenticateAny,userController.getKeycloakUserById);
+router.get('/keycloak/username/:username',authenticateAny, userController.getKeycloakUserByName); 
+router.get('/keycloak/email/:email',authenticateAny, userController.getKeycloakUserByMail);
 
-router.post('/keycloak', userController.createKeycloakUser);
-router.put('/keycloak/:id', userController.updateKeycloakUser);
-router.delete('/keycloak/:id', userController.deleteKeycloakUser);
+router.post('/keycloak',authenticateAny, userController.createKeycloakUser);
+router.put('/keycloak/:id',authenticateAny, userController.updateKeycloakUser);
+router.delete('/keycloak/:id', authenticateAny,userController.deleteKeycloakUser);
 // tạo mới user từ thông tin của keycloack
 router.post('/cloneUser', userController.cloneUser);
+// Lấy user theo email (chỉ admin)
+router.get('/email/:email', authenticateAny, userController.getByEmail);
+
+// Lấy user theo name (chỉ admin)
+router.get('/name/:name', authenticateAny, userController.getByName);
 module.exports = router;

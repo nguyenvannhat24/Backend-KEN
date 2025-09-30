@@ -8,6 +8,7 @@ const kcAdminClient = new KcAdminClient({
   realmName: process.env.KEYCLOAK_REALM,
 });
 
+// 🔑 INIT & AUTH
 async function initKeycloak() {
   try {
     await kcAdminClient.auth({
@@ -23,88 +24,77 @@ async function initKeycloak() {
   }
 }
 
-// 🟢 CREATE
+// 🔄 Kiểm tra token expired
+function isTokenExpired(token) {
+  if (!token) return true;
+  const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+  const now = Math.floor(Date.now() / 1000);
+  return payload.exp < now + 10; // refresh trước 10s
+}
+
+// 🔄 Refresh token nếu cần
+async function refreshTokenIfNeeded() {
+  if (!kcAdminClient.accessToken || isTokenExpired(kcAdminClient.accessToken)) {
+    console.log('🔄 Refreshing admin token...');
+    await initKeycloak();
+  }
+}
+
+// 🔁 Wrapper retry khi gặp 401
+async function withRetry(fn) {
+  try {
+    await refreshTokenIfNeeded();
+    return await fn();
+  } catch (err) {
+    // nếu lỗi 401, refresh token và retry 1 lần
+    if (err.response && err.response.status === 401) {
+      console.log('⚠️ 401 detected, retrying after refresh...');
+      await refreshTokenIfNeeded();
+      return await fn();
+    }
+    throw err;
+  }
+}
+
+// 🟢 CREATE USER
 async function createUser(userData) {
-  try {
-    const newUser = await kcAdminClient.users.create(userData);
-    console.log("✅ User created:", newUser);
-    return newUser;
-  } catch (err) {
-    console.error("❌ Create user failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.create(userData));
 }
 
-// 🔵 READ
+// 🔵 GET USERS
 async function getUsers(query = {}) {
-  try {
-    return await kcAdminClient.users.find(query);
-  } catch (err) {
-    console.error("❌ Get users failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.find(query));
 }
 
+// 🔵 GET USER BY ID
 async function getUserById(userId) {
-  try {
-    return await kcAdminClient.users.findOne({ id: userId });
-  } catch (err) {
-    console.error("❌ Get user by ID failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.findOne({ id: userId }));
 }
 
-// 🟡 SEARCH by email
-async function getUserByEmail(email) {
-  try {
-    const users = await kcAdminClient.users.find({ email });
-    return users; // Keycloak trả về mảng
-  } catch (err) {
-    console.error("❌ Get user by Email failed:", err);
-    throw err;
-  }
-}
-
-// 🟡 SEARCH by username
+// 🔵 GET USER BY USERNAME
 async function getUserByUsername(username) {
-  try {
-    const users = await kcAdminClient.users.find({ username });
-    return users; // cũng trả về mảng
-  } catch (err) {
-    console.error("❌ Get user by Username failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.find({ username }));
 }
 
-// 🟠 UPDATE
+// 🔵 GET USER BY EMAIL
+async function getUserByEmail(email) {
+  return withRetry(() => kcAdminClient.users.find({ email }));
+}
+
+// 🟠 UPDATE USER
 async function updateUser(userId, updatedInfo) {
-  try {
-    return await kcAdminClient.users.update({ id: userId }, updatedInfo);
-  } catch (err) {
-    console.error("❌ Update user failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.update({ id: userId }, updatedInfo));
 }
 
-// 🔴 DELETE
+// 🔴 DELETE USER
 async function deleteUser(userId) {
-  try {
-    await kcAdminClient.users.del({ id: userId });
-    console.log("✅ User deleted:", userId);
-  } catch (err) {
-    console.error("❌ Delete user failed:", err);
-    throw err;
-  }
+  return withRetry(() => kcAdminClient.users.del({ id: userId }));
 }
 
 // 🧪 TEST CONNECTION
 async function testConnection() {
-  try {
-    const users = await kcAdminClient.users.find({ max: 2 });
-    console.log('✅ Keycloak connection OK, sample users:', users.map(u => u.username));
-  } catch (err) {
-    console.error('❌ Keycloak connection test failed:', err);
-  }
+  const users = await getUsers({ max: 2 });
+  console.log('✅ Keycloak connection OK, sample users:', users.map(u => u.username));
 }
 
 module.exports = {

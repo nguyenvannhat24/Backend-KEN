@@ -33,12 +33,13 @@ router.get('/name/:name', authenticateAny, userController.getByName);
 router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
 
 // Keycloak CRUD routes
-router.get('/keycloak', userController.getAllKeycloakUsers);
+router.put('/keycloak/:id', authenticateAny, userController.updateKeycloakUser);
+router.get('/keycloak', authenticateAny, userController.getAllKeycloakUsers);
 router.get('/keycloak/id/:id', authenticateAny, userController.getKeycloakUserById);
 router.get('/keycloak/username/:username', authenticateAny, userController.getKeycloakUserByName); 
 router.get('/keycloak/email/:email', authenticateAny, userController.getKeycloakUserByMail);
 router.post('/keycloak', authenticateAny, userController.createKeycloakUser);
-router.put('/keycloak/:id', authenticateAny, userController.updateKeycloakUser);
+
 router.delete('/keycloak/:id', authenticateAny, userController.deleteKeycloakUser);
 router.post('/cloneUser', userController.cloneUser);
 

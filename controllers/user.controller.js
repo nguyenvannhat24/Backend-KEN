@@ -128,7 +128,7 @@ exports.getByEmail = async (req, res) => {
 
 exports.getByName = async (req, res) => {
   try {
-    const user = await userService.getUserByName(req.params.name);
+    const user = await userService.getUserByUsername(req.params.name);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {

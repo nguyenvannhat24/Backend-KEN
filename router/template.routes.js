@@ -1,6 +1,7 @@
 const express = require('express'); 
 const router = express.Router(); 
 const templateController = require('../controllers/template.controller'); 
+const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
 // CRUD routes
 //
 router.get('/',templateController.getAll)

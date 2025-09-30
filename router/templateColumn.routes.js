@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const templateColumnController = require("../controllers/templateColumn.controller");
-
+const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
 // CRUD routes
 router.post("/", (req, res) => templateColumnController.create(req, res));
 router.get("/", (req, res) => templateColumnController.getAll(req, res));

@@ -4,52 +4,41 @@ const groupMemberService = require("./groupMember.service");
 const groupMemberRepo = require('../repositories/groupMember.repository');
 class GroupService {
   // Tạo group mới
-  async createGroup({ center_id, name,  userId ,description }) {
-    
+  async createGroup({ center_id, name, userId, description }) {
+  if (!userId) throw new Error("userId là bắt buộc");
+  if (!name || typeof name !== "string" || name.trim() === "")
+    throw new Error("Tên group là bắt buộc và phải là chuỗi hợp lệ");
 
-    if (!userId) throw new Error("userId là bắt buộc");
+  // Convert string sang ObjectId
+  try {
+    center_id = new mongoose.Types.ObjectId(center_id);
+  } catch (err) {
+    throw new Error("center_id không hợp lệ");
+  }
 
-    // Kiểm tra name
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      throw new Error("Tên group là bắt buộc và phải là chuỗi hợp lệ");
-    }
+  try {
+    userId = new mongoose.Types.ObjectId(userId);
+  } catch (err) {
+    throw new Error("userId không hợp lệ");
+  }
 
-    // Kiểm tra độ dài name
-    if (name.length > 200) {
-      throw new Error("Tên group không được dài quá 200 ký tự");
-    }
+  // Kiểm tra trùng tên
+  const existing = await groupRepo.findOne(center_id, name.trim());
+  if (existing) throw new Error("Tên group đã tồn tại trong center này");
 
-    // Kiểm tra description
-    if (description && description.length > 300) {
-      throw new Error("Description không được dài quá 300 ký tự");
-    }
+  // Tạo group
+  const group = await groupRepo.create({ center_id, name: name.trim(), description });
 
-    // Kiểm tra center_id hợp lệ
-    if (center_id && !mongoose.Types.ObjectId.isValid(center_id)) {
-      throw new Error("center_id không hợp lệ");
-    }
-     if (userId && !mongoose.Types.ObjectId.isValid(userId)) {
-      throw new Error("center_id không hợp lệ");
-    }
-
-        // ❌ Kiểm tra trùng tên group trong cùng center
-    const existing = await groupRepo.findOne({ center_id, name: name.trim() });
-    if (existing) {
-      throw new Error("Tên group đã tồn tại trong center này");
-    }
-    
-    // Tạo group mới
-    const group = await groupRepo.create({ center_id, name, description });
-
-    // Thêm người tạo vào GroupMember
-   await groupMemberRepo.addMember({
+  // Thêm người tạo vào group member
+  await groupMemberRepo.addMember({
     group_id: group._id,
     user_id: userId,
     role_in_group: "Người tạo",
   });
 
-    return group;
-  }
+  return group;
+}
+
 
   // Lấy group theo ID
   async getGroupById(id) {
@@ -73,7 +62,7 @@ class GroupService {
       throw new Error("userId không hợp lệ");
     }
 
-    return await groupMemberRepo.getGroupsByUser(userId);
+    return await groupMemberRepo.getByGroupMembers(userId);
   }
 
   // Cập nhật group (chỉ group owner)

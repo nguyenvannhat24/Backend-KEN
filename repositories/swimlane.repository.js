@@ -21,8 +21,16 @@ class SwimlaneRepository {
     return await Swimlane.findByIdAndDelete(id);
   }
 
- async insertMany(dataArray) {
+ async insertMany(dataArray, session = null) {
+    if (session) {
+      return await Swimlane.insertMany(dataArray, { session });
+    }
     return await Swimlane.insertMany(dataArray);
+  }
+
+  async deleteManyByBoard(boardId, session = null) {
+    const query = Swimlane.deleteMany({ board_id: boardId });
+    return session ? query.session(session) : query;
   }
 }
 

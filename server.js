@@ -10,19 +10,19 @@ const userRouter = require("./router/auth.routes");
 const user = require('./router/user.routes');
 const userRole = require('./router/userRole.router');
 
-
 const centerRouter = require('./router/center.router');
 const userPointRouter = require('./router/userPoint.router');
 const roleRouter = require('./router/role.router');
 const boardRouter = require('./router/board.router');
+const templateRouter = require('./router/template.router');
 const boardMemberRouter = require('./router/boardMember.routes');
 const groupRoutes = require('./router/group.routes');
 const groupMemberRoutes = require('./router/groupMember.routes');
-const templateRoters = require('./router/template.routes');
-const templateColumn = require('./router/templateColumn.routes');
-const templateSwimlaneRouter = require('./router/templateSwimlane.routes');
+const templateColumn = require('./router/templateColumn.router');
+const templateSwimlaneRouter = require('./router/templateSwimlane.router');
 const columnRouter = require('./router/column.routes');
 const swimlaneRoutes = require('./router/swimlane.routes');
+const taskRoutes = require('./router/task.routes');
 
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
@@ -79,14 +79,15 @@ app.use('/api/centers', centerRouter);
 app.use('/api/userPoints', userPointRouter);
 app.use('/api/role', roleRouter);
 app.use('/api/boards', boardRouter);
+app.use('/api/templates', templateRouter);
 app.use('/api/boardMember',boardMemberRouter );
 app.use('/api/groups', groupRoutes);
 app.use('/api/groupMember',groupMemberRoutes);
-app.use('/api/template',templateRoters);
 app.use('/api/templateColumn',templateColumn);
 app.use('/api/templateSwimlane',templateSwimlaneRouter);
 app.use('/api/column',columnRouter);
 app.use('/api/swimlanes', swimlaneRoutes);
+app.use('/api/tasks', taskRoutes);
 // --- Start server ---
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

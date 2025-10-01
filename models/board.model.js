@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const BoardSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
+  created_by: { type: mongoose.Types.ObjectId, ref: 'User', index: true },
   is_template: { type: Boolean, default: false },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

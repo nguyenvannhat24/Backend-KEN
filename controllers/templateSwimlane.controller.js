@@ -1,67 +1,39 @@
-const templateSwimlaneService = require("../services/templateSwimlane.service");
+const service = require('../services/templateSwimlane.service');
 
 class TemplateSwimlaneController {
+  async list(req, res) {
+    try {
+      const rows = await service.list(req.params.template_id);
+      res.json({ success: true, data: rows });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
   async create(req, res) {
     try {
-      const { template_id, name, order_index } = req.body;
-      const swimlane = await templateSwimlaneService.createSwimlane({ template_id, name, order_index });
-      res.status(201).json({ success: true, data: swimlane });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async getAll(req, res) {
-    try {
-      const swimlanes = await templateSwimlaneService.getSwimlanes();
-      res.json({ success: true, data: swimlanes });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async getById(req, res) {
-    try {
-      const swimlane = await templateSwimlaneService.getSwimlaneById(req.params.id);
-      if (!swimlane) {
-        return res.status(404).json({ success: false, message: "Swimlane not found" });
-      }
-      res.json({ success: true, data: swimlane });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async getByTemplate(req, res) {
-    try {
-      const swimlanes = await templateSwimlaneService.getSwimlanesByTemplate(req.params.templateId);
-      res.json({ success: true, data: swimlanes });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
+      const row = await service.create(req.params.template_id, req.body);
+      res.status(201).json({ success: true, data: row });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 
   async update(req, res) {
     try {
-      const updated = await templateSwimlaneService.updateSwimlane(req.params.id, req.body);
-      if (!updated) {
-        return res.status(404).json({ success: false, message: "Swimlane not found" });
-      }
-      res.json({ success: true, data: updated });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
+      const row = await service.update(req.params.id, req.body);
+      res.json({ success: true, data: row });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 
-  async delete(req, res) {
+  async remove(req, res) {
     try {
-      const deleted = await templateSwimlaneService.deleteSwimlane(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ success: false, message: "Swimlane not found" });
-      }
-      res.json({ success: true, message: "Swimlane deleted" });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
+      await service.remove(req.params.id);
+      res.json({ success: true, message: 'Xóa TemplateSwimlane thành công' });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 }

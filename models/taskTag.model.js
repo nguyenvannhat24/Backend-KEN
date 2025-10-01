@@ -1,16 +1,14 @@
-const mongoose_tt = require('mongoose');
-const { Schema: Schema_tt } = require('./_shared');
+const mongoose = require('mongoose');
 
-
-const TaskTagSchema = new Schema_tt({
-task_id: { type: String, ref: 'Task', required: true, index: true },
-tag_id: { type: String, ref: 'Tag', required: true, index: true },
-}, { collection: 'task_tags', timestamps: true });
-
+const TaskTagSchema = new mongoose.Schema({
+  task_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
+  tag_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', required: true }
+}, { 
+  collection: 'TaskTags',
+  timestamps: true 
+});
 
 TaskTagSchema.index({ task_id: 1, tag_id: 1 }, { name: 'TaskTag_index_8', unique: true });
 
-
-const TaskTag = mongoose_tt.model('TaskTag', TaskTagSchema);
-module.exports = TaskTag;
+module.exports = mongoose.model('TaskTag', TaskTagSchema);
 

@@ -1,8 +1,21 @@
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleSevive = require('../services/role.service');
-const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail} = require('../services/keycloak.service');
+const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail ,createUserWithPassword} = require('../services/keycloak.service');
+//
 
+exports.createKeycloakUserPassword = async (req, res) => {
+  try {
+    const { username, email, full_name, status, password } = req.body;
+    const user = await createUserWithPassword(
+      { username, email, full_name, status },
+      password
+    );
+    res.json({ success: true, message: "User created in Keycloak", data: user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 // 🔵 Lấy danh sách user từ Keycloak
 exports.getAllKeycloakUsers = async (req, res) => {
   try {
@@ -217,25 +230,75 @@ exports.cloneUser = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const user = await userService.updateUser(req.params.id, req.body);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    const userId = req.user.id; // lấy id từ token
+    const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
+    const isAdmin = roles.includes('admin');
+
+    if (userId == req.params.id || isAdmin) {
+      const checkUser = await userService.getUserById(req.params.id);
+      if (!checkUser) throw new Error("Không tìm thấy user bạn muốn cập nhật");
+
+      const typeAccount = checkUser.typeAccount;
+
+      // Luôn update trên DB trước
+      let user = await userService.updateUser(req.params.id, req.body);
+
+      // Nếu user này thuộc SSO thì cập nhật bên Keycloak
+      if (typeAccount === 'SSO') {
+        const id = checkUser.idSSO; // ID user trên Keycloak
+
+        // Map dữ liệu từ payload frontend sang schema của Keycloak
+        const keycloakPayload = {
+          username: req.body.username || checkUser.username,
+          email: req.body.email || checkUser.email,
+          firstName: req.body.full_name ? req.body.full_name.split(" ")[0] : checkUser.full_name,
+          lastName: req.body.full_name ? req.body.full_name.split(" ").slice(1).join(" ") : "",
+          enabled: req.body.status ? req.body.status.toLowerCase() === "active" : checkUser.status === "active",
+        };
+
+        // Nếu frontend gửi password mới thì update luôn
+        if (req.body.password) {
+          keycloakPayload.credentials = [
+            {
+              type: "password",
+              value: req.body.password,
+              temporary: false
+            }
+          ];
+        }
+
+        await updateUser(id, keycloakPayload); // gọi hàm update lên Keycloak
+      }
+
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json(user);
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
+
 exports.delete = async (req, res) => {
   try {
-    const user = await userService.deleteUser(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'Deleted successfully' });
+    // Lấy thông tin user từ DB
+    const checkUser = await userService.getUserById(req.params.id);
+    if (!checkUser) return res.status(404).json({ message: "User not found" });
+
+    // Luôn xóa user trong DB
+    await userService.deleteUser(req.params.id);
+
+    // Nếu là user SSO thì xóa thêm trên Keycloak
+    if (checkUser.typeAccount === "SSO" && checkUser.idSSO) {
+      await deleteUser(checkUser.idSSO); // gọi Keycloak Admin API
+    }
+
+    res.json({ message: "Deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-
-
 };
+
 exports.viewProfile = async (req, res) => {
   try {
     const { userId } = req.body; // Lấy userId từ body
@@ -264,7 +327,7 @@ exports.getMe = async (req, res) => {
     res.json({
       success: true,
       data: {
-        _id: req.user._id,
+        _id: req.user.id,
         username: req.user.username,
         email: req.user.email,
         roles: req.user.roles

@@ -97,6 +97,30 @@ async function testConnection() {
   console.log('✅ Keycloak connection OK, sample users:', users.map(u => u.username));
 }
 
+// keycloakService.js
+async function createUserWithPassword(userData, password) {
+  return withRetry(async () => {
+    const createdUser = await kcAdminClient.users.create({
+      username: userData.username,
+      email: userData.email,
+      firstName: userData.full_name?.split(" ")[0] || "",
+      lastName: userData.full_name?.split(" ").slice(1).join(" ") || "",
+      enabled: userData.status?.toLowerCase() === "active",
+    });
+
+    await kcAdminClient.users.resetPassword({
+      id: createdUser.id,
+      credential: {
+        type: "password",
+        value: password,
+        temporary: false,
+      },
+    });
+
+    return createdUser;
+  });
+}
+
 module.exports = {
   initKeycloak,
   createUser,
@@ -106,5 +130,6 @@ module.exports = {
   deleteUser,
   testConnection,
   getUserByUsername,
-  getUserByEmail
+  getUserByEmail,
+  createUserWithPassword
 };

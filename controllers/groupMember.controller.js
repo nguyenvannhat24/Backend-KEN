@@ -84,15 +84,29 @@ class GroupMemberController {
   }
 
   // tìm người dùng đang có bao nhiêu group
-  async selecGroupUser(req,res){
-    try{
-      const {id_user} = req.body;
-     const Group = await groupMemberService.getGroupbyUser(id_user);
-     res.json({success: true, data: Group });
-    }catch(err){
-     res.status(400).json({ success: false, message: err.message });
+async selecGroupUser(req, res) {
+  try {
+    let { id_user } = req.body;
+
+    // Nếu frontend không truyền thì lấy id từ token
+    if (!id_user) {
+      id_user = req.user.id;
     }
+    console.log(id_user);
+    console.log("idSSO (keycloak):", req.user.idSSO);
+
+    if (!id_user) {
+      return res.status(400).json({ success: false, message: "id_user is required" });
+    }
+
+    const groups = await groupMemberService.getGroupbyUser(id_user);
+    res.json({ success: true, data: groups });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
   }
+}
+
+  
 }
 
 module.exports = new GroupMemberController();

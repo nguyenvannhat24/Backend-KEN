@@ -99,13 +99,15 @@ const authenticateAny = async (req, res, next) => {
 
       const dbRoles = await userRoleService.getRoles(user._id);
       req.user = {
-        id: user._id,
+        id: user._id.toString(),  
         email: user.email,
         username: user.username,
+        idSSO: user.idSSO ,
         roles: dbRoles?.map(r => r.role_id?.name).filter(Boolean) || []
       };
 
-      console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${user.email}`);
+      console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${req.user.email} id là ${req.user.id}`);
+
       next();
     });
 

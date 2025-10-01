@@ -39,7 +39,7 @@ router.get('/keycloak/id/:id', authenticateAny, userController.getKeycloakUserBy
 router.get('/keycloak/username/:username', authenticateAny, userController.getKeycloakUserByName); 
 router.get('/keycloak/email/:email', authenticateAny, userController.getKeycloakUserByMail);
 router.post('/keycloak', authenticateAny, userController.createKeycloakUser);
-
+router.post('/keycloak/createUserPass', authenticateAny, userController.createKeycloakUserPassword);
 router.delete('/keycloak/:id', authenticateAny, userController.deleteKeycloakUser);
 router.post('/cloneUser', userController.cloneUser);
 
@@ -55,7 +55,7 @@ router.get('/:id', authenticateAny, authorizeAny('admin','manage-account'), user
 router.post('/', authenticateAny, authorizeAny('admin'), userController.create);
 
 // Cập nhật user (admin hoặc chính mình)
-router.put('/:id', authenticateAny, authorizeAny('admin'), userController.update);
+router.put('/:id', authenticateAny, userController.update);
 
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);

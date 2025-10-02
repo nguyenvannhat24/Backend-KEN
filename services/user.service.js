@@ -1,6 +1,6 @@
 const userRepo = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
-
+const keycloack = require('../services/keycloak.service');
 /**
  * User Service - Xử lý business logic cho User
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
@@ -173,51 +173,66 @@ if (!user) {
     }
   }
 
-  /**
-   * Tạo user mới
-   * @param {Object} userData - Dữ liệu user
-   * @returns {Promise<Object>} User object đã tạo
-   */
-  async createUser(userData ) {
-    try {
-      // Validate input
-      if (!userData || !userData.email) {
-        throw new Error('Email là bắt buộc');
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userData.email)) {
-        throw new Error('Email không đúng định dạng');
-      }
-
-      // Kiểm tra email đã tồn tại chưa
-      const emailExists = await userRepo.isEmailExists(userData.email);
-      if (emailExists) {
-        throw new Error('Email đã tồn tại trong hệ thống');
-      }
-
-      // Kiểm tra username đã tồn tại chưa (nếu có)
-      if (userData.username) {
-        const usernameExists = await userRepo.isUsernameExists(userData.username);
-        if (usernameExists) {
-          throw new Error('Username đã tồn tại trong hệ thống');
-        }
-      }
-
-      // Hash password nếu có
-      if (userData.password) {
-        userData.password_hash = bcrypt.hashSync(userData.password, 10);
-        delete userData.password; // Xóa password plain text
-      }
-
-      console.log(`➕ Creating new user: ${userData.email}`);
-      return await userRepo.create(userData);
-    } catch (error) {
-      console.error('❌ Error in createUser:', error.message);
-      throw error;
+  async createUser(userData) {
+  try {
+    // Validate input
+    if (!userData || !userData.email) {
+      throw new Error('Email là bắt buộc');
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      throw new Error('Email không đúng định dạng');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const emailExists = await userRepo.isEmailExists(userData.email);
+    if (emailExists) {
+      throw new Error('Email đã tồn tại trong hệ thống');
+    }
+
+    // Kiểm tra username đã tồn tại chưa
+    if (userData.username) {
+      const usernameExists = await userRepo.isUsernameExists(userData.username);
+      if (usernameExists) {
+        throw new Error('Username đã tồn tại trong hệ thống');
+      }
+    }
+
+    // Hash password nếu có
+    if (userData.password) {
+      userData.password_hash = bcrypt.hashSync(userData.password, 10);
+    }
+
+    // Lấy ra biến từ userData
+    const { username, email, full_name, status, password } = userData;
+
+    // Tạo trên Keycloak trước
+    console.log('🔑 Creating user on Keycloak...');
+    const userKeyCloak = await keycloack.createUserWithPassword(
+      { username, email, full_name, status },
+      password
+    );
+
+    // Tạo local user
+    console.log(`➕ Creating new local user: ${email}`);
+    const localUser = await userRepo.create({
+      username,
+      email,
+      full_name,
+      status,
+      idSSO: userKeyCloak.id, // liên kết với Keycloak
+      typeAccount: "SSO",
+      password_hash: userData.password_hash, // lưu hash (nếu có)
+    });
+
+    return localUser;
+  } catch (error) {
+    console.error('❌ Error in createUser:', error.message);
+    throw error;
   }
+}
 
 
 async createUserSSO({ username, email, full_name, idSSO }) {
@@ -329,20 +344,103 @@ async createUserSSO({ username, email, full_name, idSSO }) {
    * @deprecated Sử dụng getAllUsers thay thế
    * @returns {Promise<Array>} Array of users
    */
-  async viewAll() {
-    try {
-      console.log('📋 Getting all users (deprecated method)');
-      const result = await userRepo.findAll();
-      return result.users || result; // Hỗ trợ cả pagination và non-pagination
-    } catch (error) {
-      console.error('❌ Error in viewAll:', error.message);
-      throw error;
-    }
+  async viewAll(options = {}) {
+  try {
+    console.log('📋 Getting all users');
+    const result = await userRepo.findAll(options);
+
+    // Luôn trả về đúng cấu trúc
+    return {
+      users: result.users,
+      totalUsers: result.pagination.total,
+      totalPages: result.pagination.pages,
+      currentPage: result.pagination.page,
+      limit: result.pagination.limit
+    };
+  } catch (error) {
+    console.error('❌ Error in viewAll:', error.message);
+    throw error;
   }
+}
+
 
 async getProfile(userId) {
   if (!userId) throw new Error("UserId là bắt buộc");
   return await userRepo.getProfileById(userId);
+}
+
+async getUserWithPassword(userId) {
+  if (!userId) throw new Error("UserId là bắt buộc");
+  return await userRepo.findById(userId);
+}
+
+async updateProfile(userId, updateData) {
+  try {
+    const user = await userRepo.update(userId, updateData);
+    console.log(`✅ [UserService] Updated profile for user: ${userId}`);
+    return user;
+  } catch (error) {
+    console.error('❌ [UserService] updateProfile error:', error);
+    throw error;
+  }
+}
+
+async changePassword(userId, currentPassword, newPassword) {
+  try {
+    // Lấy user hiện tại (bao gồm password_hash)
+    const user = await this.getUserWithPassword(userId);
+    if (!user) {
+      throw new Error('User không tồn tại');
+    }
+
+    console.log(`🔍 [UserService] Change password for user: ${userId}`);
+    console.log(`🔍 [UserService] User has password_hash: ${!!user.password_hash}`);
+    console.log(`🔍 [UserService] Current password provided: ${currentPassword}`);
+
+    // Kiểm tra mật khẩu hiện tại
+    if (user.password_hash && user.password_hash !== null && user.password_hash !== undefined) {
+      console.log(`🔍 [UserService] User has password_hash, validating current password`);
+      
+      // Kiểm tra xem password_hash có phải là bcrypt hash không
+      const isBcryptHash = user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2y$');
+      
+      let isCurrentPasswordValid = false;
+      
+      if (isBcryptHash) {
+        // Password đã được hash bằng bcrypt
+        console.log(`🔍 [UserService] Password is bcrypt hashed, using bcrypt.compare`);
+        isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+      } else {
+        // Password được lưu dưới dạng plain text
+        console.log(`🔍 [UserService] Password is plain text, using direct comparison`);
+        isCurrentPasswordValid = (currentPassword === user.password_hash);
+      }
+      
+      console.log(`🔍 [UserService] Password comparison result: ${isCurrentPasswordValid}`);
+      if (!isCurrentPasswordValid) {
+        throw new Error('Mật khẩu hiện tại không đúng');
+      }
+    } else {
+      // User không có password_hash - cho phép set password lần đầu
+      console.log(`🔍 [UserService] User không có mật khẩu, cho phép set password lần đầu`);
+      if (currentPassword) {
+        console.log(`🔍 [UserService] User không có mật khẩu nhưng vẫn cung cấp current_password, bỏ qua validation`);
+      }
+    }
+
+    // Hash mật khẩu mới
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Cập nhật mật khẩu
+    await userRepo.update(userId, { password_hash: newPasswordHash });
+    
+    console.log(`✅ [UserService] Changed password for user: ${userId}`);
+    return true;
+  } catch (error) {
+    console.error('❌ [UserService] changePassword error:', error);
+    throw error;
+  }
 }
 
 async getbyIdSOO(id){
@@ -350,6 +448,17 @@ async getbyIdSOO(id){
   return await userRepo.findbyIdSSO(id);
 }
 
+
+
+async searchAllUsers(keyword, page = 1, limit = 10) {
+  try {
+    const result = await userRepo.find({ keyword, page, limit });
+    return result; // result.users + result.pagination
+  } catch (error) {
+    console.error("Search error:", error);
+    throw error;
+  }
 }
 
+}
 module.exports = new UserService();

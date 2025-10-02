@@ -245,6 +245,54 @@ async createSSO({ username, email, full_name, idSSO }) {
       throw error;
    }
   }
+
+  /**
+ * Tìm kiếm user theo keyword (username, email, full_name)
+ * Hỗ trợ pagination
+ * @param {Object} options
+ * @param {string} options.keyword - Từ khóa tìm kiếm
+ * @param {number} options.page - Trang hiện tại (default: 1)
+ * @param {number} options.limit - Số lượng items per page (default: 10)
+ * @returns {Promise<Object>} users + pagination info
+ */
+async find(options = {}) {
+  try {
+    const { keyword = "", page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const regex = new RegExp(keyword, "i"); // case-insensitive search
+
+    const query = keyword
+      ? {
+          $or: [
+            { username: regex },
+            { email: regex },
+            { full_name: regex }
+          ]
+        }
+      : {}; // nếu không có keyword thì lấy tất cả
+
+    const [users, total] = await Promise.all([
+      User.find(query).sort(sort).skip(skip).limit(limit).lean(),
+      User.countDocuments(query)
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in UserRepository.find:', error);
+    throw error;
+  }
+}
+
 }
 
 module.exports = new UserRepository();

@@ -52,6 +52,16 @@ class AuthController {
       });
     }
 
+    // 🔎 Check user status
+if (!user.status || user.status.toLowerCase() !== "active") {
+  console.log(`🚫 [LOGIN BLOCKED] User ${user.email || user.username} có status: ${user.status}`);
+  return res.status(403).json({
+    success: false,
+    error: 'Tài khoản bị khóa hoặc chưa kích hoạt',
+    message: 'Vui lòng liên hệ quản trị viên để được hỗ trợ'
+  });
+}
+
     // Lấy tất cả role của user từ DB
     const userRoles = await role.getUserRoles(user._id); // trả về array ['admin','user',...]
 

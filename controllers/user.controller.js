@@ -104,12 +104,18 @@ exports.deleteKeycloakUser = async (req, res) => {
 
 exports.SelectAll = async (req, res) => {
   try {
-    const userAll = await userService.viewAll();
+    const { page = 1, limit = 10, sortBy = "created_at", sortOrder = "desc" } = req.query;
+
+    const userAll = await userService.viewAll({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    });
 
     return res.json({
       success: true,
-      count: userAll.length,
-      data: userAll
+      ...userAll // chứa cả users + pagination
     });
   } catch (error) {
     console.error(error);
@@ -161,28 +167,41 @@ exports.getByNumberPhone = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    // Tạo user trên bảng user
+    // 1. Tạo user (local + keycloak)
     const user = await userService.createUser(req.body);
 
-    // Lấy role_id của quyền 'user' từ bảng role
-    const roleId  = await roleSevive.getIdByName('user'); // nếu getIdByName là async
+    // 2. Lấy danh sách roles từ body (nếu không có thì mặc định "user")
+    const rolesFromBody = req.body.roles && Array.isArray(req.body.roles) 
+      ? req.body.roles 
+      : ["user"];
 
-    if (!roleId ) {
-      return res.status(400).json({ message: 'Role "user" không tồn tại' });
+    // 3. Gán roles cho user
+    for (const roleName of rolesFromBody) {
+      const roleId = await roleSevive.getIdByName(roleName);
+      if (!roleId) {
+        console.warn(`⚠️ Role "${roleName}" không tồn tại, bỏ qua`);
+        continue;
+      }
+
+      await userRoleService.create({
+        user_id: user._id,
+        role_id: roleId,
+      });
     }
 
-    // Thêm quyền cho user mới
-    await userRoleService.create({
-      user_id: user._id,
-      role_id: roleId , // tùy thuộc hàm trả về chỉ id hay object
+    // 4. Trả về user + roles
+    res.status(201).json({
+      message: "User created successfully",
+      data: user,
+      roles: rolesFromBody
     });
-
-    res.status(201).json(user);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in create user:", err);
     res.status(400).json({ message: err.message });
   }
-}
+};
+
+
 exports.cloneUser = async (req, res) => {
   try {
     const username = req.body.username;
@@ -336,5 +355,54 @@ exports.getMe = async (req, res) => {
   } catch (err) {
     console.error('❌ getMe error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Đổi mật khẩu của user hiện tại
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { current_password, new_password } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    
+    const user = await userService.getProfile(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+    
+    // Nếu user có password_hash, current_password là bắt buộc
+    if (user.password_hash && !current_password) {
+      return res.status(400).json({ success: false, message: 'current_password là bắt buộc khi user đã có mật khẩu' });
+    }
+    
+    const result = await userService.changePassword(userId, current_password, new_password);
+    res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error('❌ changePassword error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+exports.searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query; // từ query ?q=keyword
+
+    if (!q || q.trim() === '') {
+      return res.json({ success: true, users: [] });
+    }
+
+    const users = await userService.searchAllUsers(q.trim().toLowerCase());
+
+    return res.json({ success: true, users });
+  } catch (error) {
+    console.error('Search error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

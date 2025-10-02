@@ -31,7 +31,8 @@ router.get('/me', authenticateAny, userController.getMe);
 router.get('/email/:email', authenticateAny, userController.getByEmail);
 router.get('/name/:name', authenticateAny, userController.getByName);
 router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
-
+// Đổi mật khẩu
+router.put('/change-password', authenticateAny, userController.changePassword);
 // Keycloak CRUD routes
 router.put('/keycloak/:id', authenticateAny, userController.updateKeycloakUser);
 router.get('/keycloak', authenticateAny, userController.getAllKeycloakUsers);
@@ -48,6 +49,7 @@ router.post('/cloneUser', userController.cloneUser);
 // Lấy toàn bộ user (chỉ admin)
 router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
 
+router.get('/search', authenticateAny, authorizeAny('admin'), userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)
 router.get('/:id', authenticateAny, authorizeAny('admin','manage-account'), userController.getById);
 

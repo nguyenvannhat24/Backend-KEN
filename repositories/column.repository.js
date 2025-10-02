@@ -10,7 +10,7 @@ class ColumnRepository {
   }
 
   async findAllByBoard(boardId) {
-    return await Column.find({ board_id: boardId }).sort({ order_index: 1 });
+    return await Column.find({ board_id: boardId }).sort({ order: 1 });
   }
 
   async update(id, data) {

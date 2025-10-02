@@ -36,6 +36,22 @@ class GroupMemberController {
     }
   }
 
+  // Lấy danh sách thành viên theo group_id (URL parameter)
+  async getMembersByGroup(req, res) {
+    try {
+      const { group_id } = req.params;
+      console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
+      
+      const members = await groupMemberService.getMembers(group_id);
+      console.log('🔍 [DEBUG] getMembersByGroup - members:', members);
+      
+      res.json({ success: true, data: members });
+    } catch (err) {
+      console.error('❌ [getMembersByGroup ERROR]:', err.message);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
   // Cập nhật role
   async updateRole(req, res) {
     try {

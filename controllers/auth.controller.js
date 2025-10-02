@@ -207,7 +207,8 @@ class AuthController {
         {
           userId: decoded.userId,
           email: decoded.email,
-          role: decoded.role
+          username: decoded.username,
+          roles: decoded.roles
         },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }

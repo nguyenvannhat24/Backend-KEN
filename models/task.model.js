@@ -16,7 +16,7 @@ const TaskSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 }, { 
-  collection: 'Task',
+  collection: 'Tasks',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 

@@ -3,7 +3,6 @@ const jwksClient = require('jwks-rsa');
 require('dotenv').config();
 const tokenBlacklist = require('./tokenBlacklist');
 const userService = require('../services/user.service');
-const { getUserByUsername } = require('../services/keycloak.service');
 const userRoleService = require('../services/userRole.service');
 const roleService = require('../services/role.service');
 
@@ -72,18 +71,15 @@ const authenticateAny = async (req, res, next) => {
         return res.status(400).json({ message: 'Keycloak token không có username' });
       }
 
-      // Kiểm tra user đã có trong DB chưa
+      // Kiểm tra user đã có trong DB chưa (dựa trên username từ Keycloak token)
       user = await userService.getUserByUsername(username);
       if (!user) {
-        const kcUsers = await getUserByUsername(username);
-        const kcUser = kcUsers[0];
-        if (!kcUser) return res.status(404).json({ message: 'User not found in Keycloak' });
-
+        // Tạo user mới từ thông tin Keycloak token
         user = await userService.createUserSSO({
-          username: kcUser.username,
-          email: kcUser.email,
-          full_name: `${kcUser.lastName} ${kcUser.firstName}`,
-          idSSO: kcUser.id
+          username: username,
+          email: decodedKC.email || `${username}@keycloak.local`,
+          full_name: decodedKC.name || username,
+          idSSO: decodedKC.sub
         });
 
         // Thêm quyền mặc định "user"

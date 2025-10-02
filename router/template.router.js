@@ -20,10 +20,10 @@ router.put('/:id', authenticateAny, templateController.update);
 // Delete template
 router.delete('/:id', authenticateAny, templateController.remove);
 
-module.exports = router;
-
-// Nested routes
+// Nested routes - phải đặt sau các routes chính
 router.use('/:template_id/columns', templateColumnRouter);
 router.use('/:template_id/swimlanes', templateSwimlaneRouter);
+
+module.exports = router;
 
 

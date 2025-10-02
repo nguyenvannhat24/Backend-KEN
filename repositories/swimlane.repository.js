@@ -10,7 +10,7 @@ class SwimlaneRepository {
   }
 
   async findAllByBoard(boardId) {
-    return await Swimlane.find({ board_id: boardId }).sort({ order_index: 1 });
+    return await Swimlane.find({ board_id: boardId }).sort({ order: 1 });
   }
 
   async update(id, data) {

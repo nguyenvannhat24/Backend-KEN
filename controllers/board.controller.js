@@ -127,6 +127,65 @@ class BoardController {
       });
     }
   }
+
+  // Cấu hình Board settings - Story 24
+  async configureBoardSettings(req, res) {
+    try {
+      const userId = req.user?.id;
+      const { id } = req.params;
+      const { columns, swimlanes } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không xác thực' });
+      }
+
+      // Kiểm tra quyền truy cập board
+      const board = await boardService.getBoardIfPermitted(id, userId);
+      if (board === null) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
+      if (board === 'forbidden') return res.status(403).json({ success: false, message: 'Không có quyền cấu hình board này' });
+
+      const result = await boardService.configureBoardSettings(id, { columns, swimlanes }, userId);
+
+      res.json({
+        success: true,
+        message: 'Cấu hình board thành công',
+        data: result
+      });
+    } catch (error) {
+      console.error('❌ Configure board settings error:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  // Thu gọn/mở rộng Swimlane - Story 26
+  async toggleSwimlane(req, res) {
+    try {
+      const userId = req.user?.id;
+      const { boardId, swimlaneId } = req.params;
+      const { collapsed } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không xác thực' });
+      }
+
+      const result = await boardService.toggleSwimlaneCollapse(boardId, swimlaneId, collapsed, userId);
+
+      res.json({
+        success: true,
+        message: `Swimlane đã được ${collapsed ? 'thu gọn' : 'mở rộng'}`,
+        data: result
+      });
+    } catch (error) {
+      console.error('❌ Toggle swimlane error:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
   
 }
 

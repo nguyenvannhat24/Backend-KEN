@@ -1,102 +1,62 @@
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleSevive = require('../services/role.service');
-const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail} = require('../services/keycloak.service');
+// Keycloak admin functions disabled (not required)
 
-// 🔵 Lấy danh sách user từ Keycloak
+// Keycloak admin functions disabled - not required for authentication
+// These endpoints would need keycloak.service to work
+
 exports.getAllKeycloakUsers = async (req, res) => {
-  try {
-    const users = await getUsers({ max: 50 }); // giới hạn 50 user
-    res.json({ success: true, count: users.length, data: users });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get users', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
-// 🔵 Lấy user theo ID từ Keycloak
+
 exports.getKeycloakUserById = async (req, res) => {
-  try {
-    const user = await getUserById(req.params.id);
-    if (!user) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔵 Lấy user theo username
 exports.getKeycloakUserByName = async (req, res) => {
-  try {
-    const users = await getUserByUsername(req.params.username); // nên đổi route param thành :username
-    if (!users || users.length === 0) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: users[0] }); // thường chỉ lấy 1 user đầu tiên
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔵 Lấy user theo email
 exports.getKeycloakUserByMail = async (req, res) => {
-  try {
-    const users = await getUserByEmail(req.params.email); // nên đổi route param thành :email
-    if (!users || users.length === 0) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: users[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-
-
-// 🟢 Tạo user mới trên Keycloak
 exports.createKeycloakUser = async (req, res) => {
-  try {
-    const newUser = await createUser(req.body);
-    res.status(201).json({ success: true, data: newUser });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to create user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🟠 Cập nhật user trên Keycloak
 exports.updateKeycloakUser = async (req, res) => {
-  const userId = req.params.id;
-  const updatedInfo = req.body;
-
-  try {
-    await updateUser(userId, updatedInfo);
-    res.json({ success: true, message: 'User updated successfully on Keycloak' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔴 Xóa user trên Keycloak
 exports.deleteKeycloakUser = async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    await deleteUser(userId);
-    res.json({ success: true, message: 'User deleted successfully from Keycloak' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to delete user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 // local
 
 exports.SelectAll = async (req, res) => {
   try {
-    const userAll = await userService.viewAll();
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    };
+
+    const result = await userService.viewAll(options);
 
     return res.json({
       success: true,
-      count: userAll.length,
-      data: userAll
+      data: result.users || result,
+      pagination: result.pagination || {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: result.users ? result.users.length : result.length,
+        totalPages: Math.ceil((result.users ? result.users.length : result.length) / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error(error);
@@ -273,5 +233,79 @@ exports.getMe = async (req, res) => {
   } catch (err) {
     console.error('❌ getMe error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Lấy profile đầy đủ của user hiện tại
+exports.getMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    const user = await userService.getProfile(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+    
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('❌ getMyProfile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Cập nhật profile của user hiện tại
+exports.updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    const { full_name, avatar_url } = req.body;
+    const updateData = {};
+    
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    
+    const user = await userService.updateProfile(userId, updateData);
+    res.json({ success: true, message: 'Cập nhật profile thành công', data: user });
+  } catch (error) {
+    console.error('❌ updateMyProfile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Đổi mật khẩu của user hiện tại
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { current_password, new_password } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    
+    const user = await userService.getProfile(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+    
+    // Nếu user có password_hash, current_password là bắt buộc
+    if (user.password_hash && !current_password) {
+      return res.status(400).json({ success: false, message: 'current_password là bắt buộc khi user đã có mật khẩu' });
+    }
+    
+    const result = await userService.changePassword(userId, current_password, new_password);
+    res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error('❌ changePassword error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

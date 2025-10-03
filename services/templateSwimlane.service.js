@@ -30,6 +30,23 @@ class TemplateSwimlaneService {
     if (!res) throw new Error('Không tìm thấy TemplateSwimlane');
     return true;
   }
+
+  // Thêm các methods còn thiếu
+  async findAll() {
+    return TemplateSwimlane.find().sort({ order_index: 1 }).lean();
+  }
+
+  async findById(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
+    const doc = await TemplateSwimlane.findById(id).lean();
+    if (!doc) throw new Error('Không tìm thấy TemplateSwimlane');
+    return doc;
+  }
+
+  async findByTemplate(templateId) {
+    if (!mongoose.Types.ObjectId.isValid(templateId)) throw new Error('templateId không hợp lệ');
+    return TemplateSwimlane.find({ template_id: templateId }).sort({ order_index: 1 }).lean();
+  }
 }
 
 module.exports = new TemplateSwimlaneService();

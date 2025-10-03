@@ -7,8 +7,8 @@ class ColumnController {
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      const { board_id, name, order_index } = req.body;
-      const column = await columnService.createColumn({ board_id, name, order_index, userId });
+      const { board_id, name, order } = req.body;
+      const column = await columnService.createColumn({ board_id, name, order, userId });
       res.status(201).json({ success: true, data: column });
     } catch (error) {
       console.error('❌ Column create error:', error);
@@ -71,6 +71,36 @@ class ColumnController {
       res.json({ success: true, message: 'Xóa column thành công' });
     } catch (error) {
       console.error('❌ Column delete error:', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // Reorder Columns
+  async reorder(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+      
+      const { boardId } = req.params;
+      const { columns } = req.body; // Array of {id, order}
+      
+      if (!Array.isArray(columns)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'columns phải là array' 
+        });
+      }
+
+      const result = await columnService.reorderColumns(boardId, columns, userId);
+      res.json({ 
+        success: true, 
+        message: 'Sắp xếp lại columns thành công',
+        data: result 
+      });
+    } catch (error) {
+      console.error('❌ Column reorder error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }

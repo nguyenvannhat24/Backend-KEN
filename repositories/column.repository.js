@@ -13,8 +13,10 @@ class ColumnRepository {
     return await Column.find({ board_id: boardId }).sort({ order: 1 });
   }
 
-  async update(id, data) {
-    return await Column.findByIdAndUpdate(id, data, { new: true });
+  async update(id, data, session = null) {
+    const options = { new: true };
+    if (session) options.session = session;
+    return await Column.findByIdAndUpdate(id, data, options);
   }
 
   async delete(id) {

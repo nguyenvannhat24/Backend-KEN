@@ -3,7 +3,7 @@ const service = require('../services/templateColumn.service');
 class TemplateColumnController {
   async list(req, res) {
     try {
-      const rows = await service.list(req.params.template_id);
+      const rows = await service.findAll();
       res.json({ success: true, data: rows });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -12,8 +12,37 @@ class TemplateColumnController {
 
   async create(req, res) {
     try {
-      const row = await service.create(req.params.template_id, req.body);
+      const { template_id } = req.body;
+      const row = await service.create(template_id, req.body);
       res.status(201).json({ success: true, data: row });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  // Thêm các methods còn thiếu
+  async getAll(req, res) {
+    try {
+      const rows = await service.findAll();
+      res.json({ success: true, data: rows });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  async getById(req, res) {
+    try {
+      const row = await service.findById(req.params.id);
+      res.json({ success: true, data: row });
+    } catch (err) {
+      res.status(404).json({ success: false, message: err.message });
+    }
+  }
+
+  async getByTemplate(req, res) {
+    try {
+      const rows = await service.findByTemplate(req.params.templateId);
+      res.json({ success: true, data: rows });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
@@ -28,7 +57,7 @@ class TemplateColumnController {
     }
   }
 
-  async remove(req, res) {
+  async delete(req, res) {
     try {
       await service.remove(req.params.id);
       res.json({ success: true, message: 'Xóa TemplateColumn thành công' });

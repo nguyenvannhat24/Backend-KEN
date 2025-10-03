@@ -12,4 +12,8 @@ router.get('/board/:boardId', authenticateAny, swimlaneController.getByBoard);  
 router.put('/:id', authenticateAny, swimlaneController.update);                  // Update
 router.delete('/:id', authenticateAny, swimlaneController.delete);               // Delete
 
+// Additional features
+router.put('/:id/toggle-collapse', authenticateAny, swimlaneController.toggleCollapse); // Toggle collapse
+router.put('/board/:boardId/reorder', authenticateAny, swimlaneController.reorder);      // Reorder swimlanes
+
 module.exports = router;

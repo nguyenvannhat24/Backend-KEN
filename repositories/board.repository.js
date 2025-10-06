@@ -34,8 +34,8 @@ class BoardRepository {
   }
     // Tạo board có transaction
   async createWithSession(boardData, session) {
-    const boards = await Board.create([boardData], { session });
-    return boards[0]; // vì create([]) trả mảng
+    const board = await Board.create([boardData], { session });
+    return board[0]; // vì create([]) trả mảng
   }
 
   async findMembersByUser(userId) {

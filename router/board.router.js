@@ -24,6 +24,12 @@ router.put('/:id', authenticateAny, boardController.updateBoard);
 // Xóa board (chỉ creator)
 router.delete('/:id', authenticateAny, boardController.deleteBoard);
 
+// Cấu hình Board settings - Story 24
+router.put('/:id/settings', authenticateAny, boardController.configureBoardSettings);
+
+// Thu gọn/mở rộng Swimlane - Story 26
+router.put('/:boardId/swimlanes/:swimlaneId/toggle', authenticateAny, boardController.toggleSwimlane);
+
 module.exports = router;
 
 

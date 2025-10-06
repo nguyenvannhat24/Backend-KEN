@@ -167,7 +167,7 @@ async selectedAll(){
           columns.map(col => ({
             board_id: newBoard._id,
             name: col.name,
-            order_index: col.order_index
+            order: col.order_index
           })),
           session
         );
@@ -179,7 +179,7 @@ async selectedAll(){
           swimlanes.map(lane => ({
             board_id: newBoard._id,
             name: lane.name,
-            order_index: lane.order_index
+            order: lane.order_index
           })),
           session
         );
@@ -203,6 +203,98 @@ async selectedAll(){
   }
 }
 
+  // Cấu hình Board settings - Story 24
+  async configureBoardSettings(boardId, { columns, swimlanes }, userId) {
+    try {
+      // Kiểm tra quyền truy cập
+      const board = await this.getBoardIfPermitted(boardId, userId);
+      if (board === null) throw new Error('Board không tồn tại');
+      if (board === 'forbidden') throw new Error('Không có quyền cấu hình board này');
+
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        let result = { board: board };
+
+        // Cấu hình columns nếu có
+        if (columns && Array.isArray(columns)) {
+          // Xóa columns cũ
+          await columnRepo.deleteManyByBoard(boardId, session);
+          
+          // Tạo columns mới
+          if (columns.length > 0) {
+            const newColumns = await columnRepo.insertMany(
+              columns.map((col, index) => ({
+                board_id: boardId,
+                name: col.name,
+                order: col.order || index
+              })),
+              session
+            );
+            result.columns = newColumns;
+          }
+        }
+
+        // Cấu hình swimlanes nếu có
+        if (swimlanes && Array.isArray(swimlanes)) {
+          // Xóa swimlanes cũ
+          await swimlaneRepo.deleteManyByBoard(boardId, session);
+          
+          // Tạo swimlanes mới
+          if (swimlanes.length > 0) {
+            const newSwimlanes = await swimlaneRepo.insertMany(
+              swimlanes.map((lane, index) => ({
+                board_id: boardId,
+                name: lane.name,
+                order: lane.order || index
+              })),
+              session
+            );
+            result.swimlanes = newSwimlanes;
+          }
+        }
+
+        await session.commitTransaction();
+        session.endSession();
+
+        console.log(`✅ [BoardService] Configured board settings for ${boardId}`);
+        return result;
+      } catch (txErr) {
+        await session.abortTransaction();
+        session.endSession();
+        throw txErr;
+      }
+    } catch (error) {
+      console.error('❌ [BoardService] configureBoardSettings error:', error);
+      throw error;
+    }
+  }
+
+  // Thu gọn/mở rộng Swimlane - Story 26
+  async toggleSwimlaneCollapse(boardId, swimlaneId, collapsed, userId) {
+    try {
+      // Kiểm tra quyền truy cập
+      const board = await this.getBoardIfPermitted(boardId, userId);
+      if (board === null) throw new Error('Board không tồn tại');
+      if (board === 'forbidden') throw new Error('Không có quyền thao tác trên board này');
+
+      // Kiểm tra swimlane tồn tại
+      const swimlane = await swimlaneRepo.findById(swimlaneId);
+      if (!swimlane || swimlane.board_id.toString() !== boardId) {
+        throw new Error('Swimlane không tồn tại hoặc không thuộc board này');
+      }
+
+      // Cập nhật trạng thái collapsed
+      const updatedSwimlane = await swimlaneRepo.update(swimlaneId, { collapsed: collapsed });
+      
+      console.log(`✅ [BoardService] Toggled swimlane ${swimlaneId} collapse to ${collapsed}`);
+      return updatedSwimlane;
+    } catch (error) {
+      console.error('❌ [BoardService] toggleSwimlaneCollapse error:', error);
+      throw error;
+    }
+  }
 
 }
 

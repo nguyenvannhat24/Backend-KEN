@@ -1,121 +1,62 @@
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleSevive = require('../services/role.service');
-const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail ,createUserWithPassword} = require('../services/keycloak.service');
-//
+// Keycloak admin functions disabled (not required)
 
-exports.createKeycloakUserPassword = async (req, res) => {
-  try {
-    const { username, email, full_name, status, password } = req.body;
-    const user = await createUserWithPassword(
-      { username, email, full_name, status },
-      password
-    );
-    res.json({ success: true, message: "User created in Keycloak", data: user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-// 🔵 Lấy danh sách user từ Keycloak
+// Keycloak admin functions disabled - not required for authentication
+// These endpoints would need keycloak.service to work
+
 exports.getAllKeycloakUsers = async (req, res) => {
-  try {
-    const users = await getUsers({ max: 50 }); // giới hạn 50 user
-    res.json({ success: true, count: users.length, data: users });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get users', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
-// 🔵 Lấy user theo ID từ Keycloak
+
 exports.getKeycloakUserById = async (req, res) => {
-  try {
-    const user = await getUserById(req.params.id);
-    if (!user) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔵 Lấy user theo username
 exports.getKeycloakUserByName = async (req, res) => {
-  try {
-    const users = await getUserByUsername(req.params.username); // nên đổi route param thành :username
-    if (!users || users.length === 0) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: users[0] }); // thường chỉ lấy 1 user đầu tiên
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔵 Lấy user theo email
 exports.getKeycloakUserByMail = async (req, res) => {
-  try {
-    const users = await getUserByEmail(req.params.email); // nên đổi route param thành :email
-    if (!users || users.length === 0) 
-      return res.status(404).json({ success: false, message: 'User not found in Keycloak' });
-
-    res.json({ success: true, data: users[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to get user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-
-
-// 🟢 Tạo user mới trên Keycloak
 exports.createKeycloakUser = async (req, res) => {
-  try {
-    const newUser = await createUser(req.body);
-    res.status(201).json({ success: true, data: newUser });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to create user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🟠 Cập nhật user trên Keycloak
 exports.updateKeycloakUser = async (req, res) => {
-  const userId = req.params.id;
-  const updatedInfo = req.body;
-
-  try {
-    await updateUser(userId, updatedInfo);
-    res.json({ success: true, message: 'User updated successfully on Keycloak' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 
-// 🔴 Xóa user trên Keycloak
 exports.deleteKeycloakUser = async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    await deleteUser(userId);
-    res.json({ success: true, message: 'User deleted successfully from Keycloak' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to delete user', error: err.message });
-  }
+  res.status(503).json({ success: false, message: 'Keycloak admin features disabled' });
 };
 // local
 
 exports.SelectAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, sortBy = "created_at", sortOrder = "desc" } = req.query;
-
-    const userAll = await userService.viewAll({
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    
+    const options = {
       page: parseInt(page),
       limit: parseInt(limit),
       sortBy,
       sortOrder
-    });
+    };
+
+    const result = await userService.viewAll(options);
 
     return res.json({
       success: true,
-      ...userAll // chứa cả users + pagination
+      data: result.users || result,
+      pagination: result.pagination || {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: result.users ? result.users.length : result.length,
+        totalPages: Math.ceil((result.users ? result.users.length : result.length) / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error(error);
@@ -167,41 +108,28 @@ exports.getByNumberPhone = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    // 1. Tạo user (local + keycloak)
+    // Tạo user trên bảng user
     const user = await userService.createUser(req.body);
 
-    // 2. Lấy danh sách roles từ body (nếu không có thì mặc định "user")
-    const rolesFromBody = req.body.roles && Array.isArray(req.body.roles) 
-      ? req.body.roles 
-      : ["user"];
+    // Lấy role_id của quyền 'user' từ bảng role
+    const roleId  = await roleSevive.getIdByName('user'); // nếu getIdByName là async
 
-    // 3. Gán roles cho user
-    for (const roleName of rolesFromBody) {
-      const roleId = await roleSevive.getIdByName(roleName);
-      if (!roleId) {
-        console.warn(`⚠️ Role "${roleName}" không tồn tại, bỏ qua`);
-        continue;
-      }
-
-      await userRoleService.create({
-        user_id: user._id,
-        role_id: roleId,
-      });
+    if (!roleId ) {
+      return res.status(400).json({ message: 'Role "user" không tồn tại' });
     }
 
-    // 4. Trả về user + roles
-    res.status(201).json({
-      message: "User created successfully",
-      data: user,
-      roles: rolesFromBody
+    // Thêm quyền cho user mới
+    await userRoleService.create({
+      user_id: user._id,
+      role_id: roleId , // tùy thuộc hàm trả về chỉ id hay object
     });
+
+    res.status(201).json(user);
   } catch (err) {
-    console.error("❌ Error in create user:", err);
+    console.error(err);
     res.status(400).json({ message: err.message });
   }
-};
-
-
+}
 exports.cloneUser = async (req, res) => {
   try {
     const username = req.body.username;
@@ -249,75 +177,25 @@ exports.cloneUser = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const userId = req.user.id; // lấy id từ token
-    const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
-    const isAdmin = roles.includes('admin');
-
-    if (userId == req.params.id || isAdmin) {
-      const checkUser = await userService.getUserById(req.params.id);
-      if (!checkUser) throw new Error("Không tìm thấy user bạn muốn cập nhật");
-
-      const typeAccount = checkUser.typeAccount;
-
-      // Luôn update trên DB trước
-      let user = await userService.updateUser(req.params.id, req.body);
-
-      // Nếu user này thuộc SSO thì cập nhật bên Keycloak
-      if (typeAccount === 'SSO') {
-        const id = checkUser.idSSO; // ID user trên Keycloak
-
-        // Map dữ liệu từ payload frontend sang schema của Keycloak
-        const keycloakPayload = {
-          username: req.body.username || checkUser.username,
-          email: req.body.email || checkUser.email,
-          firstName: req.body.full_name ? req.body.full_name.split(" ")[0] : checkUser.full_name,
-          lastName: req.body.full_name ? req.body.full_name.split(" ").slice(1).join(" ") : "",
-          enabled: req.body.status ? req.body.status.toLowerCase() === "active" : checkUser.status === "active",
-        };
-
-        // Nếu frontend gửi password mới thì update luôn
-        if (req.body.password) {
-          keycloakPayload.credentials = [
-            {
-              type: "password",
-              value: req.body.password,
-              temporary: false
-            }
-          ];
-        }
-
-        await updateUser(id, keycloakPayload); // gọi hàm update lên Keycloak
-      }
-
-      if (!user) return res.status(404).json({ message: "User not found" });
-      res.json(user);
-    }
+    const user = await userService.updateUser(req.params.id, req.body);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-
 exports.delete = async (req, res) => {
   try {
-    // Lấy thông tin user từ DB
-    const checkUser = await userService.getUserById(req.params.id);
-    if (!checkUser) return res.status(404).json({ message: "User not found" });
-
-    // Luôn xóa user trong DB
-    await userService.deleteUser(req.params.id);
-
-    // Nếu là user SSO thì xóa thêm trên Keycloak
-    if (checkUser.typeAccount === "SSO" && checkUser.idSSO) {
-      await deleteUser(checkUser.idSSO); // gọi Keycloak Admin API
-    }
-
-    res.json({ message: "Deleted successfully" });
+    const user = await userService.deleteUser(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'Deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-};
 
+
+};
 exports.viewProfile = async (req, res) => {
   try {
     const { userId } = req.body; // Lấy userId từ body
@@ -346,7 +224,7 @@ exports.getMe = async (req, res) => {
     res.json({
       success: true,
       data: {
-        _id: req.user.id,
+        _id: req.user._id,
         username: req.user.username,
         email: req.user.email,
         roles: req.user.roles
@@ -354,6 +232,48 @@ exports.getMe = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ getMe error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Lấy profile đầy đủ của user hiện tại
+exports.getMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    const user = await userService.getProfile(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+    
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('❌ getMyProfile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Cập nhật profile của user hiện tại
+exports.updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+    }
+    
+    const { full_name, avatar_url } = req.body;
+    const updateData = {};
+    
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    
+    const user = await userService.updateProfile(userId, updateData);
+    res.json({ success: true, message: 'Cập nhật profile thành công', data: user });
+  } catch (error) {
+    console.error('❌ updateMyProfile error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -387,22 +307,5 @@ exports.changePassword = async (req, res) => {
   } catch (error) {
     console.error('❌ changePassword error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
-  }
-};
-
-exports.searchUsers = async (req, res) => {
-  try {
-    const { q } = req.query; // từ query ?q=keyword
-
-    if (!q || q.trim() === '') {
-      return res.json({ success: true, users: [] });
-    }
-
-    const users = await userService.searchAllUsers(q.trim().toLowerCase());
-
-    return res.json({ success: true, users });
-  } catch (error) {
-    console.error('Search error:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

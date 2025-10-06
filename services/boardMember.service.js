@@ -113,7 +113,7 @@ async getBoardsByUser(user_id, roles = []) {
   }
 
   // Lấy danh sách boardMember rồi populate sang bảng Board
-  const boards = await boardMemberRepo.findWithBoards(filter);
+  const boards = await boardMemberRepo.getBoardsByUser(filter);
 
   return boards.map(bm => bm.board_id); // Trả về danh sách board
 }

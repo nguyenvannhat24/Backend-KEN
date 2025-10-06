@@ -10,4 +10,7 @@ router.get('/board/:boardId', authenticateAny, columnController.getByBoard); // 
 router.put('/:id', authenticateAny, columnController.update);                // Update
 router.delete('/:id', authenticateAny, columnController.delete);             // Delete
 
+// Additional features
+router.put('/board/:boardId/reorder', authenticateAny, columnController.reorder); // Reorder columns
+
 module.exports = router;

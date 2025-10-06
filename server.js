@@ -23,6 +23,9 @@ const templateSwimlaneRouter = require('./router/templateSwimlane.router');
 const columnRouter = require('./router/column.routes');
 const swimlaneRoutes = require('./router/swimlane.routes');
 const taskRoutes = require('./router/task.routes');
+const tagRoutes = require('./router/tag.routes');
+const commentRoutes = require('./router/comment.routes');
+const importRoutes = require('./router/import.routes');
 
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
@@ -55,12 +58,7 @@ app.use(express.urlencoded({ extended: true }));
 require('./config/db');
 
 
-//keycloack
-const { initKeycloak, testConnection } = require('./services/keycloak.service');
-(async () => {
-  await initKeycloak();
-  await testConnection(); // test kết nối
-})();
+// Keycloak admin features disabled (not required for basic authentication)
 // --- Routes ---
 app.use(cors({
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
@@ -88,6 +86,9 @@ app.use('/api/templateSwimlane',templateSwimlaneRouter);
 app.use('/api/column',columnRouter);
 app.use('/api/swimlanes', swimlaneRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/import', importRoutes);
 // --- Start server ---
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

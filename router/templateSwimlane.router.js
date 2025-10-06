@@ -1,12 +1,15 @@
-const express = require('express');
-const router = express.Router({ mergeParams: true });
+const express = require("express");
+const router = express.Router();
+const templateSwimlaneController = require("../controllers/templateSwimlane.controller");
 const { authenticateAny } = require('../middlewares/auth');
-const ctrl = require('../controllers/templateSwimlane.controller');
 
-router.get('/', authenticateAny, ctrl.list);
-router.post('/', authenticateAny, ctrl.create);
-router.put('/:id', authenticateAny, ctrl.update);
-router.delete('/:id', authenticateAny, ctrl.remove);
+// CRUD routes
+router.post("/", authenticateAny, (req, res) => templateSwimlaneController.create(req, res));
+router.get("/", authenticateAny, (req, res) => templateSwimlaneController.getAll(req, res));
+router.get("/template/:templateId", authenticateAny, (req, res) => templateSwimlaneController.getByTemplate(req, res));
+router.get("/:id", authenticateAny, (req, res) => templateSwimlaneController.getById(req, res));
+router.put("/:id", authenticateAny, (req, res) => templateSwimlaneController.update(req, res));
+router.delete("/:id", authenticateAny, (req, res) => templateSwimlaneController.delete(req, res));
 
 module.exports = router;
 

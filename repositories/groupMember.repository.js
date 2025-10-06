@@ -18,9 +18,14 @@ async findMember(user_id, group_id) {
 
   // Lấy danh sách thành viên theo group
   async getMembersByGroup(group_id) {
-    return await GroupMember.find({ group_id })
+    console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
+    
+    const members = await GroupMember.find({ group_id })
       .populate("user_id", "username email full_name")
       .lean();
+    
+    console.log('🔍 [DEBUG] getMembersByGroup - found members:', members);
+    return members;
   }
 
   // Cập nhật role

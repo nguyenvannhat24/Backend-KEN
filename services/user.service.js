@@ -1,6 +1,6 @@
 const userRepo = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
-const keycloack = require('../services/keycloak.service');
+
 /**
  * User Service - Xử lý business logic cho User
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
@@ -173,66 +173,51 @@ if (!user) {
     }
   }
 
-  async createUser(userData) {
-  try {
-    // Validate input
-    if (!userData || !userData.email) {
-      throw new Error('Email là bắt buộc');
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userData.email)) {
-      throw new Error('Email không đúng định dạng');
-    }
-
-    // Kiểm tra email đã tồn tại chưa
-    const emailExists = await userRepo.isEmailExists(userData.email);
-    if (emailExists) {
-      throw new Error('Email đã tồn tại trong hệ thống');
-    }
-
-    // Kiểm tra username đã tồn tại chưa
-    if (userData.username) {
-      const usernameExists = await userRepo.isUsernameExists(userData.username);
-      if (usernameExists) {
-        throw new Error('Username đã tồn tại trong hệ thống');
+  /**
+   * Tạo user mới
+   * @param {Object} userData - Dữ liệu user
+   * @returns {Promise<Object>} User object đã tạo
+   */
+  async createUser(userData ) {
+    try {
+      // Validate input
+      if (!userData || !userData.email) {
+        throw new Error('Email là bắt buộc');
       }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        throw new Error('Email không đúng định dạng');
+      }
+
+      // Kiểm tra email đã tồn tại chưa
+      const emailExists = await userRepo.isEmailExists(userData.email);
+      if (emailExists) {
+        throw new Error('Email đã tồn tại trong hệ thống');
+      }
+
+      // Kiểm tra username đã tồn tại chưa (nếu có)
+      if (userData.username) {
+        const usernameExists = await userRepo.isUsernameExists(userData.username);
+        if (usernameExists) {
+          throw new Error('Username đã tồn tại trong hệ thống');
+        }
+      }
+
+      // Hash password nếu có
+      if (userData.password) {
+        userData.password_hash = bcrypt.hashSync(userData.password, 10);
+        delete userData.password; // Xóa password plain text
+      }
+
+      console.log(`➕ Creating new user: ${userData.email}`);
+      return await userRepo.create(userData);
+    } catch (error) {
+      console.error('❌ Error in createUser:', error.message);
+      throw error;
     }
-
-    // Hash password nếu có
-    if (userData.password) {
-      userData.password_hash = bcrypt.hashSync(userData.password, 10);
-    }
-
-    // Lấy ra biến từ userData
-    const { username, email, full_name, status, password } = userData;
-
-    // Tạo trên Keycloak trước
-    console.log('🔑 Creating user on Keycloak...');
-    const userKeyCloak = await keycloack.createUserWithPassword(
-      { username, email, full_name, status },
-      password
-    );
-
-    // Tạo local user
-    console.log(`➕ Creating new local user: ${email}`);
-    const localUser = await userRepo.create({
-      username,
-      email,
-      full_name,
-      status,
-      idSSO: userKeyCloak.id, // liên kết với Keycloak
-      typeAccount: "SSO",
-      password_hash: userData.password_hash, // lưu hash (nếu có)
-    });
-
-    return localUser;
-  } catch (error) {
-    console.error('❌ Error in createUser:', error.message);
-    throw error;
   }
-}
 
 
 async createUserSSO({ username, email, full_name, idSSO }) {
@@ -345,24 +330,15 @@ async createUserSSO({ username, email, full_name, idSSO }) {
    * @returns {Promise<Array>} Array of users
    */
   async viewAll(options = {}) {
-  try {
-    console.log('📋 Getting all users');
-    const result = await userRepo.findAll(options);
-
-    // Luôn trả về đúng cấu trúc
-    return {
-      users: result.users,
-      totalUsers: result.pagination.total,
-      totalPages: result.pagination.pages,
-      currentPage: result.pagination.page,
-      limit: result.pagination.limit
-    };
-  } catch (error) {
-    console.error('❌ Error in viewAll:', error.message);
-    throw error;
+    try {
+      console.log('📋 Getting all users with options:', options);
+      const result = await userRepo.findAll(options);
+      return result; // Trả về cả users và pagination info
+    } catch (error) {
+      console.error('❌ Error in viewAll:', error.message);
+      throw error;
+    }
   }
-}
-
 
 async getProfile(userId) {
   if (!userId) throw new Error("UserId là bắt buộc");
@@ -448,17 +424,6 @@ async getbyIdSOO(id){
   return await userRepo.findbyIdSSO(id);
 }
 
-
-
-async searchAllUsers(keyword, page = 1, limit = 10) {
-  try {
-    const result = await userRepo.find({ keyword, page, limit });
-    return result; // result.users + result.pagination
-  } catch (error) {
-    console.error("Search error:", error);
-    throw error;
-  }
 }
 
-}
 module.exports = new UserService();

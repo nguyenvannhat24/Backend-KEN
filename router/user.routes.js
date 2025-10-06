@@ -27,6 +27,13 @@ router.get('/myRoles', authenticateAny, (req, res) => {
 // Lấy thông tin bản thân
 router.get('/me', authenticateAny, userController.getMe);
 
+// Cập nhật profile chính mình
+router.put('/me', authenticateAny, userController.updateMyProfile);
+
+// Đổi mật khẩu
+router.put('/change-password', authenticateAny, userController.changePassword);
+
+
 // Lấy user theo email / name (cụ thể)
 router.get('/email/:email', authenticateAny, userController.getByEmail);
 router.get('/name/:name', authenticateAny, userController.getByName);

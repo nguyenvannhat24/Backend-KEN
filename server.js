@@ -23,7 +23,8 @@ const templateSwimlaneRouter = require('./router/templateSwimlane.router');
 const columnRouter = require('./router/column.routes');
 const swimlaneRoutes = require('./router/swimlane.routes');
 const taskRoutes = require('./router/task.routes');
-
+const permissionRoutes = require('./router/permission.routes');
+const RolePermissionRoutes = require('./router/rolePermission.routes');
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
 app.use(session({
@@ -88,6 +89,8 @@ app.use('/api/templateSwimlane',templateSwimlaneRouter);
 app.use('/api/column',columnRouter);
 app.use('/api/swimlanes', swimlaneRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/permission',permissionRoutes);
+app.use("/api/RolePermission",RolePermissionRoutes)
 // --- Start server ---
 app.listen(port, () => {
   console.log(`✅ Server is running at http://localhost:${port}`);

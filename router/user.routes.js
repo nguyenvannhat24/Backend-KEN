@@ -47,7 +47,7 @@ router.post('/cloneUser', userController.cloneUser);
 // ==================== ADMIN ONLY ROUTES ====================
 
 // Lấy toàn bộ user (chỉ admin)
-router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
+router.get('/selectAll', authenticateAny, authorizeAny('VIEW_USER'), userController.SelectAll);
 
 router.get('/search', authenticateAny, authorizeAny('admin'), userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)

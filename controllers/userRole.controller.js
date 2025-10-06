@@ -1,5 +1,6 @@
 const userRoleService = require('../services/userRole.service');
-
+const rolePermissionService = require('../services/rolePermission.service');
+const permissionService = require('../services/permission.service');
 /**
  * UserRole Controller - Xử lý các request liên quan đến UserRole
  */
@@ -167,6 +168,49 @@ class UserRoleController {
       });
     }
   }
+
+   async getpermission(req, res) {
+  try {
+    const { id } = req.body; // 🧩 id của người dùng được truyền vào
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Thiếu id người dùng" });
+    }
+
+    // 1️⃣ Lấy tất cả vai trò (roles) của user
+    const userRoles = await userRoleService.getRoles(id);
+    if (!userRoles || userRoles.length === 0) {
+      return res.status(404).json({ success: false, message: "Người dùng chưa có vai trò nào" });
+    }
+
+    const roleIds = userRoles.map(r => r.role_id?._id).filter(Boolean);
+    const roleNames = userRoles.map(r => r.role_id.name);
+    // 2️⃣ Lấy các quyền (permissions) tương ứng với danh sách roles
+    const rolePermissions = await rolePermissionService.getByRoleIds(roleIds);
+    const permissionIds = rolePermissions.map(rp => rp.permission_id?._id).filter(Boolean);
+
+    // 3️⃣ Lấy thông tin chi tiết của các quyền
+    const permissions = await permissionService.getByIds(permissionIds);
+
+    // 4️⃣ Trả về danh sách mã quyền (code)
+    const codes = permissions.map(p => p.code);
+
+    return res.status(200).json({
+      success: true,
+      count: codes.length,
+      data: codes,
+      role: roleNames
+    });
+
+  } catch (err) {
+    console.error("❌ [getpermission] Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Lỗi khi lấy danh sách quyền"
+    });
+  }
+}
+
 }
 
 // Export methods
@@ -177,5 +221,6 @@ module.exports = {
   createUserRole: userRoleController.createUserRole.bind(userRoleController),
   updateUserRole: userRoleController.updateUserRole.bind(userRoleController),
   deleteUserRole: userRoleController.deleteUserRole.bind(userRoleController),
-  deleteRolesByUser: userRoleController.deleteRolesByUser.bind(userRoleController)
+  deleteRolesByUser: userRoleController.deleteRolesByUser.bind(userRoleController),
+  getpermission: userRoleController.getpermission.bind(userRoleController)
 };

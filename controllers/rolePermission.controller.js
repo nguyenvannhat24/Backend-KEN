@@ -39,16 +39,25 @@ class RolePermissionController {
     }
   }
   
+
 async update(req, res) {
-  try {
-    const roleId = req.params.roleId;
-    const { permissions } = req.body;
-    const updated = await rolePermissionService.updateByRoleId(roleId, permissions);
-    res.status(200).json({ success: true, data: updated });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    try {
+      const { currentUserId, permissions } = req.body; // từ FE gửi
+
+      if (!currentUserId || !permissions) {
+        return res.status(400).json({ success: false, message: 'Thiếu userId hoặc permissions' });
+      }
+
+      // Gọi service để xử lý logic role riêng/nếu trùng
+      const result = await rolePermissionService.updateRolePermissions(currentUserId, permissions);
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      console.error('❌ Error in update role permissions controller:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
   }
-}
+
 
   async delete(req, res) {
     try {

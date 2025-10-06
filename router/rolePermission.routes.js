@@ -15,7 +15,9 @@ router.get('/:id', rolePermissionController.getById);
 router.get('/role/:roleId', rolePermissionController.getByRole);
 
 // Cập nhật
-router.put('/:roleId', rolePermissionController.update);
+router.put('/RolePermission', rolePermissionController.update);
+
+
 
 // Xóa
 router.delete('/:id', rolePermissionController.delete);

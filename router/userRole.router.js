@@ -14,4 +14,7 @@ router.delete('/user/:userId', authenticateAny, authorizeAny('admin'), userRoleC
 
 // lấy dánh sách permission theo id của user
 router.get('/permissionUser',userRoleController.getpermission);
+
+
+
 module.exports = router;

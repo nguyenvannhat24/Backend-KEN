@@ -195,7 +195,18 @@ class TaskService {
       throw new Error('Bạn không có quyền xóa task này');
     }
 
-    return await taskRepo.delete(id);
+    // Soft delete instead of hard delete
+    return await taskRepo.softDelete(id);
+  }
+
+  async getAllTasksWithDeleted(options = {}) {
+    try {
+      const result = await taskRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllTasksWithDeleted:', error);
+      throw error;
+    }
   }
 
   // Kéo thả task (drag & drop)

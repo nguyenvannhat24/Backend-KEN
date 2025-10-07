@@ -89,7 +89,13 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/import', importRoutes);
+
+// Admin route - Xem tất cả bản ghi đã xóa
+const userController = require('./controllers/user.controller');
+const { authenticateAny, authorizeAny } = require('./middlewares/auth');
+app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
+
 // --- Start server ---
 app.listen(port, () => {
-  console.log(`✅ Server is running at http://localhost:${port}`);
+  console.log('Server is running at http://localhost:' + port);
 });

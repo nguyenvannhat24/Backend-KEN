@@ -49,8 +49,19 @@ class TemplateService {
     if (!tpl) throw new Error('Template không tồn tại');
     if (String(tpl.created_by) !== String(userId)) throw new Error('Chỉ creator được xóa template');
 
-    await Template.findByIdAndDelete(id);
+    // Soft delete instead of hard delete
+    await templateRepo.softDelete(id);
     return true;
+  }
+
+  async getAllTemplatesWithDeleted(options = {}) {
+    try {
+      const result = await templateRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllTemplatesWithDeleted:', error);
+      throw error;
+    }
   }
 }
 

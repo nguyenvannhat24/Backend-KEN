@@ -128,6 +128,64 @@ class TaskRepository {
     const query = Task.deleteMany({ board_id });
     return session ? query.session(session) : query;
   }
+
+  async softDelete(id) {
+    try {
+      return await Task.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      );
+    } catch (error) {
+      console.error('Error soft deleting task:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'created_at',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const tasks = await Task.find({
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      })
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      const total = await Task.countDocuments({
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      });
+
+      return {
+        tasks,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all tasks with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new TaskRepository();

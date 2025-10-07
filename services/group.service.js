@@ -120,9 +120,20 @@ class GroupService {
       throw new Error("Chỉ người tạo group mới được xóa group");
     }
 
-    const deleted = await groupRepo.delete(id);
+    // Soft delete
+    const deleted = await groupRepo.softDelete(id);
     if (!deleted) throw new Error("Không tìm thấy group để xoá");
     return true;
+  }
+
+  async getAllGroupsWithDeleted(options = {}) {
+    try {
+      const result = await groupRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllGroupsWithDeleted:', error);
+      throw error;
+    }
   }
 }
 

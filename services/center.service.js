@@ -18,7 +18,18 @@ class CenterService {
   }
 
   async deleteCenter(id) {
-    return await centerRepo.delete(id);
+    // Soft delete instead of hard delete
+    return await centerRepo.softDelete(id);
+  }
+
+  async getAllCentersWithDeleted(options = {}) {
+    try {
+      const result = await centerRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllCentersWithDeleted:', error);
+      throw error;
+    }
   }
 }
 

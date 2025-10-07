@@ -5,7 +5,7 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 
 // CRUD Group
 router.post('/', authenticateAny, groupController.create);
-router.get('/', authenticateAny, groupController.getAll); // Chỉ groups của user
+router.get('/', authenticateAny, groupController.getAll); // Chỉ groups của user // lọc theo statust
 router.get('/:id', authenticateAny, groupController.getById);
 router.put('/:id', authenticateAny, groupController.update);
 router.delete('/:id', authenticateAny, groupController.delete);

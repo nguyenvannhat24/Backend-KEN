@@ -12,4 +12,9 @@ router.put('/:id', authenticateAny, authorizeAny('admin'), userRoleController.up
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userRoleController.deleteUserRole);
 router.delete('/user/:userId', authenticateAny, authorizeAny('admin'), userRoleController.deleteRolesByUser);
 
+// lấy dánh sách permission theo id của user
+router.get('/permissionUser',userRoleController.getpermission);
+
+
+
 module.exports = router;

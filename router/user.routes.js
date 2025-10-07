@@ -56,6 +56,8 @@ router.post('/cloneUser', userController.cloneUser);
 // Lấy toàn bộ user (chỉ admin)
 router.get('/selectAll', authenticateAny,authorizeAny('USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
 
+router.get('/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
+
 router.get('/search', authenticateAny,authorizeAny('VIEW_USER'), userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)
 router.get('/:id', authenticateAny, authorizeAny('VIEW_USER'), userController.getById);
@@ -68,5 +70,11 @@ router.put('/:id', authenticateAny,authorizeAny('USER_DELETE'), userController.u
 
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.delete);
+
+// Soft delete user (chỉ admin)
+router.delete('/soft/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.softDelete);
+
+// Restore user (chỉ admin)
+router.put('/restore/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.restore);
 
 module.exports = router;

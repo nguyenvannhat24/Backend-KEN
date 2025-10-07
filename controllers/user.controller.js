@@ -410,6 +410,7 @@ exports.changePassword = async (req, res) => {
   }
 };
 
+
 exports.searchUsers = async (req, res) => {
   try {
     const { q } = req.query; // từ query ?q=keyword
@@ -445,5 +446,110 @@ exports.updateMyProfile = async (req, res) => {
   } catch (error) {
     console.error('❌ updateMyProfile error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+}
+// Soft delete user (chỉ admin)
+exports.softDelete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await userService.softDeleteUser(id);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Đã xóa mềm user thành công',
+      data: user
+    });
+  } catch (error) {
+    console.error('Error in softDelete:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// Restore user (chỉ admin)
+exports.restore = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await userService.restoreUser(id);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại hoặc chưa bị xóa' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Khôi phục user thành công',
+      data: user
+    });
+  } catch (error) {
+    console.error('Error in restore:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// Get all users including soft deleted (chỉ admin)
+exports.getAllWithDeleted = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, sort = 'created_at', order = 'desc' } = req.query;
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy: sort,
+      sortOrder: order
+    };
+    
+    const result = await userService.getAllUsersWithDeleted(options);
+    
+    res.json({ 
+      success: true, 
+      data: result.users,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    console.error('Error in getAllWithDeleted:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// Get all deleted records (admin only) - Consolidated endpoint
+exports.getAllDeletedRecords = async (req, res) => {
+  try {
+    const { 
+      type = 'all',        // user, board, group, center, task, template, all
+      page = 1, 
+      limit = 10, 
+      sort = 'deleted_at', 
+      order = 'desc' 
+    } = req.query;
+
+    const validTypes = ['all', 'user', 'board', 'group', 'center', 'task', 'template'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: `Type không hợp lệ. Chỉ chấp nhận: ${validTypes.join(', ')}`
+      });
+    }
+
+    const result = await userService.getAllDeletedRecords({
+      type,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort,
+      order
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('Error in getAllDeletedRecords:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server',
+      error: error.message 
+    });
+
   }
 };

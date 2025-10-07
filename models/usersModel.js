@@ -58,6 +58,7 @@ const UserSchema = new mongoose.Schema({
     default: Date.now
   },
 
+
   typeAccount: {
     type: String,
        enum: ['Local', 'SSO'],
@@ -66,6 +67,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
       
   },
+
+  
+  // Soft delete
+  deleted_at: {
+    type: Date,
+    default: null
+  }
+
   
 }, {
   collection: 'users',
@@ -74,10 +83,20 @@ const UserSchema = new mongoose.Schema({
 
 // Indexes để tối ưu hóa truy vấn (email và username đã có unique nên không cần thêm index)
 UserSchema.index({ status: 1 });
+UserSchema.index({ deleted_at: 1 });
 
 // Middleware để cập nhật updated_at trước khi save
 UserSchema.pre('save', function(next) {
   this.updated_at = new Date();
+  next();
+});
+
+// Middleware để tự động lọc bỏ các bản ghi đã soft delete
+UserSchema.pre(/^find/, function(next) {
+  // Chỉ thêm điều kiện nếu query chưa có deleted_at hoặc $or
+  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+    this.where({ deleted_at: null });
+  }
   next();
 });
 

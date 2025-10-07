@@ -93,22 +93,19 @@ async selectedAll(){
     // Chỉ Creator (trong BoardMember) mới được xóa
     const isCreator = await boardRepo.isCreatorFromMember(userId, boardId);
     if (!isCreator) throw new Error('FORBIDDEN');
-    // Cascade delete theo Backlog: BoardMembers, Columns, Swimlanes, Tasks
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    
+    // Soft delete thay vì hard delete
+    await boardRepo.softDelete(boardId);
+    return true;
+  }
+
+  async getAllBoardsWithDeleted(options = {}) {
     try {
-      await require('../repositories/boardMember.repository').deleteManyByBoard(boardId, session);
-      await require('../repositories/column.repository').deleteManyByBoard(boardId, session);
-      await require('../repositories/swimlane.repository').deleteManyByBoard(boardId, session);
-      await require('../repositories/task.repository').deleteManyByBoard(boardId, session);
-      await boardRepo.deleteById(boardId);
-      await session.commitTransaction();
-      session.endSession();
-      return true;
-    } catch (e) {
-      await session.abortTransaction();
-      session.endSession();
-      throw e;
+      const result = await boardRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllBoardsWithDeleted:', error);
+      throw error;
     }
   }
 

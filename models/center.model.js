@@ -46,6 +46,11 @@ const CenterSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     maxlength: 100
+  },
+  
+  deleted_at: {
+    type: Date,
+    default: null
   }
 }, {
   collection: 'Centers',
@@ -56,6 +61,7 @@ const CenterSchema = new mongoose.Schema({
 CenterSchema.index({ name: 1 });
 CenterSchema.index({ status: 1 });
 CenterSchema.index({ createdAt: -1 });
+CenterSchema.index({ deleted_at: 1 });
 
 // Virtual để lấy số lượng members của center
 CenterSchema.virtual('memberCount', {
@@ -76,5 +82,13 @@ CenterSchema.virtual('groupCount', {
 // Ensure virtual fields are serialized
 CenterSchema.set('toJSON', { virtuals: true });
 CenterSchema.set('toObject', { virtuals: true });
+
+// Middleware to filter out soft deleted records
+CenterSchema.pre(/^find/, function(next) {
+  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+    this.where({ deleted_at: null });
+  }
+  next();
+});
 
 module.exports = mongoose.model('Center', CenterSchema);

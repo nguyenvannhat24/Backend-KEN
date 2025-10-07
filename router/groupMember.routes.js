@@ -7,7 +7,7 @@ const { authenticateAny } = require("../middlewares/auth");
 router.post("/", authenticateAny, groupMemberController.addMember);
 
 // Lấy danh sách thành viên trong group
-router.get("/", authenticateAny, groupMemberController.getMembers);
+router.post("/list",authenticateAny, groupMemberController.getMembers);
 
 // Lấy danh sách thành viên theo group_id
 router.get("/:group_id", authenticateAny, groupMemberController.getMembersByGroup);

@@ -456,8 +456,6 @@ async getbyIdSOO(id){
   return await userRepo.findbyIdSSO(id);
 }
 
-
-
 async searchAllUsers(keyword, page = 1, limit = 10) {
   try {
     const result = await userRepo.find({ keyword, page, limit });
@@ -467,6 +465,139 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
     throw error;
   }
 }
+  /**
+   * Soft delete user
+   */
+  async softDeleteUser(id) {
+    try {
+      const user = await userRepo.findById(id);
+      if (!user) {
+        throw new Error('User không tồn tại');
+      }
+      
+      const deletedUser = await userRepo.softDelete(id);
+      console.log('Soft deleted user:', id);
+      return deletedUser;
+    } catch (error) {
+      console.error('Error in softDeleteUser:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore user
+   */
+  async restoreUser(id) {
+    try {
+      const user = await userRepo.restore(id);
+      if (!user) {
+        throw new Error('User không tồn tại hoặc chưa bị xóa');
+      }
+      
+      console.log('Restored user:', id);
+      return user;
+    } catch (error) {
+      console.error('Error in restoreUser:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all users including soft deleted
+   */
+  async getAllUsersWithDeleted(options = {}) {
+    try {
+      const result = await userRepo.findAllWithDeleted(options);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllUsersWithDeleted:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all deleted records from all entities (for admin)
+   */
+  async getAllDeletedRecords({ type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' }) {
+    try {
+      const result = {
+        success: true,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        data: {}
+      };
+
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sortBy: sort,
+        sortOrder: order
+      };
+
+      const fetchDeleted = async (repoName, key) => {
+        const repo = require(`../repositories/${repoName}.repository`);
+        if (repo.findAllWithDeleted) {
+          const data = await repo.findAllWithDeleted(options);
+          return data;
+        }
+        return null;
+      };
+
+      if (type === 'all' || type === 'user') {
+        const userData = await userRepo.findAllWithDeleted(options);
+        result.data.users = userData.users;
+        result.data.users_pagination = userData.pagination;
+      }
+
+      if (type === 'all' || type === 'board') {
+        const boardData = await fetchDeleted('board', 'boards');
+        if (boardData) {
+          result.data.boards = boardData.boards;
+          result.data.boards_pagination = boardData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'group') {
+        const groupData = await fetchDeleted('group', 'groups');
+        if (groupData) {
+          result.data.groups = groupData.groups;
+          result.data.groups_pagination = groupData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'center') {
+        const centerData = await fetchDeleted('center', 'centers');
+        if (centerData) {
+          result.data.centers = centerData.centers;
+          result.data.centers_pagination = centerData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'task') {
+        const taskData = await fetchDeleted('task', 'tasks');
+        if (taskData) {
+          result.data.tasks = taskData.tasks;
+          result.data.tasks_pagination = taskData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'template') {
+        const templateData = await fetchDeleted('template', 'templates');
+        if (templateData) {
+          result.data.templates = templateData.templates;
+          result.data.templates_pagination = templateData.pagination;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error in getAllDeletedRecords:', error);
+      throw error;
+    }
+  }
+
+
+
 
 }
 module.exports = new UserService();

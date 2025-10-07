@@ -94,9 +94,14 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/import', importRoutes);
 
+
 app.use('/api/permission',permissionRoutes);
 app.use("/api/RolePermission",RolePermissionRoutes)
+
+app.use('/api',user)
+
+
 // --- Start server ---
 app.listen(port, () => {
-  console.log(`✅ Server is running at http://localhost:${port}`);
+  console.log('Server is running at http://localhost:' + port);
 });

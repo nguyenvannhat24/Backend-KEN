@@ -118,14 +118,22 @@ const authenticateAny = async (req, res, next) => {
 /**
  * Middleware kiểm tra quyền
  */
-const authorizeAny = (...allowed) => async (req, res, next) => {
+const authorizeAny = (allowed) => async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-    const { id } = req.user;
+    // Chuẩn hóa allowed thành mảng
+    let allowedCodes = [];
+    if (typeof allowed === 'string') {
+      allowedCodes = allowed.split(' ').map(s => s.trim());
+    } else if (Array.isArray(allowed)) {
+      allowedCodes = allowed;
+    }
+
+    const { id, roles } = req.user;
 
     // 1️⃣ Kiểm tra role trực tiếp
-    if (req.user.roles && req.user.roles.some(r => allowed.includes(r))) {
+    if (roles && roles.some(r => allowedCodes.includes(r))) {
       return next();
     }
 
@@ -139,13 +147,13 @@ const authorizeAny = (...allowed) => async (req, res, next) => {
     const permissions = await permissionService.getByIds(permissionIds);
     const codes = permissions.map(p => p.code);
 
-    if (codes.some(c => allowed.includes(c))) {
+    if (codes.some(c => allowedCodes.includes(c))) {
       return next();
     }
 
     return res.status(403).json({
       success: false,
-      message: `Bạn không có quyền hoặc vai trò cần thiết (${allowed.join(', ')})`
+      message: `Bạn không có quyền hoặc vai trò cần thiết (${allowedCodes.join(', ')})`
     });
 
   } catch (err) {
@@ -153,6 +161,7 @@ const authorizeAny = (...allowed) => async (req, res, next) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 /**
  * Middleware admin only

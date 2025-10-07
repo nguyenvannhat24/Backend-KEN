@@ -58,6 +58,24 @@ async update(req, res) {
     }
   }
 
+async updatePermisson(req, res) {
+    try {
+      const { idRole, permissions } = req.body; // từ FE gửi
+
+      if (!idRole || !permissions) {
+        return res.status(400).json({ success: false, message: 'Thiếu userId hoặc permissions' });
+      }
+
+      // Gọi service để xử lý logic 
+      const result = await rolePermissionService.updateByRoleId(idRole, permissions);
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      console.error('❌ Error in update role permissions controller:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
 
   async delete(req, res) {
     try {

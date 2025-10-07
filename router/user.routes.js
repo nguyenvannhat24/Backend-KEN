@@ -54,19 +54,19 @@ router.post('/cloneUser', userController.cloneUser);
 // ==================== ADMIN ONLY ROUTES ====================
 
 // Lấy toàn bộ user (chỉ admin)
-router.get('/selectAll', authenticateAny, authorizeAny('VIEW_USER'), userController.SelectAll);
+router.get('/selectAll', authenticateAny,authorizeAny('USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
 
-router.get('/search', authenticateAny, authorizeAny('admin'), userController.searchUsers);
+router.get('/search', authenticateAny,authorizeAny('VIEW_USER'), userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)
-router.get('/:id', authenticateAny, authorizeAny('admin','manage-account'), userController.getById);
+router.get('/:id', authenticateAny, authorizeAny('VIEW_USER'), userController.getById);
 
 // Tạo mới user (chỉ admin)
-router.post('/', authenticateAny, authorizeAny('admin'), userController.create);
+router.post('/', authenticateAny,authorizeAny('USER_CREATE'), userController.create);
 
 // Cập nhật user (admin hoặc chính mình)
-router.put('/:id', authenticateAny, userController.update);
+router.put('/:id', authenticateAny,authorizeAny('USER_DELETE'), userController.update);
 
 // Xóa user (chỉ admin)
-router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
+router.delete('/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.delete);
 
 module.exports = router;

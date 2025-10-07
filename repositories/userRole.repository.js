@@ -46,6 +46,30 @@ class UserRoleRepository {
     async  findByUserAndRole(user_id, role_id){
         return await UserRole.findOne({ user_id, role_id });
     }
+/**
+ * Đếm số người dùng theo role
+     * @param {string} roleName - tên role (ví dụ: "admin", "user", ...)
+ */
+
+
+ async  countUsersByRole(roleId) {
+  try {
+    // 1️⃣ Đếm số bản ghi trong bảng UserRole có role_id tương ứng
+    const count = await UserRole.countDocuments({ role_id: roleId, status: 'active' });
+
+    // 2️⃣ Lấy danh sách user tương ứng (nếu muốn in ra)
+    const users = await UserRole.find({ role_id: roleId, status: 'active' })
+      .populate('user_id', 'username email');
+
+    console.log(`✅ Role ID "${roleId}" hiện có ${count} người dùng đang active.`);
+    console.log('👥 Danh sách người dùng:', users.map(u => u.user_id));
+
+    return count;
+  } catch (error) {
+    console.error('❌ Lỗi khi đếm người dùng theo role_id:', error);
+    return 0;
+  }
+}
 }
 
 module.exports = new UserRoleRepository();

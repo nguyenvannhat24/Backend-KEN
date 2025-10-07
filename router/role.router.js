@@ -12,26 +12,60 @@ const router = express.Router();
 // ==================== PUBLIC ROUTES ====================
 
 // Lấy role của user hiện tại
-router.get('/my-role', authenticateAny, roleController.getUserRole);
+router.get(
+  '/my-role',
+  authenticateAny,
+  roleController.getUserRole
+);
 
-// ==================== ADMIN ROUTES ====================
+// ==================== ADMIN / PERMISSION ROUTES ====================
 
-// Lấy tất cả roles (chỉ admin)
-router.get('/', authenticateAny, authorizeAny('admin'), roleController.getAllRoles);
+// Lấy tất cả roles
+router.get(
+  '/',
+  authenticateAny,
+  authorizeAny('ROLE_VIEW'),
+  roleController.getAllRoles
+);
 
-// Lấy role theo ID (chỉ admin)
-router.get('/:id', authenticateAny, authorizeAny('admin'), roleController.getRoleById);
+// Lấy role theo ID
+router.get(
+  '/:id',
+  authenticateAny,
+  authorizeAny('ROLE_VIEW'),
+  roleController.getRoleById
+);
 
-// Lấy role theo tên (chỉ admin)
-router.get('/name/:name', authenticateAny, authorizeAny('admin'), roleController.getRoleByName);
+// Lấy role theo tên
+router.get(
+  '/name/:name',
+  authenticateAny,
+  authorizeAny('ROLE_VIEW'),
+  roleController.getRoleByName
+);
 
-// Tạo role mới (chỉ admin)
-router.post('/', authenticateAny,authorizeAny('admin'), roleController.createRole);
+// Tạo role mới
+router.post(
+  '/',
+  authenticateAny,
+  authorizeAny('ROLE_MANAGE_PERMISSION'),
+  roleController.createRole
+);
 
-// Cập nhật role (chỉ admin)
-router.put('/:id', authenticateAny, authorizeAny('admin'), roleController.updateRole);
+// Cập nhật role
+router.put(
+  '/:id',
+  authenticateAny,
+  authorizeAny('ROLE_MANAGE_PERMISSION'),
+  roleController.updateRole
+);
 
-// Xóa role (chỉ admin)
-router.delete('/:id', authenticateAny, authorizeAny('admin'), roleController.deleteRole);
+// Xóa role
+router.delete(
+  '/:id',
+  authenticateAny,
+  authorizeAny('ROLE_MANAGE_PERMISSION'),
+  roleController.deleteRole
+);
 
 module.exports = router;

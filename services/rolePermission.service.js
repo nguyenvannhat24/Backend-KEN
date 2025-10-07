@@ -78,56 +78,90 @@ class RolePermissionService {
 
   return { success: true, message: "Cập nhật quyền cho role thành công" };
 }
-async  updateRolePermissions(userId, permissionIds) {
+ async countUsersByRole(roleId) {
+    try {
+      const role = await Role.findById(roleId);
+      if (!role) {
+        console.log(`❌ Không tìm thấy role có id: ${roleId}`);
+        return 0;
+      }
+
+      const count = await UserRole.countDocuments({ role_id: role._id, status: 'active' });
+      console.log(`📊 Role '${role.name}' đang được dùng bởi ${count} user.`);
+      return count;
+    } catch (error) {
+      console.error("❌ Lỗi khi đếm user theo role:", error);
+      return 0;
+    }
+  }
+async updateRolePermissions(userId, permissionIds) {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     console.log("🔹 Bắt đầu cập nhật role và permission cho user:", userId);
 
-    // 1️⃣ Lấy tất cả role hiện tại của user 
-    const userRoles = await userRoleRepository.findRolesByUser(userId); // đây chính là các role mà user có trong bảng user role
-    console.log("🔹 Role hiện tại của user:", userRoles);
+    // 1️⃣ Lấy tất cả role của user
+      const userRoles = await userRoleRepository.findRolesByUser(userId);
+      console.log("🔹 Role hiện tại của user:", userRoles);
 
     let roleId;
 
-    if (userRoles.length === 1) {
-      // Nếu user chỉ có 1 role, dùng luôn role đó
-       roleId = userRoles[0].role_id._id.toString(); // sai ở đây roleId phải là userRoles.role_id. nếu lấy như này thì là lấy id của userRole ko liên quan đến permisson
-      console.log("🔹 Dùng role hiện tại:", roleId);
-    } else {
-      // Nếu user có nhiều role => tạo role riêng cho user
-      const newRole = await Role.create({ name: `role_for_${userId}` }, { session });
-      roleId = newRole._id.toString();
-      console.log("🔹 Tạo role mới:", roleId);
+    if (userRoles.length > 0) {
+      const currentRole = userRoles[0].role_id;
+      const count = await this.countUsersByRole(currentRole._id);
 
-      // Gán role mới cho user
-      await UserRole.create({ user_id: userId, role_id: roleId }, { session });
-      console.log("🔹 Gán role mới cho user:", roleId);
+      console.log(`📊 Số user đang dùng role '${currentRole.name}':`, count);
+
+      if (count > 1) {
+        // 🧱 Nếu có nhiều user đang dùng role này → tạo role riêng
+        const existingPrivateRole = await Role.findOne({ name: `role_for_${userId}` });
+        if (existingPrivateRole) {
+          console.log("⚠️ Role riêng đã tồn tại:", existingPrivateRole._id);
+          roleId = existingPrivateRole._id;
+        } else {
+          const newRole = await Role.create([{ name: `role_for_${userId}` }], { session });
+          roleId = newRole[0]._id;
+          console.log("🆕 Tạo role riêng:", roleId);
+
+          // Gán role mới cho user
+          await UserRole.create([{ user_id: userId, role_id: roleId }], { session });
+          console.log("👤 Gán role mới cho user:", userId);
+        }
+      } else {
+        // ✅ Nếu chỉ mình user này có role đó → dùng luôn role cũ
+        roleId = currentRole._id;
+        console.log("✅ Dùng role hiện tại:", roleId);
+      }
+    } else {
+      // 🧩 Nếu user chưa có role nào → tạo mới hoàn toàn
+      const newRole = await Role.create([{ name: `role_for_${userId}` }], { session });
+      roleId = newRole[0]._id;
+      console.log("🆕 User chưa có role, tạo mới:", roleId);
+
+      await UserRole.create([{ user_id: userId, role_id: roleId }], { session });
     }
 
-    // 2️⃣ Xóa permission cũ chỉ của role này
-    await rolePermissionRepository.deleteByRoleId(roleId, { session }); // đoạn này xóa thì lấy id của role_id để xóa trong bảng rolePermisson
-    console.log("🔹 Xóa permission cũ của role:", roleId);
+    // 2️⃣ Xóa permission cũ của role này
+    await rolePermissionRepository.deleteByRoleId(roleId, { session });
+    console.log("🧹 Đã xóa permission cũ của role:", roleId);
 
     // 3️⃣ Thêm permission mới
-    let insertedIds = [];
-    if (permissionIds.length > 0) {
-      const newRolePermissions = permissionIds.map(pid => ({
+    if (permissionIds?.length > 0) {
+      const newPermissions = permissionIds.map(pid => ({
         role_id: roleId,
         permission_id: pid
       }));
 
-      const insertedPermissions = await rolePermissionRepository.insertMany(newRolePermissions, { session });
-      insertedIds = insertedPermissions.map(p => p._id.toString());
-      console.log("🔹 Permission mới đã thêm:", insertedIds);
+      const inserted = await rolePermissionRepository.insertMany(newPermissions, { session });
+      console.log("✅ Permission mới đã thêm:", inserted.map(p => p._id.toString()));
     }
 
     await session.commitTransaction();
     session.endSession();
-    console.log("✅ Cập nhật role và permission thành công");
 
-    return { roleId, updatedPermissions: insertedIds };
+    console.log("🎯 Cập nhật role và permission thành công cho user:", userId);
+    return { success: true, roleId };
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -135,7 +169,6 @@ async  updateRolePermissions(userId, permissionIds) {
     throw err;
   }
 }
-
 
 }
 

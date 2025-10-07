@@ -14,9 +14,11 @@ router.get('/:id', rolePermissionController.getById);
 // Lấy danh sách permission theo role
 router.get('/role/:roleId', rolePermissionController.getByRole);
 
-// Cập nhật
+// Cập nhật permisson cho từng người dùng
 router.put('/RolePermission', rolePermissionController.update);
 
+// cập nhất permission cho role theo id role 
+router.put('/updatePermisson', rolePermissionController.updatePermisson);
 
 
 // Xóa

@@ -55,7 +55,7 @@ router.post('/cloneUser', userController.cloneUser);
 
 
 // Lấy toàn bộ user (chỉ admin)
-router.get('/selectAll', authenticateAny,authorizeAny('USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
+router.get('/selectAll', authenticateAny,authorizeAny('System_Manager USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
 
 
 

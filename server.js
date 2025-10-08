@@ -102,8 +102,9 @@ app.use("/api/RolePermission",RolePermissionRoutes);
 
 app.use('/api',user);
 
-app.use('/img',uploadImg);
-app.use('/uploads', express.static('uploads'));
+app.use('/api/img',uploadImg); // thêm và lấu ulr
+
+app.use('/api/uploads', express.static('uploads'));
 
 // --- Start server ---
 app.listen(port, () => {

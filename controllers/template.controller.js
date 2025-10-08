@@ -14,7 +14,12 @@ class TemplateController {
 
   async list(req, res) {
     try {
-      const tpls = await templateService.listTemplates();
+      const id_user = req.user?.id;
+      if(!id_user){
+        return;
+      }
+
+      const tpls = await templateService.listTemplates(id_user);
       res.json({ success: true, data: tpls });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });

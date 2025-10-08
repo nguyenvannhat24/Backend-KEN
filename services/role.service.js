@@ -101,63 +101,75 @@ class RoleService {
    * @returns {Object|null} Role đã cập nhật hoặc null
    */
   async updateRole(id, updateData) {
-    try {
-      console.log(`📋 [RoleService] updateRole - Updating role ID: ${id}`, updateData);
-      
-      // Check if role exists
-      const existingRole = await RoleRepository.findById(id);
-      if (!existingRole) {
-        console.log(`⚠️ [RoleService] updateRole - Role not found with ID: ${id}`);
-        return null;
-      }
-
-      // If updating name, check if new name already exists
-      if (updateData.name && updateData.name !== existingRole.name) {
-        const nameExists = await RoleRepository.findByName(updateData.name.trim());
-        if (nameExists) {
-          throw new Error('Tên role đã tồn tại');
-        }
-      }
-
-      const updatedRole = await RoleRepository.update(id, updateData);
-      console.log(`✅ [RoleService] updateRole - Updated role: ${updatedRole.name}`);
-      return updatedRole;
-    } catch (error) {
-      console.error('❌ [RoleService] updateRole - Error:', error);
-      throw error;
+  try {
+    console.log(`📋 [RoleService] updateRole - Updating role ID: ${id}`, updateData);
+    
+    // Check if role exists
+    const existingRole = await RoleRepository.findById(id);
+    if (!existingRole) {
+      console.log(`⚠️ [RoleService] updateRole - Role not found with ID: ${id}`);
+      return null;
     }
+
+    // ❌ Không cho cập nhật role System_Manager
+    if (existingRole.name === "System_Manager") {
+      throw new Error("Role System_Manager không được cập nhật");
+    }
+
+    // Nếu đổi tên, kiểm tra tên mới đã tồn tại chưa
+    if (updateData.name && updateData.name !== existingRole.name) {
+      const nameExists = await RoleRepository.findByName(updateData.name.trim());
+      if (nameExists) {
+        throw new Error('Tên role đã tồn tại');
+      }
+    }
+
+    const updatedRole = await RoleRepository.update(id, updateData);
+    console.log(`✅ [RoleService] updateRole - Updated role: ${updatedRole.name}`);
+    return updatedRole;
+  } catch (error) {
+    console.error('❌ [RoleService] updateRole - Error:', error);
+    throw error;
   }
+}
+
 
   /**
    * Xóa role
    * @param {String} id - ID của role
    * @returns {Object|null} Role đã xóa hoặc null
    */
-  async deleteRole(id) {
-    try {
-      console.log(`📋 [RoleService] deleteRole - Deleting role ID: ${id}`);
-      
-      // Check if role exists
-      const existingRole = await RoleRepository.findById(id);
-      if (!existingRole) {
-        console.log(`⚠️ [RoleService] deleteRole - Role not found with ID: ${id}`);
-        return null;
-      }
+async deleteRole(id) {
+  try {
+    console.log(`📋 [RoleService] deleteRole - Deleting role ID: ${id}`);
 
-      // Check if role is being used by any user
-      const usersWithRole = await UserRoleRepository.findByRoleId(id);
-      if (usersWithRole && usersWithRole.length > 0) {
-        throw new Error('Không thể xóa role đang được sử dụng bởi user');
-      }
-
-      const deletedRole = await RoleRepository.delete(id);
-      console.log(`✅ [RoleService] deleteRole - Deleted role: ${deletedRole.name}`);
-      return deletedRole;
-    } catch (error) {
-      console.error('❌ [RoleService] deleteRole - Error:', error);
-      throw error;
+    // Check if role exists
+    const existingRole = await RoleRepository.findById(id);
+    if (!existingRole) {
+      console.log(`⚠️ [RoleService] deleteRole - Role not found with ID: ${id}`);
+      return null;
     }
+
+    // ❌ Không cho xóa role System_Manager
+    if (existingRole.name === "System_Manager") {
+      throw new Error("Role System_Manager không được xóa");
+    }
+
+    // Check if role is being used by any user
+    const usersWithRole = await UserRoleRepository.findByRoleId(id);
+    if (usersWithRole && usersWithRole.length > 0) {
+      throw new Error('Không thể xóa role đang được sử dụng bởi user');
+    }
+
+    const deletedRole = await RoleRepository.delete(id);
+    console.log(`✅ [RoleService] deleteRole - Deleted role: ${deletedRole.name}`);
+    return deletedRole;
+  } catch (error) {
+    console.error('❌ [RoleService] deleteRole - Error:', error);
+    throw error;
   }
+}
+
 
   /**
    * Lấy role của user

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/userPoint.model');
+const User = require('../models/usersModel');
 const upload = require('../config/multer'); // file multer config
 const fs = require('fs');
 const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
@@ -19,7 +19,7 @@ router.post('/users/:id/avatar', authenticateAny ,upload.single('avatar'), async
     }
 
     // Lưu đường dẫn mới vào DB
-    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const avatarPath = `/uploads/${req.file.filename}`;
     user.avatar_url = avatarPath;
     await user.save();
 
@@ -28,5 +28,21 @@ router.post('/users/:id/avatar', authenticateAny ,upload.single('avatar'), async
     res.status(400).json({ message: err.message });
   }
 });
+
+router.get('/users/:id/avatar', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('avatar_url');
+    if (!user) return res.status(404).json({ message: 'User không tồn tại' });
+
+    if (!user.avatar_url) {
+      return res.json({ avatar_url: '/uploads/default-avatar.png' });
+    }
+
+    res.json({ avatar_url: user.avatar_url });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 module.exports = router;

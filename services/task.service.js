@@ -177,6 +177,7 @@ class TaskService {
   }
 
   // Xóa task
+ // Xóa task
   async deleteTask(id, userId) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error('Task ID không hợp lệ');
@@ -185,20 +186,24 @@ class TaskService {
     const task = await taskRepo.findById(id);
     if (!task) throw new Error('Task không tồn tại');
 
+    // Convert userId to string for comparison
+    const userIdStr = userId?.toString();
+
     // Kiểm tra user là thành viên của board
     const isMember = await boardRepo.isMember(userId, task.board_id._id?.toString?.() || task.board_id.toString());
     if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
     // Chỉ cho phép creator hoặc assigned user xóa
-    if (task.created_by._id.toString() !== userId && 
-        (!task.assigned_to || task.assigned_to._id.toString() !== userId)) {
+    const createdById = task.created_by?._id?.toString() || task.created_by?.toString();
+    const assignedToId = task.assigned_to?._id?.toString() || task.assigned_to?.toString();
+    
+    if (createdById !== userIdStr && (!assignedToId || assignedToId !== userIdStr)) {
       throw new Error('Bạn không có quyền xóa task này');
     }
 
     // Soft delete instead of hard delete
     return await taskRepo.softDelete(id);
   }
-
 
   // Kéo thả task (drag & drop)
   async moveTask(task_id, new_column_id, new_swimlane_id = null, userId) {

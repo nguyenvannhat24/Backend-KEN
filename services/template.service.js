@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Template = require('../models/template.model');
-
+const templateRepo = require('../repositories/template.repository');
+const roleRepository = require('../repositories/role.repository');
+const userRoleRepo = require('../repositories/userRole.repository');
 class TemplateService {
   async createTemplate({ name, description, userId }) {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -13,9 +15,25 @@ class TemplateService {
     return doc;
   }
 
-  async listTemplates() {
-    return Template.find().lean();
-  }
+async listTemplates(id_user) {
+  // 1️⃣ Lấy role admin
+  const adminRole = await roleRepository.findByName("admin");
+  if (!adminRole) throw new Error("Không tìm thấy role admin");
+
+ const adminRoleId = adminRole._id;
+
+  // 2️⃣ Lấy danh sách user có role admin
+  const adminUsers = await userRoleRepo.findUserByIdRole(adminRoleId);
+  const adminIds = adminUsers.map(u => u.user_id); // mảng các _id admin
+
+  // 3️⃣ Lấy template do user hiện tại hoặc admin tạo
+  const templates = await Template.find({
+    created_by: { $in: [id_user, ...adminIds] }
+  }).lean();
+
+  return templates;
+}
+
 
   async getTemplateById(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('ID không hợp lệ');

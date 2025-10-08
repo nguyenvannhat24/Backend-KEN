@@ -17,16 +17,33 @@ async findMember(user_id, group_id) {
 
 
   // Lấy danh sách thành viên theo group
-  async getMembersByGroup(group_id) {
-    console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
-    
-    const members = await GroupMember.find({ group_id })
-      .populate("user_id", "username email full_name")
-      .lean();
-    
-    console.log('🔍 [DEBUG] getMembersByGroup - found members:', members);
-    return members;
-  }
+async getMembersByGroup(group_id) {
+  console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
+
+  const members = await GroupMember.find({
+    group_id: group_id
+  })
+    .populate({
+      path: "user_id",
+      select: "username email full_name avatar_url deleted_at",
+      match: { deleted_at: null } // chỉ user chưa soft-delete
+    })
+    .populate({
+      path: "group_id",
+      select: "name deleted_at",
+      match: { deleted_at: null } // chỉ group chưa soft-delete
+    })
+    .lean();
+
+  // Lọc member mà cả user và group đều hợp lệ
+  const validMembers = members.filter(m => m.user_id !== null && m.group_id !== null);
+
+  console.log('🔍 [DEBUG] getMembersByGroup - valid members:', validMembers);
+  return validMembers;
+}
+
+
+
 
   // Cập nhật role
   async updateRole(user_id, group_id, role_in_group) {

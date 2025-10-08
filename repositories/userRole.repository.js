@@ -22,6 +22,12 @@ class UserRoleRepository {
             .populate("role_id") // trả thêm thông tin role
             .lean();
     }
+    // lấy tất cả user theo role id
+    async findUserByIdRole(roleId){
+      return await UserRole.find({ role_id: roleId.toString() })
+           
+            .lean();
+    }
 
     // Thêm mới user-role
     async create(userRoleData) {
@@ -71,7 +77,34 @@ class UserRoleRepository {
     return 0;
   }
 }
+async deleteManyByIds(ids) {
+  return await UserRole.deleteMany({ _id: { $in: ids } });
+}
+ async findByUser(userId) {
+    if (!userId) throw new Error('❌ userId bị thiếu');
 
+    // Trả về mảng các document UserRole của user
+    const userRoles = await UserRole.find({ user_id: userId }).populate('role_id'); 
+    // populate('role_id') nếu bạn muốn lấy thông tin role chi tiết
+
+    return userRoles;
+  }
+
+/* Tìm 1 user-role theo ID
+   * @param {string} userRoleId - ID của user-role
+   * @returns {Promise<Object|null>} user-role hoặc null nếu không tìm thấy
+   */
+  async findById(userRoleId) {
+    if (!userRoleId) throw new Error('userRoleId bị thiếu');
+
+    try {
+      const userRole = await UserRole.findById(userRoleId).lean();
+      return userRole; // trả về object hoặc null
+    } catch (error) {
+      console.error('❌ Error in UserRoleRepository.findById:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserRoleRepository();

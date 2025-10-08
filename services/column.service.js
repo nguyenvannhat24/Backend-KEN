@@ -41,7 +41,8 @@ class ColumnService {
     const boardRepo = require('../repositories/board.repository');
     const isMember = await boardRepo.isMember(userId, col.board_id.toString());
     if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
-    return await columnRepo.delete(id);
+    // Soft delete instead of hard delete
+    return await columnRepo.softDelete(id);
   }
 
   // Reorder columns

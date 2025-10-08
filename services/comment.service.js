@@ -137,8 +137,9 @@ class CommentService {
         throw new Error('Bạn không có quyền xóa comment này');
       }
 
-      const deleted = await commentRepo.delete(id);
-      console.log(`✅ [CommentService] Deleted comment ${id}`);
+      // Soft delete comment
+      const deleted = await commentRepo.softDelete(id);
+      console.log(`✅ [CommentService] Soft deleted comment ${id}`);
       return deleted;
     } catch (error) {
       console.error('❌ [CommentService] deleteComment error:', error);

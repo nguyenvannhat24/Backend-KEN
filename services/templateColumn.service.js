@@ -26,7 +26,9 @@ class TemplateColumnService {
 
   async remove(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
-    const res = await TemplateColumn.findByIdAndDelete(id).lean();
+    const templateColumnRepo = require('../repositories/templateColumn.repository');
+    // Soft delete instead of hard delete
+    const res = await templateColumnRepo.softDelete(id);
     if (!res) throw new Error('Không tìm thấy TemplateColumn');
     return true;
   }

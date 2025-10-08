@@ -548,6 +548,54 @@ async getbyIdSOO(id){
         }
       }
 
+      if (type === 'all' || type === 'column') {
+        const columnData = await fetchDeleted('column', 'columns');
+        if (columnData) {
+          result.data.columns = columnData.columns;
+          result.data.columns_pagination = columnData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'swimlane') {
+        const swimlaneData = await fetchDeleted('swimlane', 'swimlanes');
+        if (swimlaneData) {
+          result.data.swimlanes = swimlaneData.swimlanes;
+          result.data.swimlanes_pagination = swimlaneData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'templatecolumn') {
+        const templateColumnData = await fetchDeleted('templateColumn', 'templateColumns');
+        if (templateColumnData) {
+          result.data.templateColumns = templateColumnData.templateColumns;
+          result.data.templateColumns_pagination = templateColumnData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'templateswimlane') {
+        const templateSwimlaneData = await fetchDeleted('templateSwimlane', 'templateSwimlanes');
+        if (templateSwimlaneData) {
+          result.data.templateSwimlanes = templateSwimlaneData.templateSwimlanes;
+          result.data.templateSwimlanes_pagination = templateSwimlaneData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'tag') {
+        const tagData = await fetchDeleted('tag', 'tags');
+        if (tagData) {
+          result.data.tags = tagData.tags;
+          result.data.tags_pagination = tagData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'comment') {
+        const commentData = await fetchDeleted('comment', 'comments');
+        if (commentData) {
+          result.data.comments = commentData.comments;
+          result.data.comments_pagination = commentData.pagination;
+        }
+      }
+
       return result;
     } catch (error) {
       console.error('Error in getAllDeletedRecords:', error);

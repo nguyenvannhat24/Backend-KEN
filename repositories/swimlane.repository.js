@@ -34,6 +34,64 @@ class SwimlaneRepository {
     const query = Swimlane.deleteMany({ board_id: boardId });
     return session ? query.session(session) : query;
   }
+
+  // ==================== SOFT DELETE METHODS ====================
+
+  async softDelete(id) {
+    try {
+      return await Swimlane.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      );
+    } catch (error) {
+      console.error('Error soft deleting swimlane:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = {
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      };
+
+      const [swimlanes, total] = await Promise.all([
+        Swimlane.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Swimlane.countDocuments(query)
+      ]);
+
+      return {
+        swimlanes,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all swimlanes with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new SwimlaneRepository();

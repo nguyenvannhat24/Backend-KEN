@@ -14,7 +14,7 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 router.post(
   '/',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_GROUP'),
+  authorizeAny('GROUP_MANAGE'),
   groupController.create
 );
 
@@ -29,7 +29,7 @@ router.get(
 router.get(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_VIEW_GROUP'),
+  authorizeAny('GROUP_MANAGE_MEMBERS'),
   groupController.getById
 );
 
@@ -37,7 +37,7 @@ router.get(
 router.put(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_GROUP'),
+  authorizeAny('GROUP_MANAGE'),
   groupController.update
 );
 
@@ -45,7 +45,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_GROUP'),
+  authorizeAny('GROUP_MANAGE'),
   groupController.delete
 );
 

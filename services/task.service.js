@@ -199,15 +199,6 @@ class TaskService {
     return await taskRepo.softDelete(id);
   }
 
-  async getAllTasksWithDeleted(options = {}) {
-    try {
-      const result = await taskRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllTasksWithDeleted:', error);
-      throw error;
-    }
-  }
 
   // Kéo thả task (drag & drop)
   async moveTask(task_id, new_column_id, new_swimlane_id = null, userId) {

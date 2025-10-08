@@ -46,6 +46,7 @@ class UserRoleRepository {
     async  findByUserAndRole(user_id, role_id){
         return await UserRole.findOne({ user_id, role_id });
     }
+
 /**
  * Đếm số người dùng theo role
      * @param {string} roleName - tên role (ví dụ: "admin", "user", ...)
@@ -70,6 +71,7 @@ class UserRoleRepository {
     return 0;
   }
 }
+
 }
 
 module.exports = new UserRoleRepository();

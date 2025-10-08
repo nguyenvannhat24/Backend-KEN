@@ -126,15 +126,6 @@ class GroupService {
     return true;
   }
 
-  async getAllGroupsWithDeleted(options = {}) {
-    try {
-      const result = await groupRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllGroupsWithDeleted:', error);
-      throw error;
-    }
-  }
 }
 
 module.exports = new GroupService();

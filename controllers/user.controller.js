@@ -490,30 +490,6 @@ exports.restore = async (req, res) => {
   }
 };
 
-// Get all users including soft deleted (chỉ admin)
-exports.getAllWithDeleted = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, sort = 'created_at', order = 'desc' } = req.query;
-    
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sortBy: sort,
-      sortOrder: order
-    };
-    
-    const result = await userService.getAllUsersWithDeleted(options);
-    
-    res.json({ 
-      success: true, 
-      data: result.users,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    console.error('Error in getAllWithDeleted:', error);
-    res.status(500).json({ success: false, message: error.message || 'Server error' });
-  }
-};
 
 // Get all deleted records (admin only) - Consolidated endpoint
 exports.getAllDeletedRecords = async (req, res) => {
@@ -526,7 +502,7 @@ exports.getAllDeletedRecords = async (req, res) => {
       order = 'desc' 
     } = req.query;
 
-    const validTypes = ['all', 'user', 'board', 'group', 'center', 'task', 'template'];
+    const validTypes = ['all', 'user', 'board', 'group', 'center', 'task', 'template', 'column', 'swimlane', 'templatecolumn', 'templateswimlane', 'tag', 'comment'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({
         success: false,

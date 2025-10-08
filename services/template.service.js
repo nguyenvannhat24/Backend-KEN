@@ -54,15 +54,6 @@ class TemplateService {
     return true;
   }
 
-  async getAllTemplatesWithDeleted(options = {}) {
-    try {
-      const result = await templateRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllTemplatesWithDeleted:', error);
-      throw error;
-    }
-  }
 }
 
 module.exports = new TemplateService();

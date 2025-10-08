@@ -114,9 +114,9 @@ class TagService {
       // Xóa tất cả TaskTag liên quan
       await taskTagRepo.deleteByTagId(id);
 
-      // Xóa tag
-      const deleted = await tagRepo.delete(id);
-      console.log(`✅ [TagService] Deleted tag: ${existingTag.name}`);
+      // Soft delete tag
+      const deleted = await tagRepo.softDelete(id);
+      console.log(`✅ [TagService] Soft deleted tag: ${existingTag.name}`);
       return deleted;
     } catch (error) {
       console.error('❌ [TagService] deleteTag error:', error);

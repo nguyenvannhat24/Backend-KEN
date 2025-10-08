@@ -26,7 +26,9 @@ class TemplateSwimlaneService {
 
   async remove(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
-    const res = await TemplateSwimlane.findByIdAndDelete(id).lean();
+    const templateSwimlaneRepo = require('../repositories/templateSwimlane.repository');
+    // Soft delete instead of hard delete
+    const res = await templateSwimlaneRepo.softDelete(id);
     if (!res) throw new Error('Không tìm thấy TemplateSwimlane');
     return true;
   }

@@ -24,6 +24,7 @@ class UserPointRepository {
   async delete(id) {
     return UserPoint.findByIdAndDelete(id).lean();
   }
+
 }
 
 module.exports = new UserPointRepository();

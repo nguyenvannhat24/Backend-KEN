@@ -329,7 +329,7 @@ async createUserSSO({ username, email, full_name, idSSO }) {
   }
 
   /**
-   * Xóa user
+   * Xóa user (soft delete)
    * @param {string} id - ObjectId của user
    * @returns {Promise<Object|null>} User object đã xóa hoặc null
    */
@@ -339,8 +339,8 @@ async createUserSSO({ username, email, full_name, idSSO }) {
         throw new Error('ID không được để trống');
       }
 
-      console.log(`🗑️ Deleting user: ${id}`);
-      return await userRepo.delete(id);
+      console.log(`🗑️ Soft deleting user: ${id}`);
+      return await userRepo.softDelete(id);
     } catch (error) {
       console.error('❌ Error in deleteUser:', error.message);
       throw error;
@@ -505,15 +505,6 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
   /**
    * Get all users including soft deleted
    */
-  async getAllUsersWithDeleted(options = {}) {
-    try {
-      const result = await userRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllUsersWithDeleted:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get all deleted records from all entities (for admin)
@@ -586,6 +577,54 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
         if (templateData) {
           result.data.templates = templateData.templates;
           result.data.templates_pagination = templateData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'column') {
+        const columnData = await fetchDeleted('column', 'columns');
+        if (columnData) {
+          result.data.columns = columnData.columns;
+          result.data.columns_pagination = columnData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'swimlane') {
+        const swimlaneData = await fetchDeleted('swimlane', 'swimlanes');
+        if (swimlaneData) {
+          result.data.swimlanes = swimlaneData.swimlanes;
+          result.data.swimlanes_pagination = swimlaneData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'templatecolumn') {
+        const templateColumnData = await fetchDeleted('templateColumn', 'templateColumns');
+        if (templateColumnData) {
+          result.data.templateColumns = templateColumnData.templateColumns;
+          result.data.templateColumns_pagination = templateColumnData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'templateswimlane') {
+        const templateSwimlaneData = await fetchDeleted('templateSwimlane', 'templateSwimlanes');
+        if (templateSwimlaneData) {
+          result.data.templateSwimlanes = templateSwimlaneData.templateSwimlanes;
+          result.data.templateSwimlanes_pagination = templateSwimlaneData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'tag') {
+        const tagData = await fetchDeleted('tag', 'tags');
+        if (tagData) {
+          result.data.tags = tagData.tags;
+          result.data.tags_pagination = tagData.pagination;
+        }
+      }
+
+      if (type === 'all' || type === 'comment') {
+        const commentData = await fetchDeleted('comment', 'comments');
+        if (commentData) {
+          result.data.comments = commentData.comments;
+          result.data.comments_pagination = commentData.pagination;
         }
       }
 

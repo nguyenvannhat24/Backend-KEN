@@ -99,15 +99,6 @@ async selectedAll(){
     return true;
   }
 
-  async getAllBoardsWithDeleted(options = {}) {
-    try {
-      const result = await boardRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllBoardsWithDeleted:', error);
-      throw error;
-    }
-  }
 
  async cloneBoard(id_template, { title, description, userId }) {
   try {
@@ -216,8 +207,8 @@ async selectedAll(){
 
         // Cấu hình columns nếu có
         if (columns && Array.isArray(columns)) {
-          // Xóa columns cũ
-          await columnRepo.deleteManyByBoard(boardId, session);
+          // Soft delete columns cũ
+          await columnRepo.softDeleteManyByBoard(boardId, session);
           
           // Tạo columns mới
           if (columns.length > 0) {
@@ -235,8 +226,8 @@ async selectedAll(){
 
         // Cấu hình swimlanes nếu có
         if (swimlanes && Array.isArray(swimlanes)) {
-          // Xóa swimlanes cũ
-          await swimlaneRepo.deleteManyByBoard(boardId, session);
+          // Soft delete swimlanes cũ
+          await swimlaneRepo.softDeleteManyByBoard(boardId, session);
           
           // Tạo swimlanes mới
           if (swimlanes.length > 0) {

@@ -53,8 +53,12 @@ router.post('/cloneUser', userController.cloneUser);
 
 // ==================== ADMIN ONLY ROUTES ====================
 
+
 // Lấy toàn bộ user (chỉ admin)
 router.get('/selectAll', authenticateAny,authorizeAny('USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
+
+
+
 
 router.get('/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
 

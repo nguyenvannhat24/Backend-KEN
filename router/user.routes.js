@@ -52,7 +52,10 @@ router.post('/cloneUser', userController.cloneUser);
 
 // ==================== ADMIN ONLY ROUTES ====================
 
-// Lấy toàn bộ user (chỉ admin)
+// Lấy toàn bộ user (chỉ admin) - Route chính
+router.get('/', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
+
+// Lấy toàn bộ user (chỉ admin) - Route alias
 router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
 
 // Lấy user theo ID (admin hoặc chính mình)

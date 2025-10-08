@@ -46,6 +46,7 @@ class UserRoleRepository {
     async  findByUserAndRole(user_id, role_id){
         return await UserRole.findOne({ user_id, role_id });
     }
+
 }
 
 module.exports = new UserRoleRepository();

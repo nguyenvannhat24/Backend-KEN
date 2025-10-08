@@ -306,7 +306,7 @@ async createUserSSO({ username, email, full_name, idSSO }) {
   }
 
   /**
-   * Xóa user
+   * Xóa user (soft delete)
    * @param {string} id - ObjectId của user
    * @returns {Promise<Object|null>} User object đã xóa hoặc null
    */
@@ -316,8 +316,8 @@ async createUserSSO({ username, email, full_name, idSSO }) {
         throw new Error('ID không được để trống');
       }
 
-      console.log(`🗑️ Deleting user: ${id}`);
-      return await userRepo.delete(id);
+      console.log(`🗑️ Soft deleting user: ${id}`);
+      return await userRepo.softDelete(id);
     } catch (error) {
       console.error('❌ Error in deleteUser:', error.message);
       throw error;
@@ -464,15 +464,6 @@ async getbyIdSOO(id){
   /**
    * Get all users including soft deleted
    */
-  async getAllUsersWithDeleted(options = {}) {
-    try {
-      const result = await userRepo.findAllWithDeleted(options);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllUsersWithDeleted:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get all deleted records from all entities (for admin)

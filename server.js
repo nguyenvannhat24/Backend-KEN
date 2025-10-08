@@ -72,6 +72,11 @@ app.use(cors({
 // Route public (không cần login)
 app.use('/api', userRouter(keycloak));
 
+// Admin route for viewing all deleted records
+const userController = require('./controllers/user.controller');
+const { authenticateAny, authorizeAny } = require('./middlewares/auth');
+app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
+
 //k
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);

@@ -55,6 +55,64 @@ class TagRepository {
       }
     ]);
   }
+
+  // ==================== SOFT DELETE METHODS ====================
+
+  async softDelete(id) {
+    try {
+      return await Tag.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      );
+    } catch (error) {
+      console.error('Error soft deleting tag:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = {
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      };
+
+      const [tags, total] = await Promise.all([
+        Tag.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Tag.countDocuments(query)
+      ]);
+
+      return {
+        tags,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all tags with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new TagRepository();

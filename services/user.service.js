@@ -468,5 +468,155 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
   }
 }
 
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete user - Set deleted_at and change status to inactive
+ * @param {string} id - User ID
+ * @returns {Promise<Object>} Updated user
+ */
+async softDeleteUser(id) {
+  try {
+    console.log(`🗑️ Soft deleting user: ${id}`);
+    const user = await userRepo.softDelete(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    console.log(`✅ User soft deleted successfully: ${id}`);
+    return user;
+  } catch (error) {
+    console.error('❌ Error soft deleting user:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Restore soft deleted user
+ * @param {string} id - User ID
+ * @returns {Promise<Object>} Restored user
+ */
+async restoreUser(id) {
+  try {
+    console.log(`♻️ Restoring user: ${id}`);
+    const user = await userRepo.restore(id);
+    if (!user) {
+      throw new Error('User not found or not deleted');
+    }
+    console.log(`✅ User restored successfully: ${id}`);
+    return user;
+  } catch (error) {
+    console.error('❌ Error restoring user:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get all users including deleted ones (admin only)
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Users with pagination
+ */
+async getAllUsersWithDeleted(options = {}) {
+  try {
+    console.log('📋 Getting all users including deleted');
+    const result = await userRepo.findAllWithDeleted(options);
+    return result;
+  } catch (error) {
+    console.error('❌ Error getting users with deleted:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get all deleted records across different entity types (admin only)
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>} Deleted records with pagination
+ */
+async getAllDeletedRecords({ type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' }) {
+  try {
+    console.log(`📋 Getting deleted records - type: ${type}`);
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sort]: order === 'desc' ? -1 : 1 }
+    };
+
+    let results = {};
+
+    if (type === 'all' || type === 'user') {
+      const userRepo = require('../repositories/user.repository');
+      results.users = await userRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'board') {
+      const boardRepo = require('../repositories/board.repository');
+      results.boards = await boardRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'group') {
+      const groupRepo = require('../repositories/group.repository');
+      results.groups = await groupRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'task') {
+      const taskRepo = require('../repositories/task.repository');
+      results.tasks = await taskRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'template') {
+      const templateRepo = require('../repositories/template.repository');
+      results.templates = await templateRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'column') {
+      const columnRepo = require('../repositories/column.repository');
+      results.columns = await columnRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'swimlane') {
+      const swimlaneRepo = require('../repositories/swimlane.repository');
+      results.swimlanes = await swimlaneRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'center') {
+      const centerRepo = require('../repositories/center.repository');
+      results.centers = await centerRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'templatecolumn') {
+      const templateColumnRepo = require('../repositories/templateColumn.repository');
+      results.templateColumns = await templateColumnRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'templateswimlane') {
+      const templateSwimlaneRepo = require('../repositories/templateSwimlane.repository');
+      results.templateSwimlanes = await templateSwimlaneRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'tag') {
+      const tagRepo = require('../repositories/tag.repository');
+      results.tags = await tagRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'comment') {
+      const commentRepo = require('../repositories/comment.repository');
+      results.comments = await commentRepo.findAllWithDeleted(options);
+    }
+
+    return {
+      success: true,
+      type,
+      data: results,
+      pagination: {
+        page: options.page,
+        limit: options.limit
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error getting deleted records:', error.message);
+    throw error;
+  }
+}
+
 }
 module.exports = new UserService();

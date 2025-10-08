@@ -84,6 +84,71 @@ try {
       throw error;
     }
 }
+
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete board
+ */
+async softDelete(id) {
+  try {
+    return await Board.findByIdAndUpdate(
+      id,
+      { deleted_at: new Date() },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error soft deleting board:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all boards including soft-deleted ones (admin only)
+ */
+async findAllWithDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const query = {
+      $or: [
+        { deleted_at: null },
+        { deleted_at: { $ne: null } }
+      ]
+    };
+
+    const [boards, total] = await Promise.all([
+      Board.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Board.countDocuments(query)
+    ]);
+
+    return {
+      boards,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding all boards with deleted:', error);
+    throw error;
+  }
+}
+
 }
 
 module.exports = new BoardRepository();

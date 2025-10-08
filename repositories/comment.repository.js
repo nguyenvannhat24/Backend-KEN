@@ -56,6 +56,66 @@ class CommentRepository {
   async deleteByUserId(userId) {
     return await Comment.deleteMany({ user_id: userId });
   }
+
+  // ==================== SOFT DELETE METHODS ====================
+
+  async softDelete(id) {
+    try {
+      return await Comment.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      );
+    } catch (error) {
+      console.error('Error soft deleting comment:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'created_at',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = {
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      };
+
+      const [comments, total] = await Promise.all([
+        Comment.find(query)
+          .populate('task_id', 'title')
+          .populate('user_id', 'username email full_name')
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Comment.countDocuments(query)
+      ]);
+
+      return {
+        comments,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all comments with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CommentRepository();

@@ -293,6 +293,100 @@ async find(options = {}) {
   }
 }
 
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete user - Set deleted_at timestamp and change status to inactive
+ * @param {string} id - User ID
+ * @returns {Promise<Object|null>} Updated user
+ */
+async softDelete(id) {
+  try {
+    return await User.findByIdAndUpdate(
+      id,
+      {
+        deleted_at: new Date(),
+        status: 'inactive'
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Restore soft deleted user - Clear deleted_at and set status to active
+ * @param {string} id - User ID
+ * @returns {Promise<Object|null>} Restored user
+ */
+async restore(id) {
+  try {
+    return await User.findOneAndUpdate(
+      { _id: id, deleted_at: { $ne: null } },
+      {
+        deleted_at: null,
+        status: 'active'
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error restoring user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all users including soft-deleted ones (admin only)
+ * Bypasses the soft delete middleware by explicitly querying for all records
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Users with pagination
+ */
+async findAllWithDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    // Use $or to bypass the middleware
+    const query = {
+      $or: [
+        { deleted_at: null },
+        { deleted_at: { $ne: null } }
+      ]
+    };
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query)
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding all users with deleted:', error);
+    throw error;
+  }
+}
+
 }
 
 module.exports = new UserRepository();

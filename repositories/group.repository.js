@@ -31,6 +31,65 @@ class GroupRepository {
     name: name
   }).lean();
 }
+
+// ==================== SOFT DELETE METHODS ====================
+
+async softDelete(id) {
+  try {
+    return await Group.findByIdAndUpdate(
+      id,
+      { deleted_at: new Date() },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error soft deleting group:', error);
+    throw error;
+  }
+}
+
+async findAllWithDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const query = {
+      $or: [
+        { deleted_at: null },
+        { deleted_at: { $ne: null } }
+      ]
+    };
+
+    const [groups, total] = await Promise.all([
+      Group.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Group.countDocuments(query)
+    ]);
+
+    return {
+      groups,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding all groups with deleted:', error);
+    throw error;
+  }
+}
+
 }
 
 module.exports = new GroupRepository();

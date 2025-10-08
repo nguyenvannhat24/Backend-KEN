@@ -46,6 +46,12 @@ const CenterSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     maxlength: 100
+  },
+  
+  // Soft delete
+  deleted_at: {
+    type: Date,
+    default: null
   }
 }, {
   collection: 'Centers',
@@ -56,6 +62,16 @@ const CenterSchema = new mongoose.Schema({
 CenterSchema.index({ name: 1 });
 CenterSchema.index({ status: 1 });
 CenterSchema.index({ createdAt: -1 });
+CenterSchema.index({ deleted_at: 1 });
+
+// Middleware to filter soft-deleted records
+CenterSchema.pre(/^find/, function(next) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
+    this.where({ deleted_at: null });
+  }
+  next();
+});
 
 // Virtual để lấy số lượng members của center
 CenterSchema.virtual('memberCount', {

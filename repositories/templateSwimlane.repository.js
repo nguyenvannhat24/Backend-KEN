@@ -32,6 +32,64 @@ class TemplateSwimlaneRepository {
     async findByTemplateId(templateId) {
       return await TemplateSwimlane.find({ template_id: templateId }).lean();
     }
+
+  // ==================== SOFT DELETE METHODS ====================
+
+  async softDelete(id) {
+    try {
+      return await TemplateSwimlane.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      ).lean();
+    } catch (error) {
+      console.error('Error soft deleting template swimlane:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = {
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      };
+
+      const [templateSwimlanes, total] = await Promise.all([
+        TemplateSwimlane.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        TemplateSwimlane.countDocuments(query)
+      ]);
+
+      return {
+        templateSwimlanes,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all template swimlanes with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new TemplateSwimlaneRepository();

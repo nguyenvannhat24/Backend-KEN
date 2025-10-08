@@ -447,3 +447,100 @@ exports.updateMyProfile = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+// ==================== SOFT DELETE ENDPOINTS ====================
+
+/**
+ * Soft delete user - Admin only
+ */
+exports.softDelete = async (req, res) => {
+  try {
+    const user = await userService.softDeleteUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // If SSO user, disable on Keycloak too
+    if (user.typeAccount === 'SSO' && user.idSSO) {
+      try {
+        await updateUser(user.idSSO, { enabled: false });
+      } catch (err) {
+        console.error('Failed to disable Keycloak user:', err);
+      }
+    }
+    
+    res.json({ success: true, message: 'User soft deleted successfully', data: user });
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Restore soft deleted user - Admin only
+ */
+exports.restore = async (req, res) => {
+  try {
+    const user = await userService.restoreUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found or not deleted' });
+    }
+    
+    // If SSO user, enable on Keycloak too
+    if (user.typeAccount === 'SSO' && user.idSSO) {
+      try {
+        await updateUser(user.idSSO, { enabled: true });
+      } catch (err) {
+        console.error('Failed to enable Keycloak user:', err);
+      }
+    }
+    
+    res.json({ success: true, message: 'User restored successfully', data: user });
+  } catch (error) {
+    console.error('Error restoring user:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get all users including deleted ones - Admin only
+ */
+exports.getAllWithDeleted = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    
+    const result = await userService.getAllUsersWithDeleted({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    });
+    
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error getting users with deleted:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get all deleted records across different entity types - Admin only
+ */
+exports.getAllDeletedRecords = async (req, res) => {
+  try {
+    const { type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' } = req.query;
+    
+    const result = await userService.getAllDeletedRecords({
+      type,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort,
+      order
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting deleted records:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

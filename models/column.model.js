@@ -5,7 +5,19 @@ const ColumnSchema = new Schema({
   board_id: { type: Schema.Types.ObjectId, ref: 'Board', required: true, index: true },
   name: { type: String, required: true, maxlength: 100 },
   order: { type: Number, required: true },
+  deleted_at: { type: Date, default: null }
 }, { collection: 'Columns', timestamps: true });
 
+// Index for soft delete
+ColumnSchema.index({ deleted_at: 1 });
 
-  module.exports = mongoose.model('Column', ColumnSchema);
+// Middleware to filter soft-deleted records
+ColumnSchema.pre(/^find/, function(next) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
+    this.where({ deleted_at: null });
+  }
+  next();
+});
+
+module.exports = mongoose.model('Column', ColumnSchema);

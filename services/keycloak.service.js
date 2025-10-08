@@ -1,4 +1,4 @@
-const KcAdminClient = require('keycloak-admin').default;
+const KcAdminClient = require('@keycloak/keycloak-admin-client').default;
 const dotenv = require('dotenv');
 
 dotenv.config();

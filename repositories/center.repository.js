@@ -20,6 +20,64 @@ class CenterRepository {
   async delete(id) {
     return Center.findByIdAndDelete(id).lean();
   }
+
+  // ==================== SOFT DELETE METHODS ====================
+
+  async softDelete(id) {
+    try {
+      return await Center.findByIdAndUpdate(
+        id,
+        { deleted_at: new Date() },
+        { new: true }
+      ).lean();
+    } catch (error) {
+      console.error('Error soft deleting center:', error);
+      throw error;
+    }
+  }
+
+  async findAllWithDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = {
+        $or: [
+          { deleted_at: null },
+          { deleted_at: { $ne: null } }
+        ]
+      };
+
+      const [centers, total] = await Promise.all([
+        Center.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Center.countDocuments(query)
+      ]);
+
+      return {
+        centers,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all centers with deleted:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CenterRepository();

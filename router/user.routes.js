@@ -69,4 +69,13 @@ router.put('/:id', authenticateAny, userController.update);
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
 
+// Soft delete user (chỉ admin)
+router.delete('/soft/:id', authenticateAny, authorizeAny('admin'), userController.softDelete);
+
+// Restore user (chỉ admin)
+router.put('/restore/:id', authenticateAny, authorizeAny('admin'), userController.restore);
+
+// Get all users with deleted (chỉ admin)
+router.get('/admin/with-deleted', authenticateAny, authorizeAny('admin'), userController.getAllWithDeleted);
+
 module.exports = router;

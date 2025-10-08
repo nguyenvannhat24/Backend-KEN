@@ -67,6 +67,12 @@ const UserSchema = new mongoose.Schema({
       
   },
   
+  // Soft delete
+  deleted_at: {
+    type: Date,
+    default: null
+  }
+  
 }, {
   collection: 'users',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
@@ -74,6 +80,16 @@ const UserSchema = new mongoose.Schema({
 
 // Indexes để tối ưu hóa truy vấn (email và username đã có unique nên không cần thêm index)
 UserSchema.index({ status: 1 });
+UserSchema.index({ deleted_at: 1 });
+
+// Middleware để tự động filter soft-deleted records
+UserSchema.pre(/^find/, function(next) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
+    this.where({ deleted_at: null });
+  }
+  next();
+});
 
 // Middleware để cập nhật updated_at trước khi save
 UserSchema.pre('save', function(next) {

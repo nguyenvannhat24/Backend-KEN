@@ -93,7 +93,8 @@ async  updateRolePermissions(userId, permissionIds) {
 
     if (userRoles.length === 1) {
       // Nếu user chỉ có 1 role, dùng luôn role đó
-       roleId = userRoles[0].role_id._id.toString(); // sai ở đây roleId phải là userRoles.role_id. nếu lấy như này thì là lấy id của userRole ko liên quan đến permisson
+       roleId = userRoles[0].role_id?._id?.toString();
+      if (!roleId) throw new Error("Role ID không hợp lệ"); // sai ở đây roleId phải là userRoles.role_id. nếu lấy như này thì là lấy id của userRole ko liên quan đến permisson
       console.log("🔹 Dùng role hiện tại:", roleId);
     } else {
       // Nếu user có nhiều role => tạo role riêng cho user

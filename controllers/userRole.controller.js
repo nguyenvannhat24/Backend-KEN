@@ -184,7 +184,10 @@ class UserRoleController {
     }
 
     const roleIds = userRoles.map(r => r.role_id?._id).filter(Boolean);
-    const roleNames = userRoles.map(r => r.role_id.name);
+    if (roleIds.length === 0) {
+      return res.status(404).json({ success: false, message: "Người dùng chưa có role hợp lệ nào" });
+    }
+    const roleNames = userRoles.map(r => r.role_id?.name).filter(Boolean);
     // 2️⃣ Lấy các quyền (permissions) tương ứng với danh sách roles
     const rolePermissions = await rolePermissionService.getByRoleIds(roleIds);
     const permissionIds = rolePermissions.map(rp => rp.permission_id?._id).filter(Boolean);
@@ -193,7 +196,7 @@ class UserRoleController {
     const permissions = await permissionService.getByIds(permissionIds);
 
     // 4️⃣ Trả về danh sách mã quyền (code)
-    const codes = permissions.map(p => p.code);
+    const codes = permissions.map(p => p?.code).filter(Boolean);
 
     return res.status(200).json({
       success: true,

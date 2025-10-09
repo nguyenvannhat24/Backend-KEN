@@ -1,9 +1,9 @@
-const mongoose_ij = require('mongoose');
-const { uuidString: uuid_ij, Schema: Schema_ij } = require('./_shared');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
+const { v4: uuidv4 } = require('uuid');
 
-
-const ImportJobSchema = new Schema_ij({
-_id: uuid_ij,
+const ImportJobSchema = new Schema({
+_id: { type: String, default: () => uuidv4() },
 board_id: { type: String, ref: 'Board', required: true, index: true },
 file_name: { type: String, maxlength: 260 },
 status: { type: String, maxlength: 20 },
@@ -14,5 +14,5 @@ error_message: { type: String, maxlength: 1000 },
 }, { collection: 'import_jobs' });
 
 
-const ImportJob = mongoose_ij.model('ImportJob', ImportJobSchema);
+const ImportJob = mongoose.model('ImportJob', ImportJobSchema);
 module.exports = ImportJob;

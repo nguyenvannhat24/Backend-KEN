@@ -2,9 +2,10 @@ const Board = require('../models/board.model');
 const BoardMember = require('../models/boardMember.model');
 
 class BoardRepository {
-  async selectedAll(){
-        return Board.find().lean();
+  async selectedAll() {
+    return Board.find().lean();
   }
+
   async findById(boardId) {
     return Board.findById(boardId).lean();
   }
@@ -13,8 +14,6 @@ class BoardRepository {
     return Board.find({ _id: { $in: boardIds } }).lean();
   }
 
-
-  // Tìm boards mà user là creator thông qua BoardMember
   async findByCreator(userId) {
     const creatorMembers = await BoardMember.find({ 
       user_id: userId, 
@@ -25,7 +24,6 @@ class BoardRepository {
     
     const boardIds = creatorMembers.map(m => m.board_id);
     return Board.find({ _id: { $in: boardIds } }).lean();
-
   }
 
   async create(boardData) {

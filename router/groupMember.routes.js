@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const groupMemberController = require("../controllers/groupMember.controller");
-const { authenticateAny } = require("../middlewares/auth");
+const { authenticateAny, authorizeAny } = require("../middlewares/auth");
 
 // Thêm thành viên vào group (1 hoặc nhiều thành viên)
 router.post("/", authenticateAny, groupMemberController.addMember);
@@ -19,13 +19,13 @@ router.put("/member", authenticateAny, groupMemberController.updateMember);
 router.delete("/", authenticateAny, groupMemberController.removeMember);
 
 // Xóa thành viên (Admin hệ thống)
-router.delete("/admin", authenticateAny, groupMemberController.adminRemoveMember);
+router.delete("/admin", authenticateAny, authorizeAny('admin', 'System_Manager'), groupMemberController.adminRemoveMember);
 
 // kiểm tra mình đang ở group nào
 
 
 // xem bảng groupmember (admin only)
-router.get("/admin/all", authenticateAny, groupMemberController.selectAll);
+router.get("/admin/all", authenticateAny, authorizeAny('admin', 'System_Manager'), groupMemberController.selectAll);
 
 //
 router.post("/getGroupUser",authenticateAny ,groupMemberController.selecGroupUser);

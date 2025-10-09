@@ -16,22 +16,22 @@ router.get('/my-role', authenticateAny, roleController.getUserRole);
 
 // ==================== ADMIN ROUTES ====================
 
-// Lấy tất cả roles (chỉ admin)
-router.get('/', authenticateAny, authorizeAny('admin'), roleController.getAllRoles);
+// Lấy tất cả roles (admin hoặc System_Manager)
+router.get('/', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.getAllRoles);
 
-// Lấy role theo ID (chỉ admin)
-router.get('/:id', authenticateAny, authorizeAny('admin'), roleController.getRoleById);
+// Lấy role theo ID (admin hoặc System_Manager)
+router.get('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.getRoleById);
 
-// Lấy role theo tên (chỉ admin)
-router.get('/name/:name', authenticateAny, authorizeAny('admin'), roleController.getRoleByName);
+// Lấy role theo tên (admin hoặc System_Manager)
+router.get('/name/:name', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.getRoleByName);
 
-// Tạo role mới (chỉ admin)
-router.post('/', authenticateAny,authorizeAny('admin'), roleController.createRole);
+// Tạo role mới (admin hoặc System_Manager)
+router.post('/', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.createRole);
 
-// Cập nhật role (chỉ admin)
-router.put('/:id', authenticateAny, authorizeAny('admin'), roleController.updateRole);
+// Cập nhật role (admin hoặc System_Manager)
+router.put('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.updateRole);
 
-// Xóa role (chỉ admin)
-router.delete('/:id', authenticateAny, authorizeAny('admin'), roleController.deleteRole);
+// Xóa role (admin hoặc System_Manager)
+router.delete('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), roleController.deleteRole);
 
 module.exports = router;

@@ -21,6 +21,15 @@ class CenterRepository {
     return Center.findByIdAndDelete(id).lean();
   }
 
+  // Kiểm tra user có thuộc center không
+  async findMember(user_id, center_id) {
+    const CenterMember = require('../models/centerMember.model');
+    return CenterMember.findOne({ 
+      user_id: user_id, 
+      center_id: center_id 
+    }).lean();
+  }
+
   // ==================== SOFT DELETE METHODS ====================
 
   async softDelete(id) {

@@ -1,9 +1,9 @@
-const mongoose_notif = require('mongoose');
-const { uuidString: uuid_notif, Schema: Schema_notif } = require('./_shared');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
+const { v4: uuidv4 } = require('uuid');
 
-
-const NotificationSchema = new Schema_notif({
-_id: uuid_notif,
+const NotificationSchema = new Schema({
+_id: { type: String, default: () => uuidv4() },
 user_id: { type: String, ref: 'User', required: true, index: true },
 title: { type: String, maxlength: 200 },
 body: { type: String, maxlength: 1000 },
@@ -13,5 +13,5 @@ read_at: { type: Date },
 }, { collection: 'notifications' });
 
 
-const Notification = mongoose_notif.model('Notification', NotificationSchema);
+const Notification = mongoose.model('Notification', NotificationSchema);
 module.exports = Notification;

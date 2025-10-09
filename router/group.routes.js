@@ -11,10 +11,10 @@ router.put('/:id', authenticateAny, groupController.update);
 router.delete('/:id', authenticateAny, groupController.delete);
 
 // Xóa group (Admin hệ thống)
-router.delete('/admin/:id', authenticateAny, groupController.adminDelete);
+router.delete('/admin/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), groupController.adminDelete);
 
 // Admin only - xem tất cả groups
-router.get('/admin/all', authorizeAny('admin'), async (req, res) => {
+router.get('/admin/all', authenticateAny, authorizeAny('admin', 'System_Manager'), async (req, res) => {
   try {
     const groupService = require('../services/group.service');
     const groups = await groupService.getAllGroups();

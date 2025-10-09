@@ -1,8 +1,7 @@
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleSevive = require('../services/role.service');
-const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail ,createUserWithPassword} = require('../services/keycloak.service');
-//
+const { createUser, getUsers, getUserById, updateUser, deleteUser, getUserByUsername, getUserByEmail, createUserWithPassword} = require('../services/keycloak.service');
 
 exports.createKeycloakUserPassword = async (req, res) => {
   try {
@@ -16,16 +15,16 @@ exports.createKeycloakUserPassword = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-// 🔵 Lấy danh sách user từ Keycloak
+
 exports.getAllKeycloakUsers = async (req, res) => {
   try {
-    const users = await getUsers({ max: 50 }); // giới hạn 50 user
+    const users = await getUsers({ max: 50 });
     res.json({ success: true, count: users.length, data: users });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to get users', error: err.message });
   }
 };
-// 🔵 Lấy user theo ID từ Keycloak
+
 exports.getKeycloakUserById = async (req, res) => {
   try {
     const user = await getUserById(req.params.id);
@@ -324,17 +323,25 @@ exports.delete = async (req, res) => {
     const checkUser = await userService.getUserById(req.params.id);
     if (!checkUser) return res.status(404).json({ message: "User not found" });
 
-    // Luôn xóa user trong DB
-    await userService.deleteUser(req.params.id);
-
-    // Nếu là user SSO thì xóa thêm trên Keycloak
+    // Soft delete user trong DB
+    const user = await userService.softDeleteUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Nếu là user SSO thì disable trên Keycloak (không xóa)
     if (checkUser.typeAccount === "SSO" && checkUser.idSSO) {
-      await deleteUser(checkUser.idSSO); // gọi Keycloak Admin API
+      try {
+        await updateUser(checkUser.idSSO, { enabled: false });
+      } catch (err) {
+        console.error('Failed to disable Keycloak user:', err);
+      }
     }
 
-    res.json({ message: "Deleted successfully" });
+    res.json({ success: true, message: 'User soft deleted successfully', data: user });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error soft deleting user:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

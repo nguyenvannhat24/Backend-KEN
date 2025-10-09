@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
-/**
- * User Schema - Định nghĩa cấu trúc dữ liệu cho bảng users
- * Collection: users
- */
 const UserSchema = new mongoose.Schema({
-  // Thông tin cơ bản
   email: {
     type: String,
     required: true,
@@ -18,16 +13,13 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
     trim: true,
-    sparse: true // Cho phép null nhưng unique khi có giá trị
+    sparse: true
   },
  
-  // Mật khẩu (đã hash)
   password_hash: {
-    type: String,
-  
+    type: String
   },
   
-  // Thông tin cá nhân
   full_name: {
     type: String,
     trim: true,
@@ -40,34 +32,21 @@ const UserSchema = new mongoose.Schema({
     maxlength: 500
   },
   
-  // Trạng thái tài khoản
   status: {
     type: String,
     enum: ['active', 'inactive', 'suspended', 'pending'],
     default: 'active'
   },
   
-  // Timestamps
-  created_at: {
-    type: Date,
-    default: Date.now
-  },
-  
-  updated_at: {
-    type: Date,
-    default: Date.now
-  },
-
   typeAccount: {
     type: String,
-       enum: ['Local', 'SSO'],
-  },
-    idSSO: {
-    type: String,
-      
+    enum: ['Local', 'SSO']
   },
   
-  // Soft delete
+  idSSO: {
+    type: String
+  },
+  
   deleted_at: {
     type: Date,
     default: null
@@ -78,22 +57,14 @@ const UserSchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-// Indexes để tối ưu hóa truy vấn (email và username đã có unique nên không cần thêm index)
 UserSchema.index({ status: 1 });
 UserSchema.index({ deleted_at: 1 });
 
-// Middleware để tự động filter soft-deleted records
 UserSchema.pre(/^find/, function(next) {
   const query = this.getQuery();
   if (!query.hasOwnProperty('deleted_at') && !query.$or) {
     this.where({ deleted_at: null });
   }
-  next();
-});
-
-// Middleware để cập nhật updated_at trước khi save
-UserSchema.pre('save', function(next) {
-  this.updated_at = new Date();
   next();
 });
 

@@ -49,6 +49,9 @@ router.delete(
   groupController.delete
 );
 
+// Xóa group (Admin hệ thống)
+router.delete('/admin/:id', authenticateAny, groupController.adminDelete);
+
 // Admin only - xem tất cả groups
 router.get(
   '/admin/all',

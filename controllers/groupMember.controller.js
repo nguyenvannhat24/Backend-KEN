@@ -1,24 +1,45 @@
 const groupMemberService = require("../services/groupMember.service");
 
 class GroupMemberController {
-  // Thêm thành viên
+  // Thêm thành viên (1 hoặc nhiều thành viên)
   async addMember(req, res) {
     try {
-      const requester_id = req.user?.id; // Lấy từ token
-      const { user_id, group_id, role_in_group } = req.body;
+      const requester_id = req.user?.id;
+      const { user_id, group_id, role_in_group, members } = req.body;
 
-      console.log('🔍 [DEBUG] addMember - requester_id:', requester_id);
-      console.log('🔍 [DEBUG] addMember - user_id:', user_id);
-      console.log('🔍 [DEBUG] addMember - group_id:', group_id);
+      // Nếu có members array -> thêm nhiều thành viên
+      if (members && Array.isArray(members)) {
+        const result = await groupMemberService.addBulkMembers({
+          requester_id,
+          group_id,
+          members
+        });
 
-      const member = await groupMemberService.addMember({
-        requester_id,
-        user_id,
-        group_id,
-        role_in_group,
+        return res.status(201).json({ 
+          success: true, 
+          message: `Đã xử lý ${result.total} thành viên`,
+          data: result
+        });
+      }
+
+      // Nếu có user_id -> thêm 1 thành viên
+      if (user_id) {
+        const member = await groupMemberService.addMember({
+          requester_id,
+          user_id,
+          group_id,
+          role_in_group,
+        });
+
+        return res.status(201).json({ success: true, data: member });
+      }
+
+      // Không có dữ liệu hợp lệ
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cần cung cấp user_id hoặc members array' 
       });
 
-      res.status(201).json({ success: true, data: member });
     } catch (err) {
       console.error('❌ [addMember ERROR]:', err.message);
       res.status(400).json({ success: false, message: err.message });
@@ -52,22 +73,45 @@ class GroupMemberController {
     }
   }
 
-  // Cập nhật role
-  async updateRole(req, res) {
+  // Cập nhật thông tin thành viên (bao gồm role)
+  async updateMember(req, res) {
     try {
-      const requester_id = req.user?.id; // Lấy từ token
-      const { user_id, group_id, role_in_group } = req.body;
+      const requester_id = req.user?.id;
+      const { user_id, group_id, ...updateData } = req.body;
 
-      const member = await groupMemberService.updateRole({
+      // Validate input
+      if (!user_id || !group_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'user_id và group_id là bắt buộc' 
+        });
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Không có dữ liệu để cập nhật' 
+        });
+      }
+
+      const member = await groupMemberService.updateMember({
         requester_id,
         user_id,
         group_id,
-        role_in_group,
+        updateData
       });
 
-      res.json({ success: true, data: member });
+      res.json({ 
+        success: true, 
+        message: 'Cập nhật thành viên thành công',
+        data: member 
+      });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      console.error('❌ [updateMember ERROR]:', err.message);
+      res.status(400).json({ 
+        success: false, 
+        message: err.message 
+      });
     }
   }
 
@@ -84,6 +128,24 @@ class GroupMemberController {
       });
 
       res.json({ success: true, message: "Xóa thành công" });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
+
+  // Xóa thành viên (Admin hệ thống)
+  async adminRemoveMember(req, res) {
+    try {
+      const admin_id = req.user?.id;
+      const { user_id, group_id } = req.body;
+
+      await groupMemberService.adminRemoveMember({
+        admin_id,
+        user_id,
+        group_id,
+      });
+
+      res.json({ success: true, message: "Admin xóa thành viên thành công" });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
@@ -120,6 +182,7 @@ async selecGroupUser(req, res) {
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
+
 }
 
   

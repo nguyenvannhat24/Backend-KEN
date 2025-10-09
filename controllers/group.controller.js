@@ -60,6 +60,17 @@ console.log("DEBUG userId:", userId, "typeof:", typeof userId);
       res.status(400).json({ success: false, message: err.message });
     }
   }
+
+  // Xóa group (Admin hệ thống)
+  async adminDelete(req, res) {
+    try {
+      const adminId = req.user?.id;
+      await groupService.adminDeleteGroup(req.params.id, adminId);
+      res.json({ success: true, message: "Admin xóa group thành công" });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new GroupController();

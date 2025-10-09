@@ -120,9 +120,39 @@ class GroupService {
       throw new Error("Chỉ người tạo group mới được xóa group");
     }
 
-    // Soft delete
+    // Soft delete group
     const deleted = await groupRepo.softDelete(id);
     if (!deleted) throw new Error("Không tìm thấy group để xoá");
+
+    // Xóa tất cả group members
+    await groupMemberRepo.deleteAllByGroup(id);
+
+    return true;
+  }
+
+  // Xóa group (Admin hệ thống) - xử lý trường hợp group không có người tạo
+  async adminDeleteGroup(id, adminId) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error("ID group không hợp lệ");
+    }
+
+    // TODO: Kiểm tra adminId có phải admin hệ thống không
+    // const admin = await userService.getUserById(adminId);
+    // if (!admin || !admin.roles.includes('admin')) {
+    //   throw new Error("Chỉ admin hệ thống mới có quyền này");
+    // }
+
+    // Kiểm tra group tồn tại
+    const group = await groupRepo.findById(id);
+    if (!group) throw new Error("Group không tồn tại");
+
+    // Soft delete group
+    const deleted = await groupRepo.softDelete(id);
+    if (!deleted) throw new Error("Không thể xóa group");
+
+    // Xóa tất cả group members
+    await groupMemberRepo.deleteAllByGroup(id);
+
     return true;
   }
 

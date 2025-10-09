@@ -37,6 +37,15 @@ async findMember(user_id, group_id) {
     ).lean();
   }
 
+  // Cập nhật thông tin thành viên (tổng quát)
+  async updateMember(user_id, group_id, updateData) {
+    return await GroupMember.findOneAndUpdate(
+      { user_id, group_id },
+      updateData,
+      { new: true }
+    ).lean();
+  }
+
   // Xóa thành viên khỏi group
   async removeMember(user_id, group_id) {
     return await GroupMember.deleteOne({ user_id, group_id });
@@ -48,13 +57,15 @@ async selectAll() {
   }
 
   // lấy danh sách group theo id người dùng
-
   async getByGroupMembers(user_id){
-
      return await GroupMember.find({ user_id })
       .populate("group_id", "id name description ")
       .lean();
-    
+  }
+
+  // Xóa tất cả group members của một group
+  async deleteAllByGroup(group_id) {
+    return await GroupMember.deleteMany({ group_id });
   }
 }
 

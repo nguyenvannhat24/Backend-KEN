@@ -85,65 +85,70 @@ try {
     }
 }
 
-  // Soft delete board
-  async softDelete(boardId) {
-    try {
-      return await Board.findByIdAndUpdate(
-        boardId,
-        { deleted_at: new Date() },
-        { new: true }
-      );
-    } catch (error) {
-      console.error('Error soft deleting board:', error);
-      throw error;
-    }
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete board
+ */
+async softDelete(id) {
+  try {
+    return await Board.findByIdAndUpdate(
+      id,
+      { deleted_at: new Date() },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error soft deleting board:', error);
+    throw error;
   }
+}
 
-  // Find all boards including deleted
-  async findAllWithDeleted(options = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = 'created_at',
-        sortOrder = 'desc'
-      } = options;
+/**
+ * Get all boards including soft-deleted ones (admin only)
+ */
+async findAllWithDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
 
-      const skip = (page - 1) * limit;
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-      const boards = await Board.find({
-        $or: [
-          { deleted_at: null },
-          { deleted_at: { $ne: null } }
-        ]
-      })
+    const query = {
+      $or: [
+        { deleted_at: null },
+        { deleted_at: { $ne: null } }
+      ]
+    };
+
+    const [boards, total] = await Promise.all([
+      Board.find(query)
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .lean();
+        .lean(),
+      Board.countDocuments(query)
+    ]);
 
-      const total = await Board.countDocuments({
-        $or: [
-          { deleted_at: null },
-          { deleted_at: { $ne: null } }
-        ]
-      });
-
-      return {
-        boards,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('Error finding all boards with deleted:', error);
-      throw error;
-    }
+    return {
+      boards,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding all boards with deleted:', error);
+    throw error;
   }
+}
+
 }
 
 module.exports = new BoardRepository();

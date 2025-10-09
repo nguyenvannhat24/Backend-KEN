@@ -9,10 +9,13 @@ const SwimlaneSchema = new Schema({
   deleted_at: { type: Date, default: null }
 }, { collection: 'Swimlanes', timestamps: true });
 
+// Index for soft delete
 SwimlaneSchema.index({ deleted_at: 1 });
 
+// Middleware to filter soft-deleted records
 SwimlaneSchema.pre(/^find/, function(next) {
-  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
     this.where({ deleted_at: null });
   }
   next();

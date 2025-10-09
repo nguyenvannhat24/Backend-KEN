@@ -8,10 +8,13 @@ const GroupSchema = new Schema({
   deleted_at: { type: Date, default: null }
 }, { collection: 'Groups', timestamps: true });
 
+// Index for soft delete
 GroupSchema.index({ deleted_at: 1 });
 
+// Middleware to filter soft-deleted records
 GroupSchema.pre(/^find/, function(next) {
-  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
     this.where({ deleted_at: null });
   }
   next();

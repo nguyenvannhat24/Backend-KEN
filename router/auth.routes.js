@@ -23,7 +23,7 @@ module.exports = function() {
   router.post('/logout', authenticateAny, authController.logout);
 
   // Refresh token: KHÔNG yêu cầu access token, dùng refreshToken trong body
-  router.post('/refresh-token', authController.refreshToken);
+  router.post('/refresh-token', authController.refreshToken); //
 
   return router;
 };

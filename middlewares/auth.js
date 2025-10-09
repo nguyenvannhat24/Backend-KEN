@@ -5,7 +5,9 @@ const tokenBlacklist = require('./tokenBlacklist');
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleService = require('../services/role.service');
+const rolePermissionService = require('../services/rolePermission.service');
 
+const permissionService = require('../services/permission.service');
 // Keycloak JWKS client
 const keycloakClient = jwksClient({
   jwksUri: process.env.KEYCLOAK_JWKS_URI
@@ -95,13 +97,15 @@ const authenticateAny = async (req, res, next) => {
 
       const dbRoles = await userRoleService.getRoles(user._id);
       req.user = {
-        id: user._id,
+        id: user._id.toString(),  
         email: user.email,
         username: user.username,
+        idSSO: user.idSSO ,
         roles: dbRoles?.map(r => r.role_id?.name).filter(Boolean) || []
       };
 
-      console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${user.email}`);
+      console.log(`🔑 [AUTH] Keycloak JWT verified & user loaded: ${req.user.email} id là ${req.user.id}`);
+
       next();
     });
 
@@ -114,12 +118,40 @@ const authenticateAny = async (req, res, next) => {
 /**
  * Middleware kiểm tra quyền
  */
-const authorizeAny = (...allowedRoles) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
+const authorizeAny = (...allowed) => async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'Chưa xác thực' });
 
-  if (req.user.roles && req.user.roles.some(r => allowedRoles.includes(r))) return next();
+    const { id } = req.user;
 
-  return res.status(403).json({ success: false, message: `Bạn cần quyền ${allowedRoles.join(', ')} để truy cập` });
+    // 1️⃣ Kiểm tra role trực tiếp
+    if (req.user.roles && req.user.roles.some(r => allowed.includes(r))) {
+      return next();
+    }
+
+    // 2️⃣ Kiểm tra quyền (permission)
+    const userRoles = await userRoleService.getRoles(id);
+    const roleIds = userRoles.map(r => r.role_id._id);
+
+    const rolePermissions = await rolePermissionService.getByRoleIds(roleIds);
+    const permissionIds = rolePermissions.map(rp => rp.permission_id);
+
+    const permissions = await permissionService.getByIds(permissionIds);
+    const codes = permissions.map(p => p.code);
+
+    if (codes.some(c => allowed.includes(c))) {
+      return next();
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: `Bạn không có quyền hoặc vai trò cần thiết (${allowed.join(', ')})`
+    });
+
+  } catch (err) {
+    console.error('❌ [AUTHZ] Error in authorizeAny:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 /**

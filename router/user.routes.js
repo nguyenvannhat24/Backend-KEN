@@ -38,7 +38,8 @@ router.put('/change-password', authenticateAny, userController.changePassword);
 router.get('/email/:email', authenticateAny, userController.getByEmail);
 router.get('/name/:name', authenticateAny, userController.getByName);
 router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
-
+// Đổi mật khẩu
+router.put('/change-password', authenticateAny, userController.changePassword);
 // Keycloak CRUD routes
 router.put('/keycloak/:id', authenticateAny, userController.updateKeycloakUser);
 router.get('/keycloak', authenticateAny, userController.getAllKeycloakUsers);
@@ -46,18 +47,16 @@ router.get('/keycloak/id/:id', authenticateAny, userController.getKeycloakUserBy
 router.get('/keycloak/username/:username', authenticateAny, userController.getKeycloakUserByName); 
 router.get('/keycloak/email/:email', authenticateAny, userController.getKeycloakUserByMail);
 router.post('/keycloak', authenticateAny, userController.createKeycloakUser);
-
+router.post('/keycloak/createUserPass', authenticateAny, userController.createKeycloakUserPassword);
 router.delete('/keycloak/:id', authenticateAny, userController.deleteKeycloakUser);
 router.post('/cloneUser', userController.cloneUser);
 
 // ==================== ADMIN ONLY ROUTES ====================
 
-// Lấy toàn bộ user (chỉ admin) - Route chính
-router.get('/', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
+// Lấy toàn bộ user (chỉ admin)
+router.get('/selectAll', authenticateAny, authorizeAny('VIEW_USER'), userController.SelectAll);
 
-// Lấy toàn bộ user (chỉ admin) - Route alias
-router.get('/selectAll', authenticateAny, authorizeAny('admin','manage-account'), userController.SelectAll);
-
+router.get('/search', authenticateAny, authorizeAny('admin'), userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)
 router.get('/:id', authenticateAny, authorizeAny('admin','manage-account'), userController.getById);
 
@@ -65,7 +64,7 @@ router.get('/:id', authenticateAny, authorizeAny('admin','manage-account'), user
 router.post('/', authenticateAny, authorizeAny('admin'), userController.create);
 
 // Cập nhật user (admin hoặc chính mình)
-router.put('/:id', authenticateAny, authorizeAny('admin'), userController.update);
+router.put('/:id', authenticateAny, userController.update);
 
 // Xóa user (chỉ admin)
 router.delete('/:id', authenticateAny, authorizeAny('admin'), userController.delete);
@@ -75,5 +74,8 @@ router.delete('/soft/:id', authenticateAny, authorizeAny('admin'), userControlle
 
 // Restore user (chỉ admin)
 router.put('/restore/:id', authenticateAny, authorizeAny('admin'), userController.restore);
+
+// Get all users with deleted (chỉ admin)
+router.get('/admin/with-deleted', authenticateAny, authorizeAny('admin'), userController.getAllWithDeleted);
 
 module.exports = router;

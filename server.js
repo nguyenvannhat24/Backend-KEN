@@ -23,9 +23,12 @@ const templateSwimlaneRouter = require('./router/templateSwimlane.router');
 const columnRouter = require('./router/column.routes');
 const swimlaneRoutes = require('./router/swimlane.routes');
 const taskRoutes = require('./router/task.routes');
+
 const tagRoutes = require('./router/tag.routes');
 const commentRoutes = require('./router/comment.routes');
 const importRoutes = require('./router/import.routes');
+const permissionRoutes = require('./router/permission.routes');
+const RolePermissionRoutes = require('./router/rolePermission.routes');
 
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
@@ -69,6 +72,11 @@ app.use(cors({
 // Route public (không cần login)
 app.use('/api', userRouter(keycloak));
 
+// Admin route for viewing all deleted records
+const userController = require('./controllers/user.controller');
+const { authenticateAny, authorizeAny } = require('./middlewares/auth');
+app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
+
 //k
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
@@ -86,16 +94,14 @@ app.use('/api/templateSwimlane',templateSwimlaneRouter);
 app.use('/api/column',columnRouter);
 app.use('/api/swimlanes', swimlaneRoutes);
 app.use('/api/tasks', taskRoutes);
+
 app.use('/api/tags', tagRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/import', importRoutes);
 
-// Admin route - Xem tất cả bản ghi đã xóa
-const userController = require('./controllers/user.controller');
-const { authenticateAny, authorizeAny } = require('./middlewares/auth');
-app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
-
+app.use('/api/permission',permissionRoutes);
+app.use("/api/RolePermission",RolePermissionRoutes)
 // --- Start server ---
 app.listen(port, () => {
-  console.log('Server is running at http://localhost:' + port);
+  console.log(`✅ Server is running at http://localhost:${port}`);
 });

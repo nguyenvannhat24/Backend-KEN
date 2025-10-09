@@ -4,11 +4,11 @@ const Role = require("../models/role.model");
 class UserRoleRepository {
     // Tìm role theo user_id
     async findRoleByUser(userId) {
-        const userRole = await UserRole.findOne({ user_id: userId.toString() }).lean();
-        if (!userRole) return null;
+ const userRoles = await UserRole.find({ user_id: userId.toString() }).lean();
+  if (!userRoles || userRoles.length === 0) return [];
 
-        const role = await Role.findById(userRole.role_id).lean();
-        return role;
+  const roles = await Role.find({ _id: { $in: userRoles.map(ur => ur.role_id) } }).lean();
+  return roles;
     }
 
     // Lấy tất cả UserRole

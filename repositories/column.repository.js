@@ -35,14 +35,6 @@ class ColumnRepository {
     return session ? query.session(session) : query;
   }
 
-  async softDeleteManyByBoard(boardId, session = null) {
-    const query = Column.updateMany(
-      { board_id: boardId },
-      { deleted_at: new Date() }
-    );
-    return session ? query.session(session) : query;
-  }
-
   // ==================== SOFT DELETE METHODS ====================
 
   async softDelete(id) {

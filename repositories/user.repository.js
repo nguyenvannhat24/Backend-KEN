@@ -247,98 +247,146 @@ async createSSO({ username, email, full_name, idSSO }) {
   }
 
   /**
-   * Soft delete user
-   * @param {string} id - User ID
-   * @returns {Promise<Object>} Updated user
-   */
-  async softDelete(id) {
-    try {
-      return await User.findByIdAndUpdate(
-        id,
-        { 
-          deleted_at: new Date(),
-          status: 'inactive'
-        },
-        { new: true }
-      );
-    } catch (error) {
-      console.error('Error soft deleting user:', error);
-      throw error;
-    }
+ * Tìm kiếm user theo keyword (username, email, full_name)
+ * Hỗ trợ pagination
+ * @param {Object} options
+ * @param {string} options.keyword - Từ khóa tìm kiếm
+ * @param {number} options.page - Trang hiện tại (default: 1)
+ * @param {number} options.limit - Số lượng items per page (default: 10)
+ * @returns {Promise<Object>} users + pagination info
+ */
+async find(options = {}) {
+  try {
+    const { keyword = "", page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const regex = new RegExp(keyword, "i"); // case-insensitive search
+
+    const query = keyword
+      ? {
+          $or: [
+            { username: regex },
+            { email: regex },
+            { full_name: regex }
+          ]
+        }
+      : {}; // nếu không có keyword thì lấy tất cả
+
+    const [users, total] = await Promise.all([
+      User.find(query).sort(sort).skip(skip).limit(limit).lean(),
+      User.countDocuments(query)
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in UserRepository.find:', error);
+    throw error;
   }
+}
 
-  /**
-   * Restore soft deleted user
-   * @param {string} id - User ID
-   * @returns {Promise<Object>} Restored user
-   */
-  async restore(id) {
-    try {
-      // Explicitly query for soft-deleted users to bypass middleware
-      return await User.findOneAndUpdate(
-        { _id: id, deleted_at: { $ne: null } },
-        { 
-          deleted_at: null,
-          status: 'active'
-        },
-        { new: true }
-      );
-    } catch (error) {
-      console.error('Error restoring user:', error);
-      throw error;
-    }
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete user - Set deleted_at timestamp and change status to inactive
+ * @param {string} id - User ID
+ * @returns {Promise<Object|null>} Updated user
+ */
+async softDelete(id) {
+  try {
+    return await User.findByIdAndUpdate(
+      id,
+      {
+        deleted_at: new Date(),
+        status: 'inactive'
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    throw error;
   }
+}
 
-  /**
-   * Find all users including soft deleted
-   * @param {Object} options - Pagination and sorting options
-   * @returns {Promise<Object>} Users and pagination info
-   */
-  async findAllWithDeleted(options = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = 'created_at',
-        sortOrder = 'desc'
-      } = options;
+/**
+ * Restore soft deleted user - Clear deleted_at and set status to active
+ * @param {string} id - User ID
+ * @returns {Promise<Object|null>} Restored user
+ */
+async restore(id) {
+  try {
+    return await User.findOneAndUpdate(
+      { _id: id, deleted_at: { $ne: null } },
+      {
+        deleted_at: null,
+        status: 'active'
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error restoring user:', error);
+    throw error;
+  }
+}
 
-      const skip = (page - 1) * limit;
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+/**
+ * Get all users including soft-deleted ones (admin only)
+ * Bypasses the soft delete middleware by explicitly querying for all records
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Users with pagination
+ */
+async findAllWithDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
 
-      // Use $or to bypass middleware
-      const users = await User.find({
-        $or: [
-          { deleted_at: null },
-          { deleted_at: { $ne: null } }
-        ]
-      })
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    // Use $or to bypass the middleware
+    const query = {
+      $or: [
+        { deleted_at: null },
+        { deleted_at: { $ne: null } }
+      ]
+    };
+
+    const [users, total] = await Promise.all([
+      User.find(query)
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .lean();
+        .lean(),
+      User.countDocuments(query)
+    ]);
 
-      const total = await User.countDocuments({
-        $or: [
-          { deleted_at: null },
-          { deleted_at: { $ne: null } }
-        ]
-      });
-
-      return {
-        users,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('Error finding all users with deleted:', error);
-      throw error;
-    }
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding all users with deleted:', error);
+    throw error;
   }
+}
+
 }
 
 module.exports = new UserRepository();

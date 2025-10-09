@@ -1,6 +1,6 @@
 const userRepo = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
-
+const keycloack = require('../services/keycloak.service');
 /**
  * User Service - Xử lý business logic cho User
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
@@ -173,51 +173,74 @@ if (!user) {
     }
   }
 
-  /**
-   * Tạo user mới
-   * @param {Object} userData - Dữ liệu user
-   * @returns {Promise<Object>} User object đã tạo
-   */
-  async createUser(userData ) {
-    try {
-      // Validate input
-      if (!userData || !userData.email) {
-        throw new Error('Email là bắt buộc');
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userData.email)) {
-        throw new Error('Email không đúng định dạng');
-      }
-
-      // Kiểm tra email đã tồn tại chưa
-      const emailExists = await userRepo.isEmailExists(userData.email);
-      if (emailExists) {
-        throw new Error('Email đã tồn tại trong hệ thống');
-      }
-
-      // Kiểm tra username đã tồn tại chưa (nếu có)
-      if (userData.username) {
-        const usernameExists = await userRepo.isUsernameExists(userData.username);
-        if (usernameExists) {
-          throw new Error('Username đã tồn tại trong hệ thống');
-        }
-      }
-
-      // Hash password nếu có
-      if (userData.password) {
-        userData.password_hash = bcrypt.hashSync(userData.password, 10);
-        delete userData.password; // Xóa password plain text
-      }
-
-      console.log(`➕ Creating new user: ${userData.email}`);
-      return await userRepo.create(userData);
-    } catch (error) {
-      console.error('❌ Error in createUser:', error.message);
-      throw error;
+  async createUser(userData) {
+  try {
+    // Validate input
+    if (!userData || !userData.email) {
+      throw new Error('Email là bắt buộc');
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      throw new Error('Email không đúng định dạng');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const emailExists = await userRepo.isEmailExists(userData.email);
+    if (emailExists) {
+      throw new Error('Email đã tồn tại trong hệ thống');
+    }
+
+    // Kiểm tra username đã tồn tại chưa
+    if (userData.username) {
+      const usernameExists = await userRepo.isUsernameExists(userData.username);
+      if (usernameExists) {
+        throw new Error('Username đã tồn tại trong hệ thống');
+      }
+    }
+
+    // Hash password nếu có
+    if (userData.password) {
+      userData.password_hash = bcrypt.hashSync(userData.password, 10);
+    }
+
+    // Lấy ra biến từ userData
+    const { username, email, full_name, status, password } = userData;
+console.log('🔑 Creating user on Keycloak...');
+    // Tạo trên Keycloak trước
+    console.log('🔑 Creating user on Keycloak...');
+    const userKeyCloak = await keycloack.createUserWithPassword(
+      { username, email, full_name, status },
+      password
+    );
+// Log chi tiết user Keycloak vừa tạo
+console.log('✅ User created on Keycloak:');
+console.log('ID:', userKeyCloak.id);
+console.log('Username:', userKeyCloak.username);
+console.log('Email:', userKeyCloak.email);
+console.log('Full name:', userKeyCloak.full_name);
+console.log('Status:', userKeyCloak.status);
+    // Tạo local user
+    console.log(`➕ Creating new local user: ${email}`);
+    const localUser = await userRepo.create({
+      username,
+      email,
+      full_name,
+      status,
+      idSSO: userKeyCloak.id, // liên kết với Keycloak
+      typeAccount: "SSO",
+      password_hash: userData.password_hash, // lưu hash (nếu có)
+    });
+// Log chi tiết user local vừa tạo
+console.log('✅ Local user created:');
+console.log(localUser);
+    return localUser;
+  } catch (error) {
+    console.error('❌ Error in createUser:', error.message);
+    throw error;
   }
+}
 
 
 async createUserSSO({ username, email, full_name, idSSO }) {
@@ -306,7 +329,7 @@ async createUserSSO({ username, email, full_name, idSSO }) {
   }
 
   /**
-   * Xóa user (soft delete)
+   * Xóa user
    * @param {string} id - ObjectId của user
    * @returns {Promise<Object|null>} User object đã xóa hoặc null
    */
@@ -316,8 +339,8 @@ async createUserSSO({ username, email, full_name, idSSO }) {
         throw new Error('ID không được để trống');
       }
 
-      console.log(`🗑️ Soft deleting user: ${id}`);
-      return await userRepo.softDelete(id);
+      console.log(`🗑️ Deleting user: ${id}`);
+      return await userRepo.delete(id);
     } catch (error) {
       console.error('❌ Error in deleteUser:', error.message);
       throw error;
@@ -330,15 +353,24 @@ async createUserSSO({ username, email, full_name, idSSO }) {
    * @returns {Promise<Array>} Array of users
    */
   async viewAll(options = {}) {
-    try {
-      console.log('📋 Getting all users with options:', options);
-      const result = await userRepo.findAll(options);
-      return result; // Trả về cả users và pagination info
-    } catch (error) {
-      console.error('❌ Error in viewAll:', error.message);
-      throw error;
-    }
+  try {
+    console.log('📋 Getting all users');
+    const result = await userRepo.findAll(options);
+
+    // Luôn trả về đúng cấu trúc
+    return {
+      users: result.users,
+      totalUsers: result.pagination.total,
+      totalPages: result.pagination.pages,
+      currentPage: result.pagination.page,
+      limit: result.pagination.limit
+    };
+  } catch (error) {
+    console.error('❌ Error in viewAll:', error.message);
+    throw error;
   }
+}
+
 
 async getProfile(userId) {
   if (!userId) throw new Error("UserId là bắt buộc");
@@ -424,176 +456,167 @@ async getbyIdSOO(id){
   return await userRepo.findbyIdSSO(id);
 }
 
-  /**
-   * Soft delete user
-   */
-  async softDeleteUser(id) {
-    try {
-      const user = await userRepo.findById(id);
-      if (!user) {
-        throw new Error('User không tồn tại');
-      }
-      
-      const deletedUser = await userRepo.softDelete(id);
-      console.log('Soft deleted user:', id);
-      return deletedUser;
-    } catch (error) {
-      console.error('Error in softDeleteUser:', error);
-      throw error;
-    }
+
+
+async searchAllUsers(keyword, page = 1, limit = 10) {
+  try {
+    const result = await userRepo.find({ keyword, page, limit });
+    return result; // result.users + result.pagination
+  } catch (error) {
+    console.error("Search error:", error);
+    throw error;
   }
-
-  /**
-   * Restore user
-   */
-  async restoreUser(id) {
-    try {
-      const user = await userRepo.restore(id);
-      if (!user) {
-        throw new Error('User không tồn tại hoặc chưa bị xóa');
-      }
-      
-      console.log('Restored user:', id);
-      return user;
-    } catch (error) {
-      console.error('Error in restoreUser:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all users including soft deleted
-   */
-
-  /**
-   * Get all deleted records from all entities (for admin)
-   */
-  async getAllDeletedRecords({ type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' }) {
-    try {
-      const result = {
-        success: true,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        data: {}
-      };
-
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort,
-        sortOrder: order
-      };
-
-      const fetchDeleted = async (repoName, key) => {
-        const repo = require(`../repositories/${repoName}.repository`);
-        if (repo.findAllWithDeleted) {
-          const data = await repo.findAllWithDeleted(options);
-          return data;
-        }
-        return null;
-      };
-
-      if (type === 'all' || type === 'user') {
-        const userData = await userRepo.findAllWithDeleted(options);
-        result.data.users = userData.users;
-        result.data.users_pagination = userData.pagination;
-      }
-
-      if (type === 'all' || type === 'board') {
-        const boardData = await fetchDeleted('board', 'boards');
-        if (boardData) {
-          result.data.boards = boardData.boards;
-          result.data.boards_pagination = boardData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'group') {
-        const groupData = await fetchDeleted('group', 'groups');
-        if (groupData) {
-          result.data.groups = groupData.groups;
-          result.data.groups_pagination = groupData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'center') {
-        const centerData = await fetchDeleted('center', 'centers');
-        if (centerData) {
-          result.data.centers = centerData.centers;
-          result.data.centers_pagination = centerData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'task') {
-        const taskData = await fetchDeleted('task', 'tasks');
-        if (taskData) {
-          result.data.tasks = taskData.tasks;
-          result.data.tasks_pagination = taskData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'template') {
-        const templateData = await fetchDeleted('template', 'templates');
-        if (templateData) {
-          result.data.templates = templateData.templates;
-          result.data.templates_pagination = templateData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'column') {
-        const columnData = await fetchDeleted('column', 'columns');
-        if (columnData) {
-          result.data.columns = columnData.columns;
-          result.data.columns_pagination = columnData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'swimlane') {
-        const swimlaneData = await fetchDeleted('swimlane', 'swimlanes');
-        if (swimlaneData) {
-          result.data.swimlanes = swimlaneData.swimlanes;
-          result.data.swimlanes_pagination = swimlaneData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'templatecolumn') {
-        const templateColumnData = await fetchDeleted('templateColumn', 'templateColumns');
-        if (templateColumnData) {
-          result.data.templateColumns = templateColumnData.templateColumns;
-          result.data.templateColumns_pagination = templateColumnData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'templateswimlane') {
-        const templateSwimlaneData = await fetchDeleted('templateSwimlane', 'templateSwimlanes');
-        if (templateSwimlaneData) {
-          result.data.templateSwimlanes = templateSwimlaneData.templateSwimlanes;
-          result.data.templateSwimlanes_pagination = templateSwimlaneData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'tag') {
-        const tagData = await fetchDeleted('tag', 'tags');
-        if (tagData) {
-          result.data.tags = tagData.tags;
-          result.data.tags_pagination = tagData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'comment') {
-        const commentData = await fetchDeleted('comment', 'comments');
-        if (commentData) {
-          result.data.comments = commentData.comments;
-          result.data.comments_pagination = commentData.pagination;
-        }
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error in getAllDeletedRecords:', error);
-      throw error;
-    }
-  }
-
 }
 
+// ==================== SOFT DELETE METHODS ====================
+
+/**
+ * Soft delete user - Set deleted_at and change status to inactive
+ * @param {string} id - User ID
+ * @returns {Promise<Object>} Updated user
+ */
+async softDeleteUser(id) {
+  try {
+    console.log(`🗑️ Soft deleting user: ${id}`);
+    const user = await userRepo.softDelete(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    console.log(`✅ User soft deleted successfully: ${id}`);
+    return user;
+  } catch (error) {
+    console.error('❌ Error soft deleting user:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Restore soft deleted user
+ * @param {string} id - User ID
+ * @returns {Promise<Object>} Restored user
+ */
+async restoreUser(id) {
+  try {
+    console.log(`♻️ Restoring user: ${id}`);
+    const user = await userRepo.restore(id);
+    if (!user) {
+      throw new Error('User not found or not deleted');
+    }
+    console.log(`✅ User restored successfully: ${id}`);
+    return user;
+  } catch (error) {
+    console.error('❌ Error restoring user:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get all users including deleted ones (admin only)
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Users with pagination
+ */
+async getAllUsersWithDeleted(options = {}) {
+  try {
+    console.log('📋 Getting all users including deleted');
+    const result = await userRepo.findAllWithDeleted(options);
+    return result;
+  } catch (error) {
+    console.error('❌ Error getting users with deleted:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get all deleted records across different entity types (admin only)
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>} Deleted records with pagination
+ */
+async getAllDeletedRecords({ type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' }) {
+  try {
+    console.log(`📋 Getting deleted records - type: ${type}`);
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sort]: order === 'desc' ? -1 : 1 }
+    };
+
+    let results = {};
+
+    if (type === 'all' || type === 'user') {
+      const userRepo = require('../repositories/user.repository');
+      results.users = await userRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'board') {
+      const boardRepo = require('../repositories/board.repository');
+      results.boards = await boardRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'group') {
+      const groupRepo = require('../repositories/group.repository');
+      results.groups = await groupRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'task') {
+      const taskRepo = require('../repositories/task.repository');
+      results.tasks = await taskRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'template') {
+      const templateRepo = require('../repositories/template.repository');
+      results.templates = await templateRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'column') {
+      const columnRepo = require('../repositories/column.repository');
+      results.columns = await columnRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'swimlane') {
+      const swimlaneRepo = require('../repositories/swimlane.repository');
+      results.swimlanes = await swimlaneRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'center') {
+      const centerRepo = require('../repositories/center.repository');
+      results.centers = await centerRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'templatecolumn') {
+      const templateColumnRepo = require('../repositories/templateColumn.repository');
+      results.templateColumns = await templateColumnRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'templateswimlane') {
+      const templateSwimlaneRepo = require('../repositories/templateSwimlane.repository');
+      results.templateSwimlanes = await templateSwimlaneRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'tag') {
+      const tagRepo = require('../repositories/tag.repository');
+      results.tags = await tagRepo.findAllWithDeleted(options);
+    }
+
+    if (type === 'all' || type === 'comment') {
+      const commentRepo = require('../repositories/comment.repository');
+      results.comments = await commentRepo.findAllWithDeleted(options);
+    }
+
+    return {
+      success: true,
+      type,
+      data: results,
+      pagination: {
+        page: options.page,
+        limit: options.limit
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error getting deleted records:', error.message);
+    throw error;
+  }
+}
+
+}
 module.exports = new UserService();

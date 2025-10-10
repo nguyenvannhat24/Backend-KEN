@@ -3,7 +3,13 @@ const Permission = require('../models/Permission.model');
 
 class PermissionRepository {
   async create(data) {
-    return await Permission.create(data);
+    const permission = new Permission({
+  code: data.code,
+  description: data.description,
+  typePermission: data.typePermission  // gán đúng tên trường
+});
+ return await permission.save();
+
   }
 
   async findAll() {

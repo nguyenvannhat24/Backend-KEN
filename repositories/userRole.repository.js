@@ -80,6 +80,7 @@ class UserRoleRepository {
 async deleteManyByIds(ids) {
   return await UserRole.deleteMany({ _id: { $in: ids } });
 }
+
  async findByUser(userId) {
     if (!userId) throw new Error('❌ userId bị thiếu');
 
@@ -89,6 +90,55 @@ async deleteManyByIds(ids) {
 
     return userRoles;
   }
+
+async updateByIdUser(idCreate, idUser, roleUpdate) {
+  try {
+    // Kiểm tra roleUpdate xem có System_Manager không
+    if (Array.isArray(roleUpdate)) {
+      roleUpdate = roleUpdate[0]; // lấy phần tử đầu tiên nếu là mảng
+    }
+
+    if (roleUpdate === 'System_Manager') {
+      throw new Error("⚠️ Không được gán role System_Manager");
+    }
+
+    // Lấy role hiện tại của user
+    const currentRoles = await UserRole.find({ user_id: idUser }).populate('role_id');
+    const hasSystemManager = currentRoles.some(
+      (r) => r.role_id.name === 'System_Manager'
+    );
+
+    if (hasSystemManager) {
+      throw new Error("⚠️ Không thể sửa role của user System_Manager");
+    }
+
+    // Tìm id role mới
+    const role = await Role.findOne({ name: roleUpdate });
+    if (!role) throw new Error(`Không tìm thấy role với tên: ${roleUpdate}`);
+
+    const idrole = role._id;
+
+    // Xóa tất cả role cũ của user
+    await UserRole.deleteMany({ user_id: idUser });
+
+    // Tạo role mới
+    const newUserRole = {
+      user_id: idUser,
+      role_id: idrole,
+      assigned_by: idCreate,
+      status: 'active'
+    };
+
+    const result = await UserRole.create(newUserRole);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Error in updateByIdUser:', error);
+    throw error;
+  }
+}
+
+
 
 /* Tìm 1 user-role theo ID
    * @param {string} userRoleId - ID của user-role
@@ -105,6 +155,28 @@ async deleteManyByIds(ids) {
       throw error;
     }
   }
+
+    /**
+   * Lấy tất cả user đang có role theo roleId
+   * @param roleId 
+   * @returns array UserRole
+   */
+   async findByRoleId(roleId) {
+    try {
+      if (!roleId) {
+        throw new Error("Role ID không được để trống");
+      }
+
+      // Query tất cả user có role này
+      const usersWithRole = await UserRole.find({ role_id: roleId });
+
+      return usersWithRole;
+    } catch (error) {
+      console.error("❌ Error in findByRoleId:", error);
+      throw error;
+    }
+  }
+
 }
 
 module.exports = new UserRoleRepository();

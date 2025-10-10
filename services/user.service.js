@@ -1,6 +1,7 @@
 const userRepo = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
 const keycloack = require('../services/keycloak.service');
+const userRole = require('../repositories/userRole.repository');
 /**
  * User Service - Xử lý business logic cho User
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
@@ -283,50 +284,63 @@ async createUserSSO({ username, email, full_name, idSSO }) {
    * @param {Object} updateData - Dữ liệu cập nhật
    * @returns {Promise<Object|null>} User object đã cập nhật hoặc null
    */
-  async updateUser(id, updateData) {
-    try {
-      if (!id) {
-        throw new Error('ID không được để trống');
-      }
-      if (!updateData || Object.keys(updateData).length === 0) {
-        throw new Error('Dữ liệu cập nhật không được để trống');
-      }
+/**
+ * Cập nhật user
+ * @param {string} idUpdate - ID của người thực hiện update
+ * @param {string} id - ID của user cần update
+ * @param {Object} updateData - Dữ liệu cập nhật
+ */
+async updateUser(idUpdate, id, updateData) {
+  try {
+    if (!id) throw new Error('ID không được để trống');
+    if (!updateData || Object.keys(updateData).length === 0)
+      throw new Error('Dữ liệu cập nhật không được để trống');
 
-      // Validate email format nếu có
-      if (updateData.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(updateData.email)) {
-          throw new Error('Email không đúng định dạng');
-        }
+    // ✅ Validate email 
+    if (updateData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.email))
+        throw new Error('Email không đúng định dạng');
 
-        // Kiểm tra email đã tồn tại chưa (loại trừ user hiện tại)
-        const emailExists = await userRepo.isEmailExists(updateData.email, id);
-        if (emailExists) {
-          throw new Error('Email đã tồn tại trong hệ thống');
-        }
-      }
-
-      // Kiểm tra username đã tồn tại chưa (nếu có)
-      if (updateData.username) {
-        const usernameExists = await userRepo.isUsernameExists(updateData.username, id);
-        if (usernameExists) {
-          throw new Error('Username đã tồn tại trong hệ thống');
-        }
-      }
-
-      // Hash password nếu có
-      if (updateData.password) {
-        updateData.password_hash = bcrypt.hashSync(updateData.password, 10);
-        delete updateData.password; // Xóa password plain text
-      }
-
-      console.log(`✏️ Updating user: ${id}`);
-      return await userRepo.update(id, updateData);
-    } catch (error) {
-      console.error('❌ Error in updateUser:', error.message);
-      throw error;
+      const emailExists = await userRepo.isEmailExists(updateData.email, id);
+      if (emailExists) throw new Error('Email đã tồn tại trong hệ thống');
     }
+
+    // ✅ Validate username
+    if (updateData.username) {
+      const usernameExists = await userRepo.isUsernameExists(updateData.username, id);
+      if (usernameExists) throw new Error('Username đã tồn tại trong hệ thống');
+    }
+
+    // ✅ Hash password nếu có
+    if (updateData.password) {
+      updateData.password_hash = bcrypt.hashSync(updateData.password, 10);
+      delete updateData.password;
+    }
+
+    // ✅ Cập nhật role nếu có
+    if (updateData.roles) {
+      if (!Array.isArray(updateData.roles)) {
+        throw new Error('Roles phải là một mảng');
+      }
+
+      // FE truyền ["admin"] hoặc ["672c123..."]
+      const roleId = updateData.roles[0]; // chỉ lấy 1 quyền duy nhất
+      if (!roleId ) throw new Error('Role không hợp lệ');
+      
+      await userRole.updateByIdUser(idUpdate, id, roleId);
+      delete updateData.roles;
+    }
+
+    console.log(`✏️ Updating user: ${id}`);
+    return await userRepo.update(id, updateData);
+
+  } catch (error) {
+    console.error('❌ Error in updateUser:', error.message);
+    throw error;
   }
+}
+
 
   /**
    * Xóa user (soft delete)

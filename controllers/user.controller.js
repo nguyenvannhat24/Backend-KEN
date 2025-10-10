@@ -250,7 +250,7 @@ exports.update = async (req, res) => {
   try {
     const userId = req.user.id; // lấy id từ token
     const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
-    const isAdmin = roles.includes('admin');
+ const isAdmin = roles.includes('admin') || roles.includes('System_Manager'); // ✅ sửa ở đây
 
     console.log(`🔹 Request update user: ${req.params.id} by ${userId}, admin: ${isAdmin}`);
 
@@ -260,15 +260,16 @@ exports.update = async (req, res) => {
 
       if (!checkUser) {
         console.warn("⚠️ Không tìm thấy user bạn muốn cập nhật");
-        throw new Error("Không tìm thấy user bạn muốn cập nhật");
+        throw new Error("Không tìm thấy user bạn muốn cập nhật" + checkUser);
       }
 
       const typeAccount = checkUser.typeAccount;
       console.log(`🔹 Type account: ${typeAccount}`);
 
       // Luôn update trên DB trước
-      let user = await userService.updateUser(req.params.id, req.body);
+      let user = await userService.updateUser(userId, req.params.id, req.body);
       console.log("✅ User updated in local DB:", user);
+      //cập nhật role cho user
 
       // Nếu user này thuộc SSO thì cập nhật bên Keycloak
       if (typeAccount === 'SSO') {

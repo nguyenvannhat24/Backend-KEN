@@ -91,41 +91,67 @@ async getProfileById(id) {
    * @param {string} options.sortOrder - Thứ tự sort: 'asc' hoặc 'desc' (default: 'desc')
    * @returns {Promise<Object>} Object chứa users và pagination info
    */
-  async findAll(options = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = 'created_at',
-        sortOrder = 'desc'
-      } = options;
+async findAll(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
 
-      const skip = (page - 1) * limit;
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-      const [users, total] = await Promise.all([
-        User.find()
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-        User.countDocuments()
-      ]);
-
-      return {
-        users,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('Error finding all users:', error);
-      throw error;
+const pipeline = [
+  {
+    $match: { deleted_at: null } // ✅ chỉ lấy user chưa bị xóa mềm
+  },
+  {
+    $lookup: {
+      from: "UserRoles",
+      localField: "_id",
+      foreignField: "user_id",
+      as: "user_roles"
     }
+  },
+  {
+    $lookup: {
+      from: "Roles",
+      localField: "user_roles.role_id",
+      foreignField: "_id",
+      as: "roles"
+    }
+  },
+  {
+    $addFields: {
+      role_name: { $arrayElemAt: ["$roles.name", 0] }
+    }
+  },
+  { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
+  { $skip: skip },
+  { $limit: limit }
+];
+
+
+    const users = await User.aggregate(pipeline);
+
+    const total = await User.countDocuments();
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error("Error finding all users:", error);
+    throw error;
   }
+}
 
   /**
    * Tạo user mới

@@ -14,35 +14,35 @@ router.post(
 router.get(
   "/", 
   authenticateAny, 
-  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_EDIT'), // ví dụ user có quyền xem tất cả template swimlane
+  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_UPDATE'), // ví dụ user có quyền xem tất cả template swimlane
   (req, res) => templateSwimlaneController.getAll(req, res)
 );
 
 router.get(
   "/:id", 
   authenticateAny, 
-  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_EDIT'), 
+  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_UPDATE'), 
   (req, res) => templateSwimlaneController.getById(req, res)
 );
 
 router.get(
   "/template/:templateId", 
   authenticateAny, 
-  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_EDIT'), 
+  authorizeAny('TEMPLATE_CREATE', 'TEMPLATE_UPDATE'), 
   (req, res) => templateSwimlaneController.getByTemplate(req, res)
 );
 
 router.put(
   "/:id", 
   authenticateAny, 
-  authorizeAny('TEMPLATE_EDIT'), // chỉ user có quyền TEMPLATE_EDIT mới được cập nhật
+  authorizeAny('TEMPLATE_UPDATE'), // chỉ user có quyền TEMPLATE_EDIT mới được cập nhật
   (req, res) => templateSwimlaneController.update(req, res)
 );
 
 router.delete(
   "/:id", 
   authenticateAny, 
-  authorizeAny('TEMPLATE_EDIT'), // nếu muốn riêng quyền xóa có thể thêm TEMPLATE_DELETE
+  authorizeAny('TEMPLATE_UPDATE'), // nếu muốn riêng quyền xóa có thể thêm TEMPLATE_DELETE
   (req, res) => templateSwimlaneController.delete(req, res)
 );
 

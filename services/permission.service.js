@@ -4,6 +4,7 @@ const permissionRepository = require('../repositories/permission.repository');
 class PermissionService {
   async createPermission(data) {
     const existing = await permissionRepository.findByCode(data.code);
+
     if (existing) {
       throw new Error('Permission code already exists');
     }

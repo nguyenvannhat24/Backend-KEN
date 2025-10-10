@@ -61,16 +61,27 @@ class RolePermissionService {
   }
 
 
-  async updateByRoleId(roleId, permissionIds) {
+async updateByRoleId(roleId, permissionIds) {
+  // 0️⃣ Kiểm tra role có phải role hệ thống không
+  const role = await roleRepository.findById(roleId);
+  if (!role) {
+    return { success: false, message: "Role không tồn tại" };
+  }
+  
+ if ((role.name || "").trim().toLowerCase() === "system_manager".toLowerCase()) {
+  console.log("⚠️ Ngăn không sửa role System_Manager");
+  return { success: false, message: "Không thể sửa quyền của role hệ thống" };
+}
+
 
   // 1️⃣ Xóa tất cả quyền cũ của role
   await rolePermissionRepository.deleteByRoleId(roleId);
-  console.log(roleId);
+
   // 2️⃣ Thêm lại quyền mới (nếu có)
-    const newRolePermissions = permissionIds.map(pid => ({
-      role_id: roleId,
-      permission_id: pid
-    }));
+  const newRolePermissions = permissionIds.map(pid => ({
+    role_id: roleId,
+    permission_id: pid
+  }));
 
   if (newRolePermissions.length > 0) {
     await rolePermissionRepository.insertMany(newRolePermissions);
@@ -78,6 +89,7 @@ class RolePermissionService {
 
   return { success: true, message: "Cập nhật quyền cho role thành công" };
 }
+
  async countUsersByRole(roleId) {
     try {
       const role = await Role.findById(roleId);

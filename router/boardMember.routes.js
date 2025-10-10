@@ -9,7 +9,7 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 router.get(
   "/all",
   authenticateAny,
-  authorizeAny('ADMIN'), // chỉ admin mới xem được
+  authorizeAny('admin System_Manager VIEW_ALL_BOARD VIEW_BOARD'), // chỉ admin mới xem được
   boardMemberController.selectAll
 );
 
@@ -17,7 +17,7 @@ router.get(
 router.get(
   "/board/:board_id",
   authenticateAny,
-  authorizeAny('BOARD_VIEW'), // user có quyền xem board
+  authorizeAny('System_Manager admin VIEW_ALL_BOARD  VIEW_BOARD'), // user có quyền xem board
   boardMemberController.getMembers
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.post(
   "/board/:board_id",
   authenticateAny,
-  authorizeAny('BOARD_MANAGE_MEMBERS'), // quyền thêm member
+  authorizeAny('BOARD_MANAGE_MEMBERS admin System_Manager '), // quyền thêm member
   boardMemberController.addMember
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.put(
   "/board/:board_id/user/:user_id",
   authenticateAny,
-  authorizeAny('BOARD_MANAGE_MEMBERS'), // quyền quản lý role
+  authorizeAny('BOARD_MANAGE_MEMBERS System_Manager admin' ), // quyền quản lý role
   boardMemberController.updateRole
 );
 
@@ -41,7 +41,7 @@ router.put(
 router.delete(
   "/board/:board_id/user/:user_id",
   authenticateAny,
-  authorizeAny('BOARD_MANAGE_MEMBERS'), // quyền xóa member
+  authorizeAny('BOARD_MANAGE_MEMBERS System_Manager admin'), // quyền xóa member
   boardMemberController.removeMember
 );
 
@@ -49,7 +49,7 @@ router.delete(
 router.get(
   "/user/:user_id/boards",
   authenticateAny,
-  authorizeAny('BOARD_VIEW'), // quyền xem board
+  authorizeAny('VIEW_BOARD System_Manager admin'), // quyền xem board
   boardMemberController.getBoardsByUser
 );
 

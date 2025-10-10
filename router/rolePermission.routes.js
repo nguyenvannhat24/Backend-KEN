@@ -6,23 +6,23 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 router.post('/', rolePermissionController.create);
 
 // Lấy tất cả
-router.get('/',authenticateAny , rolePermissionController.getAll);
+router.get('/',authenticateAny ,authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'), rolePermissionController.getAll);
 
 // Lấy theo ID
-router.get('/:id', authenticateAny,rolePermissionController.getById);
+router.get('/:id', authenticateAny,authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'),rolePermissionController.getById);
 
 // Lấy danh sách permission theo role
-router.get('/role/:roleId',authenticateAny , rolePermissionController.getByRole);
+router.get('/role/:roleId',authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'),authenticateAny , rolePermissionController.getByRole);
 
 // Cập nhật permisson cho từng người dùng
-router.put('/RolePermission',authenticateAny , rolePermissionController.update);
+router.put('/RolePermission',authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'),authenticateAny , rolePermissionController.update);
 
 // cập nhất permission cho role theo id role 
-router.put('/updatePermisson', authenticateAny ,rolePermissionController.updatePermisson);
+router.put('/updatePermisson',authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'), authenticateAny ,rolePermissionController.updatePermisson);
 
 
 // Xóa
-router.delete('/:id',authenticateAny , rolePermissionController.delete);
+router.delete('/:id',authenticateAny ,authorizeAny('admin System_Manager ROLE_DELETE DELETE_PERMISSION ROLE_DELETE'), rolePermissionController.delete);
 // lấy danh sách tên permission theo tên role
-router.get('/nameRole/:name',rolePermissionController.getPermissionsByNameRole);
+router.get('/nameRole/:name',authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW VIEW_ALL_PERMISSION'),rolePermissionController.getPermissionsByNameRole);
 module.exports = router;

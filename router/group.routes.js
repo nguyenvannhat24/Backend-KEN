@@ -14,7 +14,7 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 router.post(
   '/',
   authenticateAny,
-  authorizeAny('GROUP_MANAGE'),
+  authorizeAny('CREATE_GROUP  '),
   groupController.create
 );
 
@@ -22,6 +22,7 @@ router.post(
 router.get(
   '/',
   authenticateAny,
+  authorizeAny('VIEW_GROUP_ALL'),
   groupController.getAll // lọc theo status và groups của user
 );
 
@@ -29,7 +30,7 @@ router.get(
 router.get(
   '/:id',
   authenticateAny,
-  authorizeAny('GROUP_MANAGE_MEMBERS'),
+  authorizeAny('VIEW_GROUP'),
   groupController.getById
 );
 
@@ -37,7 +38,7 @@ router.get(
 router.put(
   '/:id',
   authenticateAny,
-  authorizeAny('GROUP_MANAGE'),
+  authorizeAny('UPDATE_GROUP'),
   groupController.update
 );
 
@@ -45,18 +46,18 @@ router.put(
 router.delete(
   '/:id',
   authenticateAny,
-  authorizeAny('GROUP_MANAGE'),
+  authorizeAny('DELETE_GROUP'),
   groupController.delete
 );
 
 // Xóa group (Admin hệ thống)
-router.delete('/admin/:id', authenticateAny, groupController.adminDelete);
+router.delete('/admin/:id', authenticateAny,  authorizeAny('admin System_Manager'), groupController.adminDelete);
 
 // Admin only - xem tất cả groups
 router.get(
   '/admin/all',
   authenticateAny,
-  authorizeAny('admin'),
+  authorizeAny('admin System_Manager' ),
   async (req, res) => {
     try {
       const groupService = require('../services/group.service');

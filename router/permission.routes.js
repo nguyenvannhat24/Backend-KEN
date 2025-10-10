@@ -10,7 +10,7 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 router.post(
   '/',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+ 
   permissionController.create
 );
 
@@ -18,7 +18,7 @@ router.post(
 router.get(
   '/',
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+
   permissionController.getAll
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+ 
   permissionController.getById
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.put(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+
   permissionController.update
 );
 
@@ -42,7 +42,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+
   permissionController.delete
 );
 

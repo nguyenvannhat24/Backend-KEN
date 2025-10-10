@@ -112,7 +112,7 @@ class RoleService {
     }
 
     // ❌ Không cho cập nhật role System_Manager
-    if (existingRole.name === "System_Manager") {
+    if (existingRole.name === "System_Manager"  ) {
       throw new Error("Role System_Manager không được cập nhật");
     }
 
@@ -122,6 +122,8 @@ class RoleService {
       if (nameExists) {
         throw new Error('Tên role đã tồn tại');
       }
+      
+     // if(updateData.name === 'admin' || updateData.name === 'user') throw new Error('Tên role này của hệ thống ko đc sửa');
     }
 
     const updatedRole = await RoleRepository.update(id, updateData);

@@ -9,7 +9,7 @@ const boardController = require('../controllers/board.controller');
 router.get(
   '/my',
   authenticateAny,
-  authorizeAny('BOARD_VIEW'), // user có quyền xem board
+  authorizeAny('VIEW_BOARD'), // user có quyền xem board
   boardController.listMyBoards
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.get(
   '/:id',
   authenticateAny,
-  authorizeAny('BOARD_VIEW'), // member hoặc creator có quyền xem
+  authorizeAny('VIEW_BOARD'), // member hoặc creator có quyền xem
   boardController.getBoardDetail
 );
 
@@ -41,7 +41,7 @@ router.get(
 router.put(
   '/:id',
   authenticateAny,
-  authorizeAny('BOARD_CONFIG'), // member hoặc creator có quyền chỉnh sửa
+  authorizeAny('BOARD_UPDATE'), // member hoặc creator có quyền chỉnh sửa
   boardController.updateBoard
 );
 
@@ -49,7 +49,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateAny,
-  authorizeAny('BOARD_CONFIG'), // chỉ creator có quyền xóa
+  authorizeAny('BOARD_DELETE'), // chỉ creator có quyền xóa
   boardController.deleteBoard
 );
 
@@ -57,7 +57,7 @@ router.delete(
 router.put(
   '/:id/settings',
   authenticateAny,
-  authorizeAny('BOARD_CONFIG'),
+  authorizeAny('BOARD_UPDATE'),
   boardController.configureBoardSettings
 );
 
@@ -65,7 +65,7 @@ router.put(
 router.put(
   '/:boardId/swimlanes/:swimlaneId/toggle',
   authenticateAny,
-  authorizeAny('BOARD_CONFIG'),
+  authorizeAny('BOARD_UPDATE'),
   boardController.toggleSwimlane
 );
 

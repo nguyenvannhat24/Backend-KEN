@@ -55,30 +55,30 @@ router.post('/cloneUser', userController.cloneUser);
 
 
 // Lấy toàn bộ user (chỉ admin)
-router.get('/selectAll', authenticateAny,authorizeAny('System_Manager USER_VIEW_ALL VIEW_USER'), userController.SelectAll);
+router.get('/selectAll', authenticateAny,authorizeAny('System_Manager USER_VIEW_ALL'), userController.SelectAll);
 
 
 
 
-router.get('/admin/deleted', authenticateAny, authorizeAny('admin'), userController.getAllDeletedRecords);
+router.get('/admin/deleted', authenticateAny, authorizeAny('System_Manager USER_VIEW_ALL') ,userController.getAllDeletedRecords);
 
-router.get('/search', authenticateAny,authorizeAny('VIEW_USER'), userController.searchUsers);
+router.get('/search', authenticateAny, userController.searchUsers);
 // Lấy user theo ID (admin hoặc chính mình)
-router.get('/:id', authenticateAny, authorizeAny('VIEW_USER'), userController.getById);
+router.get('/:id', authenticateAny,authorizeAny('VIEW_ALL VIEW_USER USER_VIEW_ALL System_Manager'), userController.getById);
 
 // Tạo mới user (chỉ admin)
-router.post('/', authenticateAny,authorizeAny('USER_CREATE'), userController.create);
+router.post('/', authenticateAny,authenticateAny,authorizeAny('USER_CREATE System_Manager admin') , userController.create);
 
 // Cập nhật user (admin hoặc chính mình)
-router.put('/:id', authenticateAny,authorizeAny('USER_DELETE'), userController.update);
+router.put('/:id', authenticateAny, authorizeAny('USER_CREATE System_Manager admin') , userController.update);
 
 // Xóa user (chỉ admin)
-router.delete('/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.delete);
+router.delete('/:id', authenticateAny , authorizeAny('USER_DELETE System_Manager admin') , userController.delete);
 
 // Soft delete user (chỉ admin)
-router.delete('/soft/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.softDelete);
+router.delete('/soft/:id', authenticateAny, authorizeAny('System_Manager admin') , userController.softDelete);
 
 // Restore user (chỉ admin)
-router.put('/restore/:id', authenticateAny, authorizeAny('USER_DELETE'), userController.restore);
+router.put('/restore/:id', authenticateAny, authorizeAny('System_Manager admin') , userController.restore);
 
 module.exports = router;

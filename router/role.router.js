@@ -15,6 +15,7 @@ const router = express.Router();
 router.get(
   '/my-role',
   authenticateAny,
+  authorizeAny('ROLE_VIEW'),
   roleController.getUserRole
 );
 
@@ -48,7 +49,7 @@ router.get(
 router.post(
   '/',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+ authorizeAny('ROLE_CREATE'),
   roleController.createRole
 );
 
@@ -56,7 +57,7 @@ router.post(
 router.put(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+   authorizeAny('ROLE_UPDATE'),
   roleController.updateRole
 );
 
@@ -64,7 +65,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateAny,
-  authorizeAny('ROLE_MANAGE_PERMISSION'),
+ authorizeAny('ROLE_DELETE'),
   roleController.deleteRole
 );
 

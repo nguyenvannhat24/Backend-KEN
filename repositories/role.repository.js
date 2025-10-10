@@ -88,26 +88,39 @@ class RoleRepository {
    * @param {Object} updateData - Dữ liệu cập nhật
    * @returns {Object|null} Role đã cập nhật hoặc null
    */
-  async update(id, updateData) {
-    try {
-      console.log(`📋 [RoleRepository] update - Updating role ID: ${id}`, updateData);
-      const updatedRole = await roleModel.findByIdAndUpdate(
-        id, 
-        updateData, 
-        { new: true, runValidators: true }
-      ).lean();
-      
-      if (updatedRole) {
-        console.log(`✅ [RoleRepository] update - Updated role: ${updatedRole.name}`);
-      } else {
-        console.log(`⚠️ [RoleRepository] update - Role not found with ID: ${id}`);
-      }
-      return updatedRole;
-    } catch (error) {
-      console.error('❌ [RoleRepository] update - Error:', error);
-      throw error;
+async update(id, updateData) {
+  try {
+    console.log(`📋 [RoleRepository] update - Updating role ID: ${id}`, updateData);
+
+    // 1️⃣ Lấy role hiện tại
+    const existingRole = await roleModel.findById(id).lean();
+    if (!existingRole) {
+      console.log(`⚠️ [RoleRepository] update - Role not found with ID: ${id}`);
+      return { success: false, message: "Role không tồn tại" };
     }
+
+    // 2️⃣ Chặn role admin/user/System_Manager mà không ném lỗi
+    const protectedRoles = ["System_Manager", "admin", "user"];
+    if (protectedRoles.includes((existingRole.name || "").trim())) {
+      console.log(`⚠️ [RoleRepository] update - Role ${existingRole.name} không được cập nhật`);
+      return { success: false, message: `Role ${existingRole.name} không được cập nhật` };
+    }
+
+    // 3️⃣ Update role
+    const updatedRole = await roleModel.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).lean();
+
+    console.log(`✅ [RoleRepository] update - Updated role: ${updatedRole?.name}`);
+    return { success: true, data: updatedRole };
+  } catch (error) {
+    console.error('❌ [RoleRepository] update - Error:', error);
+    return { success: false, message: error.message || "Có lỗi xảy ra" };
   }
+}
+
 
   /**
    * Xóa role

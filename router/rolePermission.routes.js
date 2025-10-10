@@ -12,17 +12,17 @@ router.get('/',authenticateAny ,authorizeAny('admin System_Manager VIEW_ALL_PERM
 router.get('/:id', authenticateAny,authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'),rolePermissionController.getById);
 
 // Lấy danh sách permission theo role
-router.get('/role/:roleId',authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'),authenticateAny , rolePermissionController.getByRole);
+router.get('/role/:roleId',authenticateAny ,authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW'),authenticateAny , rolePermissionController.getByRole);
 
 // Cập nhật permisson cho từng người dùng
-router.put('/RolePermission',authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'),authenticateAny , rolePermissionController.update);
+router.put('/RolePermission',authenticateAny ,authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'),authenticateAny , rolePermissionController.update);
 
 // cập nhất permission cho role theo id role 
-router.put('/updatePermisson',authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'), authenticateAny ,rolePermissionController.updatePermisson);
+router.put('/updatePermisson',authenticateAny ,authorizeAny('admin System_Manager UPDATE_PERMISSION ROLE_EDIT'), authenticateAny ,rolePermissionController.updatePermisson);
 
 
 // Xóa
 router.delete('/:id',authenticateAny ,authorizeAny('admin System_Manager ROLE_DELETE DELETE_PERMISSION ROLE_DELETE'), rolePermissionController.delete);
 // lấy danh sách tên permission theo tên role
-router.get('/nameRole/:name',authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW VIEW_ALL_PERMISSION'),rolePermissionController.getPermissionsByNameRole);
+router.get('/nameRole/:name',authenticateAny ,authorizeAny('admin System_Manager VIEW_ALL_PERMISSION ROLE_VIEW VIEW_ALL_PERMISSION'),rolePermissionController.getPermissionsByNameRole);
 module.exports = router;

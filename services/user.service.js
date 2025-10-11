@@ -2,6 +2,7 @@ const userRepo = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
 const keycloack = require('../services/keycloak.service');
 const userRole = require('../repositories/userRole.repository');
+const { restoreUserOnKeycloak } = require('../services/keycloak.service');
 /**
  * User Service - Xử lý business logic cho User
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
@@ -501,20 +502,23 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
   /**
    * Restore user
    */
-  async restoreUser(id) {
+async  restoreUser(id) {
+  const user = await userRepo.restore(id);
+  if (!user) return null;
+
+  // 🔹 Nếu user có tài khoản SSO → kích hoạt lại trên Keycloak
+  if (user.typeAccount === 'SSO' && user.idSSO) {
     try {
-      const user = await userRepo.restore(id);
-      if (!user) {
-        throw new Error('User không tồn tại hoặc chưa bị xóa');
-      }
-      
-      console.log('Restored user:', id);
-      return user;
-    } catch (error) {
-      console.error('Error in restoreUser:', error);
-      throw error;
+      console.log(`🔹 Restoring Keycloak user: ${user.username} (${user.idSSO})`);
+      await restoreUserOnKeycloak(user.idSSO);
+      console.log('✅ Restored user on Keycloak');
+    } catch (kcError) {
+      console.error('❌ Lỗi khôi phục trên Keycloak:', kcError);
     }
   }
+
+  return user;
+}
 
   /**
    * Get all users including soft deleted

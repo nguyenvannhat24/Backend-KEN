@@ -1,7 +1,7 @@
 const userService = require('../services/user.service');
 const userRoleService = require('../services/userRole.service');
 const roleSevive = require('../services/role.service');
-const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail ,createUserWithPassword} = require('../services/keycloak.service');
+const { createUser, getUsers, getUserById, updateUser, deleteUser   ,getUserByUsername, getUserByEmail ,createUserWithPassword ,changeUserPassword ,deactivateUserOnKeycloak ,restoreUserOnKeycloak} = require('../services/keycloak.service');
 //
 
 exports.createKeycloakUserPassword = async (req, res) => {
@@ -330,7 +330,7 @@ exports.delete = async (req, res) => {
 
     // Nếu là user SSO thì xóa thêm trên Keycloak
     if (checkUser.typeAccount === "SSO" && checkUser.idSSO) {
-      await deleteUser(checkUser.idSSO); // gọi Keycloak Admin API
+      await deactivateUserOnKeycloak(checkUser.idSSO); // gọi Keycloak Admin API
     }
 
     res.json({ message: "Deleted successfully" });
@@ -379,7 +379,6 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// Đổi mật khẩu của user hiện tại
 exports.changePassword = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -388,28 +387,49 @@ exports.changePassword = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     }
-    
+
     if (!new_password || new_password.length < 6) {
       return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
     }
-    
+
+    // Lấy thông tin user trong DB
     const user = await userService.getProfile(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User không tồn tại' });
     }
-    
-    // Nếu user có password_hash, current_password là bắt buộc
+
+    // Nếu user có password_hash => local account => yêu cầu current_password
     if (user.password_hash && !current_password) {
-      return res.status(400).json({ success: false, message: 'current_password là bắt buộc khi user đã có mật khẩu' });
+      return res.status(400).json({ success: false, message: 'Cần nhập mật khẩu hiện tại' });
     }
-    
+
+    // 1️⃣ Đổi mật khẩu trong database local
     const result = await userService.changePassword(userId, current_password, new_password);
+    console.log('✅ Đã đổi mật khẩu trong local DB');
+
+    // 2️⃣ Nếu là tài khoản SSO, đổi thêm mật khẩu trên Keycloak
+    if (user.typeAccount === 'SSO' && user.idSSO) {
+      try {
+        console.log(`🔹 Đang đổi mật khẩu trên Keycloak cho user ${user.username} (${user.idSSO})`);
+
+        // Gọi sang keycloak.service
+        await changeUserPassword(user.idSSO, new_password);
+
+        console.log('✅ Đã đổi mật khẩu trên Keycloak');
+      } catch (kcError) {
+        console.error('❌ Lỗi đổi mật khẩu Keycloak:', kcError);
+        // Không cần throw ra ngoài, chỉ cảnh báo — vì local vẫn đã đổi
+      }
+    }
+
     res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+
   } catch (error) {
     console.error('❌ changePassword error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+
 
 
 exports.searchUsers = async (req, res) => {
@@ -435,20 +455,57 @@ exports.updateMyProfile = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     }
-    
-    const { full_name, avatar_url } = req.body;
+
+    // Lấy dữ liệu người dùng hiện tại để kiểm tra loại tài khoản
+    const userInDB = await userService.getUserById(userId);
+    if (!userInDB) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    const { full_name, avatar_url, email } = req.body;
     const updateData = {};
-    
     if (full_name !== undefined) updateData.full_name = full_name;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
-    
-    const user = await userService.updateProfile(userId, updateData);
-    res.json({ success: true, message: 'Cập nhật profile thành công', data: user });
+    if (email !== undefined) updateData.email = email;
+
+    // Cập nhật trước trong database
+    const updatedUser = await userService.updateProfile(userId, updateData);
+    console.log("✅ Updated user in DB:", updatedUser);
+
+    // Nếu user dùng SSO, cập nhật bên Keycloak
+    if (userInDB.typeAccount === 'SSO') {
+      const id = userInDB.idSSO;
+      console.log(`🔹 Updating user on Keycloak with ID: ${id}`);
+
+      // Map sang định dạng của Keycloak
+      const keycloakPayload = {
+        username: updatedUser.username,
+        email: updatedUser.email || userInDB.email,
+        firstName: updatedUser.full_name ? updatedUser.full_name.split(" ")[0] : userInDB.full_name,
+        lastName: updatedUser.full_name ? updatedUser.full_name.split(" ").slice(1).join(" ") : "",
+        attributes: {
+          avatar_url: updatedUser.avatar_url || userInDB.avatar_url
+        }
+      };
+
+      // Gọi API cập nhật Keycloak
+      await updateUser(id, keycloakPayload);
+      console.log("✅ User profile updated on Keycloak");
+    }
+
+    res.json({
+      success: true,
+      message: 'Cập nhật profile thành công',
+      data: updatedUser
+    });
+
   } catch (error) {
     console.error('❌ updateMyProfile error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
-}
+};
+
+
 // Soft delete user (chỉ admin)
 exports.softDelete = async (req, res) => {
   try {

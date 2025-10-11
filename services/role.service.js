@@ -158,10 +158,10 @@ async deleteRole(id) {
     }
 
     // Check if role is being used by any user
-    const usersWithRole = await UserRoleRepository.findByRoleId(id);
-    if (usersWithRole && usersWithRole.length > 0) {
-      throw new Error('Không thể xóa role đang được sử dụng bởi user');
-    }
+    // const usersWithRole = await UserRoleRepository.findByRoleId(id);
+    // if (usersWithRole && usersWithRole.length > 0) {
+    //   throw new Error('Không thể xóa role đang được sử dụng bởi user');
+    // }
 
     const deletedRole = await RoleRepository.delete(id);
     console.log(`✅ [RoleService] deleteRole - Deleted role: ${deletedRole.name}`);

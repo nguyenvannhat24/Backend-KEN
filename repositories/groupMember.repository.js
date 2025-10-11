@@ -84,6 +84,21 @@ async selectAll() {
   async deleteAllByGroup(group_id) {
     return await GroupMember.deleteMany({ group_id });
   }
+  async findByRole(group_id, roleName) {
+  return GroupMember.find({
+    group_id,
+    role_in_group: roleName
+  });
+}
+
+  async findMembersByRole(group_id, role_in_group) {
+    return await GroupMember.find({
+      group_id,
+      role_in_group: role_in_group.trim()
+    });
+  }
+
+
 }
 
 module.exports = new GroupMemberRepository();

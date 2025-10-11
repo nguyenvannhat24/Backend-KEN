@@ -100,8 +100,8 @@ app.use('/api/import', importRoutes);
 app.use('/api/permission',permissionRoutes);
 app.use("/api/RolePermission",RolePermissionRoutes);
 
-app.use('/api',user);
-
+//app.use('/api',user);
+app.use('/api/user', user);
 app.use('/api/img',uploadImg); // thêm và lấu ulr
 
 app.use('/api/uploads', express.static('uploads'));

@@ -100,6 +100,14 @@ async function testConnection() {
   console.log('✅ Keycloak connection OK, sample users:', users.map(u => u.username));
 }
 
+async function deactivateUserOnKeycloak(userId) {
+  return withRetry(() =>
+    kcAdminClient.users.update(
+      { id: userId },
+      { enabled: false } // 👈 chuyển trạng thái thành "vô hiệu hóa"
+    )
+  );
+}
 // keycloakService.js
 async function createUserWithPassword(userData, password) {
   return withRetry(async () => {
@@ -124,6 +132,33 @@ async function createUserWithPassword(userData, password) {
   });
 }
 
+// 🟣 CHANGE USER PASSWORD
+async function changeUserPassword(userId, newPassword) {
+  return withRetry(async () => {
+    console.log(`🔐 [KeycloakService] Changing password for userId: ${userId}`);
+    await kcAdminClient.users.resetPassword({
+      id: userId,
+      credential: {
+        type: 'password',
+        value: newPassword,
+        temporary: false, // false = người dùng không cần đổi lại khi đăng nhập
+      },
+    });
+    console.log(`✅ [KeycloakService] Password changed successfully for user ${userId}`);
+    return true;
+  });
+}
+// ✅ Khôi phục user trên Keycloak (bật lại tài khoản)
+async function restoreUserOnKeycloak(userId) {
+  return withRetry(() =>
+    kcAdminClient.users.update(
+      { id: userId },
+      { enabled: true } // 👈 kích hoạt lại user
+    )
+  );
+}
+
+
 module.exports = {
   initKeycloak,
   createUser,
@@ -134,5 +169,8 @@ module.exports = {
   testConnection,
   getUserByUsername,
   getUserByEmail,
-  createUserWithPassword
+  createUserWithPassword,
+  changeUserPassword,
+  deactivateUserOnKeycloak,
+  restoreUserOnKeycloak
 };

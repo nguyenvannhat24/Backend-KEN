@@ -104,9 +104,9 @@ async updateByIdUser(idCreate, idUser, roleUpdate) {
 
     // Lấy role hiện tại của user
     const currentRoles = await UserRole.find({ user_id: idUser }).populate('role_id');
-    const hasSystemManager = currentRoles.some(
-      (r) => r.role_id.name === 'System_Manager'
-    );
+const hasSystemManager = currentRoles.some(
+  (r) => r.role_id && r.role_id.name === 'System_Manager'
+);
 
     if (hasSystemManager) {
       throw new Error("⚠️ Không thể sửa role của user System_Manager");

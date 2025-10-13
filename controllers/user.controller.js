@@ -105,7 +105,7 @@ exports.SelectAll = async (req, res) => {
   try {
     const { page = 1, limit = 10, sortBy = "created_at", sortOrder = "desc" } = req.query;
 
-    const userAll = await userService.viewAll({
+    const userAll = await userService.getAllUsers({
       page: parseInt(page),
       limit: parseInt(limit),
       sortBy,
@@ -114,11 +114,15 @@ exports.SelectAll = async (req, res) => {
 
     return res.json({
       success: true,
-      ...userAll // chứa cả users + pagination
+      ...userAll
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Lỗi server' });
+    console.error('Error in SelectAll:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Lỗi server',
+      message: error.message 
+    });
   }
 };
 
@@ -127,58 +131,95 @@ exports.SelectAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const user = await userService.getUserById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getById:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByEmail = async (req, res) => {
   try {
     const user = await userService.getUserByEmail(req.params.email);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByEmail:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByName = async (req, res) => {
   try {
     const user = await userService.getUserByUsername(req.params.name);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByName:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByNumberPhone = async (req, res) => {
   try {
-    const user = await userService.getUserByNumberPhone(req.params.numberphone);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    const user = await userService.getUserByPhoneNumber(req.params.numberphone);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByNumberPhone:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.create = async (req, res) => {
   try {
-    // 1. Tạo user (local + keycloak)
     const user = await userService.createUser(req.body);
 
-    // 2. Lấy danh sách roles từ body (nếu không có thì mặc định "user")
     const rolesFromBody = req.body.roles && Array.isArray(req.body.roles) 
       ? req.body.roles 
       : ["user"];
 
-    // 3. Gán roles cho user
     for (const roleName of rolesFromBody) {
       const roleId = await roleSevive.getIdByName(roleName);
       if (!roleId) {
-        console.warn(`⚠️ Role "${roleName}" không tồn tại, bỏ qua`);
+        console.warn(`Role "${roleName}" không tồn tại, bỏ qua`);
         continue;
       }
 
@@ -188,15 +229,42 @@ exports.create = async (req, res) => {
       });
     }
 
-    // 4. Trả về user + roles
     res.status(201).json({
+      success: true,
       message: "User created successfully",
       data: user,
       roles: rolesFromBody
     });
   } catch (err) {
-    console.error("❌ Error in create user:", err);
-    res.status(400).json({ message: err.message });
+    console.error("Error in create user:", err);
+    
+    // Xử lý lỗi duplicate key
+    if (err.code === 11000) {
+      if (err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (err.keyPattern && err.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -251,30 +319,20 @@ exports.update = async (req, res) => {
     const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
     const isAdmin = roles.includes('admin');
 
-    console.log(`🔹 Request update user: ${req.params.id} by ${userId}, admin: ${isAdmin}`);
-
     if (userId == req.params.id || isAdmin) {
       const checkUser = await userService.getUserById(req.params.id);
-      console.log("🔹 checkUser:", checkUser);
 
       if (!checkUser) {
-        console.warn("⚠️ Không tìm thấy user bạn muốn cập nhật");
         throw new Error("Không tìm thấy user bạn muốn cập nhật");
       }
 
       const typeAccount = checkUser.typeAccount;
-      console.log(`🔹 Type account: ${typeAccount}`);
 
-      // Luôn update trên DB trước
       let user = await userService.updateUser(req.params.id, req.body);
-      console.log("✅ User updated in local DB:", user);
 
       // Nếu user này thuộc SSO thì cập nhật bên Keycloak
       if (typeAccount === 'SSO') {
         const id = checkUser.idSSO; // ID user trên Keycloak
-        console.log(`🔹 Updating user on Keycloak with ID: ${id}`);
-
-        // Map dữ liệu từ payload frontend sang schema của Keycloak
         const keycloakPayload = {
           username: req.body.username || checkUser.username,
           email: req.body.email || checkUser.email,
@@ -293,26 +351,56 @@ exports.update = async (req, res) => {
           ];
         }
 
-        console.log("🔹 Keycloak payload:", keycloakPayload);
-
-        await updateUser(id, keycloakPayload); // gọi hàm update lên Keycloak
-        console.log("✅ User updated on Keycloak");
+        await updateUser(id, keycloakPayload);
       }
 
       if (!user) {
-        console.warn("⚠️ User not found after update");
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ 
+          success: false,
+          message: "User not found" 
+        });
       }
 
-      console.log("✅ Update process finished, returning updated user");
-      res.json(user);
+      res.json({ 
+        success: true,
+        data: user 
+      });
     } else {
-      console.warn("⚠️ User không có quyền cập nhật user này");
-      res.status(403).json({ message: "Bạn không có quyền cập nhật user này" });
+      res.status(403).json({ 
+        success: false,
+        message: "Bạn không có quyền cập nhật user này" 
+      });
     }
   } catch (err) {
-    console.error("❌ Error in update user:", err);
-    res.status(400).json({ message: err.message });
+    console.error("Error in update user:", err);
+    
+    // Xử lý lỗi duplicate key
+    if (err.code === 11000) {
+      if (err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (err.keyPattern && err.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -347,12 +435,12 @@ exports.delete = async (req, res) => {
 
 exports.viewProfile = async (req, res) => {
   try {
-    const { userId } = req.body; // Lấy userId từ body
+    const { userId } = req.body;
     if (!userId) {
       return res.status(400).json({ success: false, message: "userId là bắt buộc" });
     }
 
-    const profile = await userService.getProfile(userId);
+    const profile = await userService.getUserById(userId);
     if (!profile) {
       return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
     }
@@ -380,7 +468,7 @@ exports.getMe = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('❌ getMe error:', err);
+    console.error('getMe error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -409,10 +497,10 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'current_password là bắt buộc khi user đã có mật khẩu' });
     }
     
-    const result = await userService.changePassword(userId, current_password, new_password);
+    const result = await userService.updateUser(userId, { password: new_password });
     res.json({ success: true, message: 'Đổi mật khẩu thành công' });
   } catch (error) {
-    console.error('❌ changePassword error:', error);
+    console.error('changePassword error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
@@ -447,10 +535,34 @@ exports.updateMyProfile = async (req, res) => {
     if (full_name !== undefined) updateData.full_name = full_name;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     
-    const user = await userService.updateProfile(userId, updateData);
+    const user = await userService.updateUser(userId, updateData);
     res.json({ success: true, message: 'Cập nhật profile thành công', data: user });
   } catch (error) {
-    console.error('❌ updateMyProfile error:', error);
+    console.error('updateMyProfile error:', error);
+    
+    // Xử lý lỗi duplicate key
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (error.keyPattern && error.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
+      });
+    }
+    
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

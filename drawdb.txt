@@ -1,0 +1,308 @@
+Table Users [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	email varchar(200) [ not null ]
+	username varchar(100)
+	password_hash binary
+	full_name varchar(200)
+	avatar_url varchar(500)
+	status varchar(30)
+	created_at timestamp
+	updated_at timestamp
+        deleted_at timestamp
+}
+
+Table Roles [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	name varchar(50) [ not null ]
+	description varchar(300)
+}
+
+Table UserRoles [headercolor: #175e7a] {
+	user_id uuid
+	role_id uuid
+
+	indexes {
+		(user_id, role_id) [ name: 'UserRole_index_0' ]
+	}
+}
+
+Table Permissions [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	code varchar(100) [ not null ]
+	description varchar(300)
+}
+
+Table RolePermissions [headercolor: #175e7a] {
+	role_id uuid
+	permission_id uuid
+
+	indexes {
+		(role_id, permission_id) [ name: 'RolePermission_index_1' ]
+	}
+}
+
+Table Centers [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	name varchar(200) [ not null ]
+	address varchar(300)
+}
+
+Table CenterMembers [headercolor: #175e7a] {
+	center_id uuid
+	user_id uuid
+
+	indexes {
+		(center_id, user_id) [ name: 'CenterMember_index_3' ]
+	}
+}
+
+Table Groups [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	center_id uuid
+	name varchar(200) [ not null ]
+	description varchar(300)
+}
+
+Table GroupMembers [headercolor: #175e7a] {
+	group_id uuid
+	user_id uuid
+	role_in_group varchar(50)
+
+	indexes {
+		(group_id, user_id) [ name: 'GroupMember_index_4' ]
+	}
+}
+
+Table Boards [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	title varchar(200) [ not null ]
+	description varchar(500)
+	created_at timestamp
+	updated_at timestamp
+	is_template boolean
+}
+
+Table BoardMembers [headercolor: #175e7a] {
+	user_id uuid
+	board_id uuid
+	role_in_board varchar(30)
+	Creator boolean
+
+	indexes {
+		(user_id, board_id) [ name: 'BoardMember_index_5' ]
+	}
+}
+
+Table Columns [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	board_id uuid [ not null ]
+	name varchar(100) [ not null ]
+	order int [ not null ]
+}
+
+Table Swimlanes [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	board_id uuid [ not null ]
+	name varchar(100) [ not null ]
+	order int [ not null ]
+
+	indexes {
+		(board_id, name) [ name: 'Swimlane_index_7', unique ]
+	}
+}
+
+Table Tasks [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	board_id uuid [ not null ]
+	column_id uuid [ not null ]
+	swimlane_id uuid
+	title varchar(200) [ not null ]
+	description text
+	priority varchar(20)
+	start_date date
+	due_date date
+	estimate_hours decimal(6,2)
+	created_by uuid [ not null ]
+	assigned_to uuid
+	created_at timestamp
+	updated_at timestamp
+}
+
+Table Tags [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	name varchar(50) [ not null ]
+	color varchar(20)
+	board_id integer
+}
+
+Table TaskTags [headercolor: #175e7a] {
+	task_id uuid
+	tag_id uuid
+
+	indexes {
+		(task_id, tag_id) [ name: 'TaskTag_index_8' ]
+	}
+}
+
+Table Comments [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	task_id uuid [ not null ]
+	user_id uuid [ not null ]
+	content text
+	created_at timestamp
+}
+
+Table boardTemplates [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	name varchar(200)
+	description varchar(500)
+	created_by uuid [ not null ]
+	created_at timestamp
+	updated_at timestamp
+}
+
+Table TemplateColumns [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	template_id uuid [ not null ]
+	name varchar(100)
+	order_index int
+}
+
+Table TemplateSwimlanes [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	template_id uuid [ not null ]
+	name varchar(100)
+	order_index int
+}
+
+Table UserPoints [headercolor: #175e7a] {
+	user_id uuid
+	center_id uuid
+	updated_at timestamp
+
+	indexes {
+		(user_id, center_id) [ name: 'UserPoint_index_9' ]
+	}
+}
+
+Table Notifications [headercolor: #175e7a] {
+	id uuid [ pk, unique ]
+	user_id uuid [ not null ]
+	title varchar(200)
+	body varchar(1000)
+	type varchar(50)
+	created_at timestamp
+	read_at timestamp
+}
+
+Ref fk_User_id_UserRole {
+	Users.id < UserRoles.user_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Role_id_UserRole {
+	Roles.id < UserRoles.role_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Role_id_RolePermission {
+	Roles.id < RolePermissions.role_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Permission_id_RolePermission {
+	Permissions.id < RolePermissions.permission_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Center_id_CenterMember {
+	Centers.id < CenterMembers.center_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_CenterMember {
+	Users.id < CenterMembers.user_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Center_id_Group {
+	Centers.id < Groups.center_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Group_id_GroupMember {
+	Groups.id < GroupMembers.group_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_GroupMember {
+	Users.id < GroupMembers.user_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_BoardMember {
+	Users.id < BoardMembers.user_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Board_id_BoardMember {
+	Boards.id < BoardMembers.board_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Board_id_Column {
+	Boards.id < Columns.board_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Board_id_Swimlane {
+	Boards.id < Swimlanes.board_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Board_id_Task {
+	Boards.id < Tasks.board_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Column_id_Task {
+	Columns.id < Tasks.column_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Swimlane_id_Task {
+	Swimlanes.id < Tasks.swimlane_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Task {
+	Users.id < Tasks.created_by [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Task {
+	Users.id < Tasks.assigned_to [ delete: no action, update: no action ]
+}
+
+Ref fk_Task_id_TaskTag {
+	Tasks.id < TaskTags.task_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Tag_id_TaskTag {
+	Tags.id < TaskTags.tag_id [ delete: no action, update: no action ]
+}
+
+Ref fk_Task_id_Comment {
+	Tasks.id < Comments.task_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Comment {
+	Users.id < Comments.user_id [ delete: no action, update: no action ]
+}
+
+Ref "fk_User_id_board Template" {
+	Users.id < boardTemplates.created_by [ delete: no action, update: no action ]
+}
+
+Ref "fk_board Template_id_TemplateColumn" {
+	boardTemplates.id < TemplateColumns.template_id [ delete: no action, update: no action ]
+}
+
+Ref "fk_board Template_id_TemplateSwimlane" {
+	boardTemplates.id < TemplateSwimlanes.template_id [ delete: no action, update: no action ]
+}
+
+Ref "fk_User_id_User Point" {
+	Users.id < UserPoints.user_id [ delete: no action, update: no action ]
+}
+
+Ref "fk_Center_id_User Point" {
+	Centers.id < UserPoints.center_id [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Notification {
+	Users.id < Notifications.user_id [ delete: no action, update: no action ]
+}

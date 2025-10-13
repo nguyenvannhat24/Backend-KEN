@@ -601,38 +601,7 @@ exports.updateMyProfile = async (req, res) => {
 };
 
 
-// Soft delete user (chỉ admin)
-exports.softDelete = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await userService.softDeleteUser(id);
-    
-    // Xử lý lỗi duplicate key
-    if (error.code === 11000) {
-      if (error.keyPattern && error.keyPattern.email) {
-        return res.status(400).json({
-          success: false,
-          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
-          error: "DUPLICATE_EMAIL"
-        });
-      }
-      if (error.keyPattern && error.keyPattern.username) {
-        return res.status(400).json({
-          success: false,
-          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
-          error: "DUPLICATE_USERNAME"
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: "Dữ liệu đã tồn tại trong hệ thống",
-        error: "DUPLICATE_DATA"
-      });
-    }
-    
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
+
 
 // ==================== SOFT DELETE ENDPOINTS ====================
 

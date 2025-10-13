@@ -46,18 +46,7 @@ async softDelete(id) {
     throw error;
   }
 
-  async softDelete(id) {
-    try {
-      return await Template.findByIdAndUpdate(
-        id,
-        { deleted_at: new Date() },
-        { new: true }
-      );
-    } catch (error) {
-      console.error('Error soft deleting template:', error);
-      throw error;
-    }
-  }
+}
 
   async findAllWithDeleted(options = {}) {
     try {
@@ -105,49 +94,7 @@ async softDelete(id) {
   }
 }
 
-async findAllWithDeleted(options = {}) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      sortBy = 'created_at',
-      sortOrder = 'desc'
-    } = options;
 
-    const skip = (page - 1) * limit;
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-    const query = {
-      $or: [
-        { deleted_at: null },
-        { deleted_at: { $ne: null } }
-      ]
-    };
-
-    const [templates, total] = await Promise.all([
-      Template.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Template.countDocuments(query)
-    ]);
-
-    return {
-      templates,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
-  } catch (error) {
-    console.error('Error finding all templates with deleted:', error);
-    throw error;
-  }
-}
-
-}
 
 module.exports = new TemplateRepository();

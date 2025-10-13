@@ -97,6 +97,14 @@ async selectAll() {
       role_in_group: role_in_group.trim()
     });
   }
+ async findAllByGroup(group_id) {
+    if (!group_id) throw new Error("Thiếu group_id");
+
+    // Lấy danh sách thành viên thuộc group
+    const members = await GroupMember.find({ group_id }).lean();
+
+    return members; // trả về mảng object (không phải document mongoose)
+  }
 
 
 }

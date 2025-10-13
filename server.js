@@ -31,7 +31,7 @@ const permissionRoutes = require('./router/permission.routes');
 const RolePermissionRoutes = require('./router/rolePermission.routes');
 
 const uploadImg  =require('./router/uploadimg.router');
-
+const taskImportRoutes = require('./router/taskImport.routes');
 // --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
 app.use(session({
@@ -103,7 +103,7 @@ app.use("/api/RolePermission",RolePermissionRoutes);
 //app.use('/api',user);
 app.use('/api/user', user);
 app.use('/api/img',uploadImg); // thêm và lấu ulr
-
+app.use('/api/tasks', taskImportRoutes);
 app.use('/api/uploads', express.static('uploads'));
 
 // --- Start server ---

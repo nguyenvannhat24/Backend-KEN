@@ -123,29 +123,45 @@ class GroupMemberService {
 
 
   async removeMember({ requester_id, user_id, group_id }) {
-    const requester = await userRepo.findById(requester_id);
-    if (!requester) throw new Error("Người yêu cầu không tồn tại");
+  const requester = await userRepo.findById(requester_id);
+  if (!requester) throw new Error("Người yêu cầu không tồn tại");
 
-    // ✅ System Manager/Admin được phép xóa bất kỳ ai
-    if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
-      const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
-      if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
+  // ✅ Lấy danh sách thành viên hiện tại
+  const members = await groupMemberRepo.findAllByGroup(group_id);
+  if (!members || members.length === 0) {
+    throw new Error("Nhóm không có thành viên nào");
+  }
 
-      const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
-      if (requesterRole !== "người tạo" && requesterRole !== "quản trị viên") {
-        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể xóa thành viên");
-      }
+  // ❗ Nếu nhóm chỉ có 1 người, không cho phép xóa
+  if (members.length === 1) {
+    throw new Error("Không thể xóa thành viên cuối cùng của nhóm");
+  }
 
-      if (requester_id === user_id && requesterRole === "người tạo") {
-        throw new Error("Người tạo group không thể xóa chính mình");
-      }
+  // ✅ System Manager/Admin được phép xóa bất kỳ ai
+  if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
+    const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
+    if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
+
+    const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
+    if (requesterRole !== "người tạo" && requesterRole !== "quản trị viên") {
+      throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể xóa thành viên");
     }
 
-    const result = await groupMemberRepo.removeMember(user_id, group_id);
-    if (result.deletedCount === 0) throw new Error("Không tìm thấy thành viên để xóa");
-
-    return true;
+    // ❌ Không cho người tạo xóa chính mình
+    if (requester_id === user_id && requesterRole === "người tạo") {
+      throw new Error("Người tạo group không thể xóa chính mình");
+    }
   }
+
+  // ✅ Thực hiện xóa
+  const result = await groupMemberRepo.removeMember(user_id, group_id);
+  if (result.deletedCount === 0) {
+    throw new Error("Không tìm thấy thành viên để xóa");
+  }
+
+  return true;
+}
+
 
   async getMembers(group_id) {
     return await groupMemberRepo.getMembersByGroup(group_id);

@@ -100,25 +100,29 @@ async selectedAll(){
   }
 
 
- async cloneBoard(id_template, { title, description, userId }) {
+async cloneBoard(id_template, { title, description, userId }) {
   try {
-    // 0. Validate input
-    if (!id_template) {
-      throw new Error('Thiếu id_template');
-    }
-    if (!title || title.trim() === '') {
-      throw new Error('Tên board không được để trống');
-    }
-    if (!userId) {
-      throw new Error('Thiếu userId');
-    }
+    // 0️⃣ Validate input
+    if (!id_template) throw new Error('Thiếu id_template');
+    if (!title || title.trim() === '') throw new Error('Tên board không được để trống');
+    if (!userId) throw new Error('Thiếu userId');
 
-    
+    const cleanTitle = title.trim();
 
-    // 1. Kiểm tra template tồn tại
+    // 1️⃣ Kiểm tra template tồn tại
     await require('./template.service').getTemplateById(id_template);
 
-    // 2. Lấy cấu trúc từ template (đảm bảo có thứ tự ổn định)
+    // 2️⃣ Kiểm tra trùng tên board của người dùng
+    const existingBoard = await boardRepo.findOne({
+      created_by: userId,
+      title: { $regex: new RegExp(`^${cleanTitle}$`, 'i') } // không phân biệt hoa thường
+    });
+
+    if (existingBoard) {
+      throw new Error(`Bạn đã có board với tên "${cleanTitle}" rồi.`);
+    }
+
+    // 3️⃣ Lấy cấu trúc từ template
     const templateColumnService = require('./templateColumn.service');
     const templateSwimlaneService = require('./templateSwimlane.service');
     const columns = (await templateColumnService.list(id_template)) || [];
@@ -128,20 +132,22 @@ async selectedAll(){
       throw new Error('Template không hợp lệ: dữ liệu không phải mảng');
     }
 
-    // 3. Clone trong 1 transaction để đảm bảo toàn vẹn
+    // 4️⃣ Clone trong transaction
     const session = await mongoose.startSession();
     session.startTransaction();
+
     let newBoard, newColumns = [], newSwimlanes = [];
+
     try {
-      // 3.1 Tạo board mới (board thật, không phải template)
+      // 4.1️⃣ Tạo board mới
       newBoard = await boardRepo.createWithSession({
-        title,
+        title: cleanTitle,
         description,
         is_template: false,
         created_by: userId
       }, session);
 
-      // 3.2 Thêm creator vào BoardMembers
+      // 4.2️⃣ Thêm người tạo vào BoardMembers
       await boardMemberRepo.addMember({
         board_id: newBoard._id,
         user_id: userId,
@@ -149,7 +155,7 @@ async selectedAll(){
         Creator: true,
       }, session);
 
-      // 3.3 Clone columns
+      // 4.3️⃣ Clone columns
       if (columns.length > 0) {
         newColumns = await columnRepo.insertMany(
           columns.map(col => ({
@@ -161,7 +167,7 @@ async selectedAll(){
         );
       }
 
-      // 3.4 Clone swimlanes
+      // 4.4️⃣ Clone swimlanes
       if (swimlanes.length > 0) {
         newSwimlanes = await swimlaneRepo.insertMany(
           swimlanes.map(lane => ({
@@ -175,6 +181,7 @@ async selectedAll(){
 
       await session.commitTransaction();
       session.endSession();
+
     } catch (txErr) {
       await session.abortTransaction();
       session.endSession();

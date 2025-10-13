@@ -4,8 +4,9 @@ const User = require('../models/usersModel');
 const upload = require('../config/multer'); // file multer config
 const fs = require('fs');
 const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth');
+const { uploadAvatar, uploadFile } = require('../config/multer');
 // Upload avatar
-router.post('/users/:id/avatar', authenticateAny ,upload.single('avatar'), async (req, res) => {
+router.post('/users/:id/avatar', authenticateAny ,uploadAvatar.single('avatar'), async (req, res) => {
   try {
     const userId = req.params.id;
 

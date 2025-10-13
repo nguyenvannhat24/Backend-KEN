@@ -28,5 +28,5 @@ router.delete("/admin", authenticateAny, authorizeAny('admin System_Manager DELE
 router.get("/admin/all", authenticateAny, authorizeAny('admin System_Manager ' ), groupMemberController.selectAll);
 
 //
-router.post("/getGroupUser",authenticateAny , authorizeAny('admin System_Manager ' ), groupMemberController.selecGroupUser);
+router.post("/getGroupUser",authenticateAny , authorizeAny('admin System_Manager VIEW_GROUP' ), groupMemberController.selecGroupUser);
 module.exports = router;

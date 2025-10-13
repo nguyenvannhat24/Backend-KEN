@@ -285,6 +285,39 @@ class TaskController {
     }
   }
 
+  // Cập nhật thời gian ước tính - Story 22
+  async updateEstimate(req, res) {
+    try {
+      const { id } = req.params;
+      const { estimate_hours } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      if (estimate_hours === undefined || estimate_hours === null) {
+        return res.status(400).json({
+          success: false,
+          message: 'estimate_hours là bắt buộc'
+        });
+      }
+
+      const updatedTask = await taskService.updateTask(id, { estimate_hours }, userId);
+      
+      res.json({
+        success: true,
+        message: 'Cập nhật thời gian ước tính thành công',
+        data: updatedTask
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
   // Sắp xếp lại thứ tự tasks trong column (Jira style)
   async reorderTasks(req, res) {
     try {

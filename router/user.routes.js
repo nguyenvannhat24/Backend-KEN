@@ -4,19 +4,9 @@ const { authenticateAny, authorizeAny, adminAny } = require('../middlewares/auth
 
 const router = express.Router();
 
-/**
- * User Routes - Quản lý người dùng
- * Tất cả routes đều cần authentication
- */
-
-// ==================== AUTHENTICATED ROUTES ====================
-
-// Xem profile chính mình
 router.post('/getprofile', authenticateAny, userController.viewProfile);
 
-// Xem roles của chính mình
 router.get('/myRoles', authenticateAny, (req, res) => {
-  console.log('User info:', req.user);
   res.json({
     email: req.user.email,
     username: req.user.username,
@@ -24,7 +14,6 @@ router.get('/myRoles', authenticateAny, (req, res) => {
   });
 });
 
-// Lấy thông tin bản thân
 router.get('/me', authenticateAny, userController.getMe);
 
 // Cập nhật profile chính mình
@@ -33,13 +22,11 @@ router.put('/me', authenticateAny, userController.updateMyProfile);
 // Đổi mật khẩu
 router.put('/change-password', authenticateAny, userController.changePassword);
 
-
 // Lấy user theo email / name (cụ thể)
 router.get('/email/:email', authenticateAny, userController.getByEmail);
 router.get('/name/:name', authenticateAny, userController.getByName);
-router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin'), userController.getByNumberPhone);
-// Đổi mật khẩu
-router.put('/change-password', authenticateAny, userController.changePassword);
+router.get('/phone/:numberphone', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getByNumberPhone);
+
 // Keycloak CRUD routes
 router.put('/keycloak/:id', authenticateAny, userController.updateKeycloakUser);
 router.get('/keycloak', authenticateAny, userController.getAllKeycloakUsers);
@@ -80,5 +67,11 @@ router.delete('/soft/:id', authenticateAny, authorizeAny('System_Manager admin')
 
 // Restore user (chỉ admin)
 router.put('/restore/:id', authenticateAny, authorizeAny('System_Manager admin') , userController.restore);
+
+// Get all users with deleted (admin hoặc System_Manager)
+router.get('/admin/with-deleted', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getAllWithDeleted);
+
+// Get all deleted records (admin hoặc System_Manager)
+router.get('/admin/deleted', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getAllDeletedRecords);
 
 module.exports = router;

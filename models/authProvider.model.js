@@ -1,9 +1,9 @@
-const mongoose_ap = require('mongoose');
-const { uuidString: uuid_ap, Schema: Schema_ap } = require('./_shared');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
+const { v4: uuidv4 } = require('uuid');
 
-
-const AuthProviderSchema = new Schema_ap({
-_id: uuid_ap,
+const AuthProviderSchema = new Schema({
+_id: { type: String, default: () => uuidv4() },
 user_id: { type: String, ref: 'User', required: true, index: true },
 provider: { type: String, required: true, maxlength: 50 },
 provider_user_id: { type: String, required: true, maxlength: 200 },
@@ -13,5 +13,5 @@ provider_user_id: { type: String, required: true, maxlength: 200 },
 AuthProviderSchema.index({ provider: 1, provider_user_id: 1 }, { name: 'AuthProvider_index_2', unique: true });
 
 
-const AuthProvider = mongoose_ap.model('AuthProvider', AuthProviderSchema);
+const AuthProvider = mongoose.model('AuthProvider', AuthProviderSchema);
 module.exports = AuthProvider;

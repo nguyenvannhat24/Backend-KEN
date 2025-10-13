@@ -47,6 +47,8 @@ class GroupMemberService {
     const group = await groupRepo.findById(group_id);
     if (!group) throw new Error("Group không tồn tại");
 
+    // Không cần validation center_id theo yêu cầu Backlog
+
     const existing = await groupMemberRepo.findMember(user_id, group_id);
     if (existing) throw new Error("User đã là thành viên trong group này");
 
@@ -164,6 +166,9 @@ class GroupMemberService {
 
 
   async getMembers(group_id) {
+    const groupRepo = require('../repositories/group.repository');
+    const group = await groupRepo.findById(group_id);
+    if (!group) throw new Error("Group không tồn tại hoặc đã bị xóa");
     return await groupMemberRepo.getMembersByGroup(group_id);
   }
 
@@ -244,6 +249,37 @@ class GroupMemberService {
 
     return results;
   }
+
+  // Xóa thành viên (Admin hệ thống)
+  async adminRemoveMember({ admin_id, user_id, group_id }) {
+    const mongoose = require('mongoose');
+    
+    // Validate input
+    if (!mongoose.Types.ObjectId.isValid(admin_id)) {
+      throw new Error("admin_id không hợp lệ");
+    }
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+      throw new Error("user_id không hợp lệ");
+    }
+    if (!mongoose.Types.ObjectId.isValid(group_id)) {
+      throw new Error("group_id không hợp lệ");
+    }
+
+    // Kiểm tra group tồn tại
+    const group = await groupRepo.findById(group_id);
+    if (!group) throw new Error("Group không tồn tại");
+
+    // Kiểm tra thành viên tồn tại
+    const member = await groupMemberRepo.findMember(user_id, group_id);
+    if (!member) throw new Error("Thành viên không tồn tại trong group này");
+
+    // Admin có thể xóa bất kỳ thành viên nào (kể cả người tạo)
+    const result = await groupMemberRepo.removeMember(user_id, group_id);
+    if (result.deletedCount === 0) throw new Error("Không thể xóa thành viên");
+    
+    return true;
+  }
+
 }
 
 module.exports = new GroupMemberService();

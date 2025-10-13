@@ -8,10 +8,12 @@ const ColumnSchema = new Schema({
   deleted_at: { type: Date, default: null }
 }, { collection: 'Columns', timestamps: true });
 
+
 ColumnSchema.index({ deleted_at: 1 });
 
 ColumnSchema.pre(/^find/, function(next) {
-  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
     this.where({ deleted_at: null });
   }
   next();

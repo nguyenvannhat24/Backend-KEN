@@ -2,32 +2,29 @@ const mongoose = require('mongoose');
 const groupRepo = require('../repositories/group.repository');
 const groupMemberService = require("./groupMember.service");
 const groupMemberRepo = require('../repositories/groupMember.repository');
+
 class GroupService {
-  // Tạo group mới
   async createGroup({ center_id, name, userId, description }) {
-  if (!userId) throw new Error("userId là bắt buộc");
-  if (!name || typeof name !== "string" || name.trim() === "")
-    throw new Error("Tên group là bắt buộc và phải là chuỗi hợp lệ");
+    if (!userId) throw new Error("userId là bắt buộc");
+    if (!name || typeof name !== "string" || name.trim() === "")
+      throw new Error("Tên group là bắt buộc và phải là chuỗi hợp lệ");
 
-  // Convert string sang ObjectId
-  try {
-    center_id = new mongoose.Types.ObjectId(center_id);
-  } catch (err) {
-    throw new Error("center_id không hợp lệ");
-  }
+    try {
+      center_id = new mongoose.Types.ObjectId(center_id);
+    } catch (err) {
+      throw new Error("center_id không hợp lệ");
+    }
 
-  try {
-    userId = new mongoose.Types.ObjectId(userId);
-  } catch (err) {
-    throw new Error("userId không hợp lệ");
-  }
+    try {
+      userId = new mongoose.Types.ObjectId(userId);
+    } catch (err) {
+      throw new Error("userId không hợp lệ");
+    }
 
-  // Kiểm tra trùng tên
-  const existing = await groupRepo.findOne(center_id, name.trim());
-  if (existing) throw new Error("Tên group đã tồn tại trong center này");
+    const existing = await groupRepo.findOne(center_id, name.trim());
+    if (existing) throw new Error("Tên group đã tồn tại trong center này");
 
-  // Tạo group
-  const group = await groupRepo.create({ center_id, name: name.trim(), description });
+    const group = await groupRepo.create({ center_id, name: name.trim(), description });
 
   // Thêm người tạo vào group member
   await groupMemberRepo.addMember({

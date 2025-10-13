@@ -42,7 +42,6 @@ class SwimlaneRepository {
     );
     return session ? query.session(session) : query;
   }
-
   // ==================== SOFT DELETE METHODS ====================
 
   async softDelete(id) {

@@ -5,11 +5,10 @@ const port = process.env.PORT || 3005;
 const Keycloak = require('keycloak-connect');
 const session = require('express-session');
 const cors = require("cors");
-// Routers
+
 const userRouter = require("./router/auth.routes");
 const user = require('./router/user.routes');
 const userRole = require('./router/userRole.router');
-
 const centerRouter = require('./router/center.router');
 const userPointRouter = require('./router/userPoint.router');
 const roleRouter = require('./router/role.router');
@@ -23,7 +22,6 @@ const templateSwimlaneRouter = require('./router/templateSwimlane.router');
 const columnRouter = require('./router/column.routes');
 const swimlaneRoutes = require('./router/swimlane.routes');
 const taskRoutes = require('./router/task.routes');
-
 const tagRoutes = require('./router/tag.routes');
 const commentRoutes = require('./router/comment.routes');
 const importRoutes = require('./router/import.routes');
@@ -74,6 +72,11 @@ app.use(cors({
 // Route public (không cần login)
 app.use('/api', userRouter(keycloak));
 
+// Admin route for viewing all deleted records
+const userController = require('./controllers/user.controller');
+const { authenticateAny, authorizeAny } = require('./middlewares/auth');
+app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getAllDeletedRecords);
+
 //k
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
@@ -108,5 +111,5 @@ app.use('/api/uploads', express.static('uploads'));
 
 // --- Start server ---
 app.listen(port, () => {
-  console.log('Server is running at http://localhost:' + port);
+  console.log(`✅ Server is running at http://localhost:${port}`);
 });

@@ -10,10 +10,13 @@ updated_at: { type: Date, default: Date.now },
 deleted_at: { type: Date, default: null }
 }, { collection: 'Templates' });
 
+// Index for soft delete
 TemplateSchema.index({ deleted_at: 1 });
 
+// Middleware to filter soft-deleted records
 TemplateSchema.pre(/^find/, function(next) {
-  if (!this.getQuery().deleted_at && !this.getQuery().$or) {
+  const query = this.getQuery();
+  if (!query.hasOwnProperty('deleted_at') && !query.$or) {
     this.where({ deleted_at: null });
   }
   next();

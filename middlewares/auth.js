@@ -11,9 +11,6 @@ const permissionService = require('../services/permission.service');
 
 
 
-/**
- * Middleware xác thực cả Local JWT và Keycloak JWT
- */
 const authenticateAny = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -126,12 +123,11 @@ const authorizeAny = (allowed) => async (req, res, next) => {
       return next();
     }
 
-    // 2️⃣ Kiểm tra quyền (permission)
     const userRoles = await userRoleService.getRoles(id);
-    const roleIds = userRoles.map(r => r.role_id._id);
+    const roleIds = userRoles.map(r => r.role_id?._id).filter(Boolean);
 
     const rolePermissions = await rolePermissionService.getByRoleIds(roleIds);
-    const permissionIds = rolePermissions.map(rp => rp.permission_id);
+    const permissionIds = rolePermissions.map(rp => rp.permission_id?._id).filter(Boolean);
 
     const permissions = await permissionService.getByIds(permissionIds);
     const codes = permissions.map(p => p.code);
@@ -146,7 +142,7 @@ const authorizeAny = (allowed) => async (req, res, next) => {
     });
 
   } catch (err) {
-    console.error('❌ [AUTHZ] Error in authorizeAny:', err);
+    console.error('Error in authorizeAny:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

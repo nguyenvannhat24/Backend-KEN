@@ -8,70 +8,41 @@ const { restoreUserOnKeycloak } = require('../services/keycloak.service');
  * Chứa các methods xử lý logic nghiệp vụ liên quan đến user
  */
 class UserService {
+  async validateUser(login, password) {
+    try {
+      if (!login || !password) {
+        return null;
+      }
 
-  /**
-   * Validate user đăng nhập
-   * @param {string} email - Email của user
-   * @param {string} password - Mật khẩu (plain text)
-   * @returns {Promise<Object|null>} User object nếu hợp lệ, null nếu không
-   */
-async validateUser(login, password) {
-  try {
-    console.log(`🔍 Validating user: ${login}`);
+      let user = await userRepo.findByEmail(login);
+      if (!user) {
+        user = await userRepo.findByUsername(login);
+      }
 
-    // Validate input
-    if (!login || !password) {
-      console.log('❌ Email/username hoặc password không được để trống');
+      if (!user) {
+        return null;
+      }
+
+      const isPasswordValid = this._validatePassword(password, user);
+      if (!isPasswordValid) {
+        return null;
+      }
+
+      return user;
+    } catch (error) {
+      console.error('Error validating user:', error.message);
       return null;
     }
-
-    // Tìm user theo email hoặc username
-   let user = await userRepo.findByEmail(login);
-if (!user) {
-  user = await userRepo.findByUsername(login);
-}
-
-    if (!user) {
-      console.log(`❌ Không tìm thấy user với login: ${login}`);
-      return null;
-    }
-
-    // Kiểm tra mật khẩu
-    const isPasswordValid = this._validatePassword(password, user);
-    if (!isPasswordValid) {
-      console.log(`❌ Mật khẩu không đúng cho user: ${login}`);
-      return null;
-    }
-
-    console.log(`✅ Đăng nhập thành công cho user: ${user.email || user.username}`);
-    return user;
-
-  } catch (error) {
-    console.error('❌ Lỗi trong validateUser:', error.message);
-    return null;
   }
-}
 
-
-  /**
-   * Validate password (hỗ trợ nhiều format)
-   * @param {string} inputPassword - Mật khẩu nhập vào
-   * @param {Object} user - User object từ database
-   * @returns {boolean} true nếu mật khẩu đúng
-   * @private
-   */
   _validatePassword(inputPassword, user) {
-    // Kiểm tra password_hash (plain text hoặc bcrypt)
     if (user.password_hash) {
-      // Nếu là bcrypt hash
       if (user.password_hash.startsWith('$2b$')) {
         return bcrypt.compareSync(inputPassword, user.password_hash);
       }
-      // Nếu là plain text
       return user.password_hash === inputPassword;
     }
 
-    // Kiểm tra password field (nếu có)
     if (user.password) {
       if (user.password.startsWith('$2b$')) {
         return bcrypt.compareSync(inputPassword, user.password);
@@ -82,198 +53,64 @@ if (!user) {
     return false;
   }
 
-
-
-  /**
-   * Lấy tất cả users với pagination
-   * @param {Object} options - Options cho pagination
-   * @returns {Promise<Object>} Object chứa users và pagination info
-   */
   async getAllUsers(options = {}) {
     try {
-      console.log('📋 Getting all users with options:', options);
       return await userRepo.findAll(options);
     } catch (error) {
-      console.error('❌ Error in getAllUsers:', error.message);
+      console.error('Error in getAllUsers:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Lấy user theo ID
-   * @param {string} id - ObjectId của user
-   * @returns {Promise<Object|null>} User object hoặc null
-   */
   async getUserById(id) {
     try {
-      if (!id) {
-        throw new Error('ID không được để trống');
-      }
-      
-      console.log(`🔍 Getting user by ID: ${id}`);
       return await userRepo.findById(id);
     } catch (error) {
-      console.error('❌ Error in getUserById:', error.message);
+      console.error('Error in getUserById:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Lấy user theo email
-   * @param {string} email - Email của user
-   * @returns {Promise<Object|null>} User object hoặc null
-   */
   async getUserByEmail(email) {
     try {
-      if (!email) {
-        throw new Error('Email không được để trống');
-      }
-      
-      console.log(`🔍 Getting user by email: ${email}`);
       return await userRepo.findByEmail(email);
     } catch (error) {
-      console.error('❌ Error in getUserByEmail:', error.message);
+      console.error('Error in getUserByEmail:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Lấy user theo username
-   * @param {string} username - Username của user
-   * @returns {Promise<Object|null>} User object hoặc null
-   */
   async getUserByUsername(username) {
     try {
-      if (!username) {
-        throw new Error('Username không được để trống');
-      }
-      
-      console.log(`🔍 Getting user by username: ${username}`);
       return await userRepo.findByUsername(username);
     } catch (error) {
-      console.error('❌ Error in getUserByUsername:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Lấy user theo số điện thoại
-   * @param {string} phoneNumber - Số điện thoại
-   * @returns {Promise<Object|null>} User object hoặc null
-   */
-  async getUserByPhoneNumber(phoneNumber) {
-    try {
-      if (!phoneNumber) {
-        throw new Error('Số điện thoại không được để trống');
-      }
-      
-      console.log(`🔍 Getting user by phone: ${phoneNumber}`);
-      return await userRepo.findByPhoneNumber(phoneNumber);
-    } catch (error) {
-      console.error('❌ Error in getUserByPhoneNumber:', error.message);
+      console.error('Error in getUserByUsername:', error.message);
       throw error;
     }
   }
 
   async createUser(userData) {
-  try {
-    // Validate input
-    if (!userData || !userData.email) {
-      throw new Error('Email là bắt buộc');
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userData.email)) {
-      throw new Error('Email không đúng định dạng');
-    }
-
-    // Kiểm tra email đã tồn tại chưa
-    const emailExists = await userRepo.isEmailExists(userData.email);
-    if (emailExists) {
-      throw new Error('Email đã tồn tại trong hệ thống');
-    }
-
-    // Kiểm tra username đã tồn tại chưa
-    if (userData.username) {
-      const usernameExists = await userRepo.isUsernameExists(userData.username);
-      if (usernameExists) {
-        throw new Error('Username đã tồn tại trong hệ thống');
+    try {
+      if (userData.password) {
+        userData.password_hash = bcrypt.hashSync(userData.password, 10);
+        delete userData.password;
       }
+      return await userRepo.create(userData);
+    } catch (error) {
+      console.error('Error in createUser:', error.message);
+      throw error;
     }
-
-    // Hash password nếu có
-    if (userData.password) {
-      userData.password_hash = bcrypt.hashSync(userData.password, 10);
-    }
-
-    // Lấy ra biến từ userData
-    const { username, email, full_name, status, password } = userData;
-console.log('🔑 Creating user on Keycloak...');
-    // Tạo trên Keycloak trước
-    console.log('🔑 Creating user on Keycloak...');
-    const userKeyCloak = await keycloack.createUserWithPassword(
-      { username, email, full_name, status },
-      password
-    );
-// Log chi tiết user Keycloak vừa tạo
-console.log('✅ User created on Keycloak:');
-console.log('ID:', userKeyCloak.id);
-console.log('Username:', userKeyCloak.username);
-console.log('Email:', userKeyCloak.email);
-console.log('Full name:', userKeyCloak.full_name);
-console.log('Status:', userKeyCloak.status);
-    // Tạo local user
-    console.log(`➕ Creating new local user: ${email}`);
-    const localUser = await userRepo.create({
-      username,
-      email,
-      full_name,
-      status,
-      idSSO: userKeyCloak.id, // liên kết với Keycloak
-      typeAccount: "SSO",
-      password_hash: userData.password_hash, // lưu hash (nếu có)
-    });
-// Log chi tiết user local vừa tạo
-console.log('✅ Local user created:');
-console.log(localUser);
-    return localUser;
-  } catch (error) {
-    console.error('❌ Error in createUser:', error.message);
-    throw error;
   }
-}
 
-
-async createUserSSO({ username, email, full_name, idSSO }) {
-  try {
-    if (!email) {
-      throw new Error('Email là bắt buộc');
+  async createUserSSO(userData) {
+    try {
+      userData.typeAccount = 'SSO';
+      return await userRepo.create(userData);
+    } catch (error) {
+      console.error('Error in createUserSSO:', error.message);
+      throw error;
     }
-
-    // Kiểm tra email đã tồn tại chưa
-    const emailExists = await userRepo.isEmailExists(email);
-    if (emailExists) {
-      // Nếu tồn tại, trả về user hiện tại, không tạo mới
-      console.log(`⚠️ User SSO với email ${email} đã tồn tại, dùng user hiện tại`);
-      return await userRepo.findByEmail(email);
-    }
-
-    // Kiểm tra username tồn tại chưa
-    if (username) {
-      const usernameExists = await userRepo.isUsernameExists(username);
-      if (usernameExists) {
-        console.log(`⚠️ Username ${username} đã tồn tại, sẽ tiếp tục tạo user theo email`);
-      }
-    }
-
-    console.log(`➕ Creating new userSSO: ${username}`);
-    return await userRepo.createSSO({ username, email, full_name, idSSO });
-  } catch (error) {
-    console.error('❌ Error in createUserSSO:', error.message);
-    throw error;
   }
-}
 
 
 
@@ -343,21 +180,11 @@ async updateUser(idUpdate, id, updateData) {
 }
 
 
-  /**
-   * Xóa user (soft delete)
-   * @param {string} id - ObjectId của user
-   * @returns {Promise<Object|null>} User object đã xóa hoặc null
-   */
   async deleteUser(id) {
     try {
-      if (!id) {
-        throw new Error('ID không được để trống');
-      }
-
-      console.log(`🗑️ Soft deleting user: ${id}`);
-      return await userRepo.softDelete(id);
+      return await userRepo.deleteById(id);
     } catch (error) {
-      console.error('❌ Error in deleteUser:', error.message);
+      console.error('Error in deleteUser:', error.message);
       throw error;
     }
   }
@@ -485,16 +312,13 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
    */
   async softDeleteUser(id) {
     try {
-      const user = await userRepo.findById(id);
+      const user = await userRepo.softDelete(id);
       if (!user) {
-        throw new Error('User không tồn tại');
+        throw new Error('User not found');
       }
-      
-      const deletedUser = await userRepo.softDelete(id);
-      console.log('Soft deleted user:', id);
-      return deletedUser;
+      return user;
     } catch (error) {
-      console.error('Error in softDeleteUser:', error);
+      console.error('Error soft deleting user:', error.message);
       throw error;
     }
   }
@@ -524,131 +348,17 @@ async  restoreUser(id) {
    * Get all users including soft deleted
    */
 
-  /**
-   * Get all deleted records from all entities (for admin)
-   */
   async getAllDeletedRecords({ type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' }) {
     try {
-      const result = {
-        success: true,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        data: {}
-      };
-
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort,
-        sortOrder: order
-      };
-
-      const fetchDeleted = async (repoName, key) => {
-        const repo = require(`../repositories/${repoName}.repository`);
-        if (repo.findAllWithDeleted) {
-          const data = await repo.findAllWithDeleted(options);
-          return data;
-        }
-        return null;
-      };
-
-      if (type === 'all' || type === 'user') {
-        const userData = await userRepo.findAllWithDeleted(options);
-        result.data.users = userData.users;
-        result.data.users_pagination = userData.pagination;
+      const options = { page, limit, sortBy: sort, sortOrder: order };
+      
+      if (type === 'all') {
+        return await userRepo.findAllWithDeleted(options);
       }
-
-      if (type === 'all' || type === 'board') {
-        const boardData = await fetchDeleted('board', 'boards');
-        if (boardData) {
-          result.data.boards = boardData.boards;
-          result.data.boards_pagination = boardData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'group') {
-        const groupData = await fetchDeleted('group', 'groups');
-        if (groupData) {
-          result.data.groups = groupData.groups;
-          result.data.groups_pagination = groupData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'center') {
-        const centerData = await fetchDeleted('center', 'centers');
-        if (centerData) {
-          result.data.centers = centerData.centers;
-          result.data.centers_pagination = centerData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'task') {
-        const taskData = await fetchDeleted('task', 'tasks');
-        if (taskData) {
-          result.data.tasks = taskData.tasks;
-          result.data.tasks_pagination = taskData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'template') {
-        const templateData = await fetchDeleted('template', 'templates');
-        if (templateData) {
-          result.data.templates = templateData.templates;
-          result.data.templates_pagination = templateData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'column') {
-        const columnData = await fetchDeleted('column', 'columns');
-        if (columnData) {
-          result.data.columns = columnData.columns;
-          result.data.columns_pagination = columnData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'swimlane') {
-        const swimlaneData = await fetchDeleted('swimlane', 'swimlanes');
-        if (swimlaneData) {
-          result.data.swimlanes = swimlaneData.swimlanes;
-          result.data.swimlanes_pagination = swimlaneData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'templatecolumn') {
-        const templateColumnData = await fetchDeleted('templateColumn', 'templateColumns');
-        if (templateColumnData) {
-          result.data.templateColumns = templateColumnData.templateColumns;
-          result.data.templateColumns_pagination = templateColumnData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'templateswimlane') {
-        const templateSwimlaneData = await fetchDeleted('templateSwimlane', 'templateSwimlanes');
-        if (templateSwimlaneData) {
-          result.data.templateSwimlanes = templateSwimlaneData.templateSwimlanes;
-          result.data.templateSwimlanes_pagination = templateSwimlaneData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'tag') {
-        const tagData = await fetchDeleted('tag', 'tags');
-        if (tagData) {
-          result.data.tags = tagData.tags;
-          result.data.tags_pagination = tagData.pagination;
-        }
-      }
-
-      if (type === 'all' || type === 'comment') {
-        const commentData = await fetchDeleted('comment', 'comments');
-        if (commentData) {
-          result.data.comments = commentData.comments;
-          result.data.comments_pagination = commentData.pagination;
-        }
-      }
-
-      return result;
+      
+      return await userRepo.findDeleted(options);
     } catch (error) {
-      console.error('Error in getAllDeletedRecords:', error);
+      console.error('Error in getAllDeletedRecords:', error.message);
       throw error;
     }
   }
@@ -656,5 +366,4 @@ async  restoreUser(id) {
 
 
 
-}
 module.exports = new UserService();

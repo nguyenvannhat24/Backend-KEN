@@ -49,76 +49,37 @@ class UserRepository {
     }
   }
 
-  /**
-   * Lấy tất cả users với pagination
-   * @param {Object} options - Options cho pagination
-   * @param {number} options.page - Trang hiện tại (default: 1)
-   * @param {number} options.limit - Số lượng items per page (default: 10)
-   * @param {string} options.sortBy - Field để sort (default: 'created_at')
-   * @param {string} options.sortOrder - Thứ tự sort: 'asc' hoặc 'desc' (default: 'desc')
-   * @returns {Promise<Object>} Object chứa users và pagination info
-   */
-async findAll(options = {}) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      sortBy = 'created_at',
-      sortOrder = 'desc'
-    } = options;
+  async findAll(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'created_at',
+        sortOrder = 'desc'
+      } = options;
 
-    const skip = (page - 1) * limit;
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-const pipeline = [
-  {
-    $match: { deleted_at: null } // ✅ chỉ lấy user chưa bị xóa mềm
-  },
-  {
-    $lookup: {
-      from: "UserRoles",
-      localField: "_id",
-      foreignField: "user_id",
-      as: "user_roles"
+      const [users, total] = await Promise.all([
+        User.find().sort(sort).skip(skip).limit(limit).lean(),
+        User.countDocuments()
+      ]);
+
+      return {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding all users:', error);
+      throw error;
     }
-  },
-  {
-    $lookup: {
-      from: "Roles",
-      localField: "user_roles.role_id",
-      foreignField: "_id",
-      as: "roles"
-    }
-  },
-  {
-    $addFields: {
-      role_name: { $arrayElemAt: ["$roles.name", 0] }
-    }
-  },
-  { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-  { $skip: skip },
-  { $limit: limit }
-];
-
-
-    const users = await User.aggregate(pipeline);
-
-    const total = await User.countDocuments();
-
-    return {
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
-  } catch (error) {
-    console.error("Error finding all users:", error);
-    throw error;
   }
-}
 
   async create(userData) {
     try {
@@ -173,30 +134,13 @@ const pipeline = [
         User.countDocuments(searchQuery)
       ]);
 
-  /**
- * Tìm kiếm user theo keyword (username, email, full_name)
- * Hỗ trợ pagination
- * @param {Object} options
- * @param {string} options.keyword - Từ khóa tìm kiếm
- * @param {number} options.page - Trang hiện tại (default: 1)
- * @param {number} options.limit - Số lượng items per page (default: 10)
- * @returns {Promise<Object>} users + pagination info
- */
-async find(options = {}) {
-  try {
-    const { keyword = "", page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = options;
-
-    const skip = (page - 1) * limit;
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-    const regex = new RegExp(keyword, "i"); // case-insensitive search
-
-    const query = keyword
-      ? {
-          $or: [
-            { username: regex },
-            { email: regex },
-            { full_name: regex }
-          ]
+      return {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
         }
       };
     } catch (error) {
@@ -238,14 +182,7 @@ async find(options = {}) {
       throw error;
     }
   }
-};
 
-
-/*
-   * Soft delete user
-   * @param {string} id - User ID
-   * @returns {Promise<Object>} Updated user
-   */
   async softDelete(id) {
     try {
       return await User.findByIdAndUpdate(
@@ -317,6 +254,39 @@ async find(options = {}) {
     }
   }
 
+  async findDeleted(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'deleted_at',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = { deleted_at: { $ne: null } };
+
+      const [users, total] = await Promise.all([
+        User.find(query).sort(sort).skip(skip).limit(limit).lean(),
+        User.countDocuments(query)
+      ]);
+
+      return {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error finding deleted users:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserRepository();

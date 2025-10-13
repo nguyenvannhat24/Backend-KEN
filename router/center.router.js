@@ -7,8 +7,8 @@ const { authenticateAny, authorizeAny } = require('../middlewares/auth');
 // Centers: read for authenticated users, write for admin
 router.get('/', authenticateAny, centerController.getAllCenters);
 router.get('/:id', authenticateAny, centerController.getCenterById);
-router.post('/', authenticateAny, authorizeAny('admin'), centerController.createCenter);
-router.put('/:id', authenticateAny, authorizeAny('admin'), centerController.updateCenter);
-router.delete('/:id', authenticateAny, authorizeAny('admin'), centerController.deleteCenter);
+router.post('/', authenticateAny, authorizeAny('admin', 'System_Manager'), centerController.createCenter);
+router.put('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), centerController.updateCenter);
+router.delete('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), centerController.deleteCenter);
 
 module.exports = router;

@@ -12,7 +12,7 @@ const router = express.Router();
 // ==================== AUTHENTICATED ROUTES ====================
 
 // Tạo tag mới - Story 44
-router.post('/', authenticateAny, authorizeAny('admin'), tagController.create);
+router.post('/', authenticateAny, authorizeAny('admin', 'System_Manager'), tagController.create);
 
 // Lấy tất cả tags - Story 43
 router.get('/', authenticateAny, tagController.getAll);
@@ -21,10 +21,10 @@ router.get('/', authenticateAny, tagController.getAll);
 router.get('/:id', authenticateAny, tagController.getById);
 
 // Cập nhật tag - Story 45
-router.put('/:id', authenticateAny, authorizeAny('admin'), tagController.update);
+router.put('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), tagController.update);
 
 // Xóa tag - Story 46
-router.delete('/:id', authenticateAny, authorizeAny('admin'), tagController.delete);
+router.delete('/:id', authenticateAny, authorizeAny('admin', 'System_Manager'), tagController.delete);
 
 // ==================== TASK-TAG RELATIONSHIP ROUTES ====================
 

@@ -16,16 +16,16 @@ exports.createKeycloakUserPassword = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-// 🔵 Lấy danh sách user từ Keycloak
+
 exports.getAllKeycloakUsers = async (req, res) => {
   try {
-    const users = await getUsers({ max: 50 }); // giới hạn 50 user
+    const users = await getUsers({ max: 50 });
     res.json({ success: true, count: users.length, data: users });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to get users', error: err.message });
   }
 };
-// 🔵 Lấy user theo ID từ Keycloak
+
 exports.getKeycloakUserById = async (req, res) => {
   try {
     const user = await getUserById(req.params.id);
@@ -106,7 +106,7 @@ exports.SelectAll = async (req, res) => {
   try {
     const { page = 1, limit = 10, sortBy = "created_at", sortOrder = "desc" } = req.query;
 
-    const userAll = await userService.viewAll({
+    const userAll = await userService.getAllUsers({
       page: parseInt(page),
       limit: parseInt(limit),
       sortBy,
@@ -115,11 +115,15 @@ exports.SelectAll = async (req, res) => {
 
     return res.json({
       success: true,
-      ...userAll // chứa cả users + pagination
+      ...userAll
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Lỗi server' });
+    console.error('Error in SelectAll:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Lỗi server',
+      message: error.message 
+    });
   }
 };
 
@@ -128,58 +132,95 @@ exports.SelectAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const user = await userService.getUserById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getById:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByEmail = async (req, res) => {
   try {
     const user = await userService.getUserByEmail(req.params.email);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByEmail:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByName = async (req, res) => {
   try {
     const user = await userService.getUserByUsername(req.params.name);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByName:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.getByNumberPhone = async (req, res) => {
   try {
-    const user = await userService.getUserByNumberPhone(req.params.numberphone);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    const user = await userService.getUserByPhoneNumber(req.params.numberphone);
+    if (!user) return res.status(404).json({ 
+      success: false,
+      message: 'User not found' 
+    });
+    res.json({ 
+      success: true,
+      data: user 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getByNumberPhone:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
 exports.create = async (req, res) => {
   try {
-    // 1. Tạo user (local + keycloak)
     const user = await userService.createUser(req.body);
 
-    // 2. Lấy danh sách roles từ body (nếu không có thì mặc định "user")
     const rolesFromBody = req.body.roles && Array.isArray(req.body.roles) 
       ? req.body.roles 
       : ["user"];
 
-    // 3. Gán roles cho user
     for (const roleName of rolesFromBody) {
       const roleId = await roleSevive.getIdByName(roleName);
       if (!roleId) {
-        console.warn(`⚠️ Role "${roleName}" không tồn tại, bỏ qua`);
+        console.warn(`Role "${roleName}" không tồn tại, bỏ qua`);
         continue;
       }
 
@@ -189,15 +230,42 @@ exports.create = async (req, res) => {
       });
     }
 
-    // 4. Trả về user + roles
     res.status(201).json({
+      success: true,
       message: "User created successfully",
       data: user,
       roles: rolesFromBody
     });
   } catch (err) {
-    console.error("❌ Error in create user:", err);
-    res.status(400).json({ message: err.message });
+    console.error("Error in create user:", err);
+    
+    // Xử lý lỗi duplicate key
+    if (err.code === 11000) {
+      if (err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (err.keyPattern && err.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -252,11 +320,8 @@ exports.update = async (req, res) => {
     const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
  const isAdmin = roles.includes('admin') || roles.includes('System_Manager'); // ✅ sửa ở đây
 
-    console.log(`🔹 Request update user: ${req.params.id} by ${userId}, admin: ${isAdmin}`);
-
     if (userId == req.params.id || isAdmin) {
       const checkUser = await userService.getUserById(req.params.id);
-      console.log("🔹 checkUser:", checkUser);
 
       if (!checkUser) {
         console.warn("⚠️ Không tìm thấy user bạn muốn cập nhật");
@@ -264,7 +329,6 @@ exports.update = async (req, res) => {
       }
 
       const typeAccount = checkUser.typeAccount;
-      console.log(`🔹 Type account: ${typeAccount}`);
 
       // Luôn update trên DB trước
       let user = await userService.updateUser(userId, req.params.id, req.body);
@@ -274,9 +338,6 @@ exports.update = async (req, res) => {
       // Nếu user này thuộc SSO thì cập nhật bên Keycloak
       if (typeAccount === 'SSO') {
         const id = checkUser.idSSO; // ID user trên Keycloak
-        console.log(`🔹 Updating user on Keycloak with ID: ${id}`);
-
-        // Map dữ liệu từ payload frontend sang schema của Keycloak
         const keycloakPayload = {
           username: req.body.username || checkUser.username,
           email: req.body.email || checkUser.email,
@@ -295,26 +356,56 @@ exports.update = async (req, res) => {
           ];
         }
 
-        console.log("🔹 Keycloak payload:", keycloakPayload);
-
-        await updateUser(id, keycloakPayload); // gọi hàm update lên Keycloak
-        console.log("✅ User updated on Keycloak");
+        await updateUser(id, keycloakPayload);
       }
 
       if (!user) {
-        console.warn("⚠️ User not found after update");
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ 
+          success: false,
+          message: "User not found" 
+        });
       }
 
-      console.log("✅ Update process finished, returning updated user");
-      res.json(user);
+      res.json({ 
+        success: true,
+        data: user 
+      });
     } else {
-      console.warn("⚠️ User không có quyền cập nhật user này");
-      res.status(403).json({ message: "Bạn không có quyền cập nhật user này" });
+      res.status(403).json({ 
+        success: false,
+        message: "Bạn không có quyền cập nhật user này" 
+      });
     }
   } catch (err) {
-    console.error("❌ Error in update user:", err);
-    res.status(400).json({ message: err.message });
+    console.error("Error in update user:", err);
+    
+    // Xử lý lỗi duplicate key
+    if (err.code === 11000) {
+      if (err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (err.keyPattern && err.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -325,28 +416,32 @@ exports.delete = async (req, res) => {
     const checkUser = await userService.getUserById(req.params.id);
     if (!checkUser) return res.status(404).json({ message: "User not found" });
 
-    // Luôn xóa user trong DB
-    await userService.deleteUser(req.params.id);
-
-    // Nếu là user SSO thì xóa thêm trên Keycloak
+    // Soft delete user trong DB
+    const user = await userService.softDeleteUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Nếu là user SSO thì disable trên Keycloak (không xóa)
     if (checkUser.typeAccount === "SSO" && checkUser.idSSO) {
       await deactivateUserOnKeycloak(checkUser.idSSO); // gọi Keycloak Admin API
     }
 
-    res.json({ message: "Deleted successfully" });
+    res.json({ success: true, message: 'User soft deleted successfully', data: user });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error soft deleting user:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 exports.viewProfile = async (req, res) => {
   try {
-    const { userId } = req.body; // Lấy userId từ body
+    const { userId } = req.body;
     if (!userId) {
       return res.status(400).json({ success: false, message: "userId là bắt buộc" });
     }
 
-    const profile = await userService.getProfile(userId);
+    const profile = await userService.getUserById(userId);
     if (!profile) {
       return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
     }
@@ -374,7 +469,7 @@ exports.getMe = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('❌ getMe error:', err);
+    console.error('getMe error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -425,7 +520,7 @@ exports.changePassword = async (req, res) => {
     res.json({ success: true, message: 'Đổi mật khẩu thành công' });
 
   } catch (error) {
-    console.error('❌ changePassword error:', error);
+    console.error('changePassword error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
@@ -512,62 +607,115 @@ exports.softDelete = async (req, res) => {
     const { id } = req.params;
     const user = await userService.softDeleteUser(id);
     
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User không tồn tại' });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Đã xóa mềm user thành công',
-      data: user
-    });
-  } catch (error) {
-    console.error('Error in softDelete:', error);
-    res.status(500).json({ success: false, message: error.message || 'Server error' });
-  }
-};
-
-// Restore user (chỉ admin)
-exports.restore = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await userService.restoreUser(id);
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User không tồn tại hoặc chưa bị xóa' });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Khôi phục user thành công',
-      data: user
-    });
-  } catch (error) {
-    console.error('Error in restore:', error);
-    res.status(500).json({ success: false, message: error.message || 'Server error' });
-  }
-};
-
-
-// Get all deleted records (admin only) - Consolidated endpoint
-exports.getAllDeletedRecords = async (req, res) => {
-  try {
-    const { 
-      type = 'all',        // user, board, group, center, task, template, all
-      page = 1, 
-      limit = 10, 
-      sort = 'deleted_at', 
-      order = 'desc' 
-    } = req.query;
-
-    const validTypes = ['all', 'user', 'board', 'group', 'center', 'task', 'template', 'column', 'swimlane', 'templatecolumn', 'templateswimlane', 'tag', 'comment'];
-    if (!validTypes.includes(type)) {
+    // Xử lý lỗi duplicate key
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({
+          success: false,
+          message: `Email "${req.body.email}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_EMAIL"
+        });
+      }
+      if (error.keyPattern && error.keyPattern.username) {
+        return res.status(400).json({
+          success: false,
+          message: `Username "${req.body.username}" đã tồn tại trong hệ thống`,
+          error: "DUPLICATE_USERNAME"
+        });
+      }
       return res.status(400).json({
         success: false,
-        message: `Type không hợp lệ. Chỉ chấp nhận: ${validTypes.join(', ')}`
+        message: "Dữ liệu đã tồn tại trong hệ thống",
+        error: "DUPLICATE_DATA"
       });
     }
+    
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 
+// ==================== SOFT DELETE ENDPOINTS ====================
+
+/**
+ * Soft delete user - Admin only
+ */
+exports.softDelete = async (req, res) => {
+  try {
+    const user = await userService.softDeleteUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // If SSO user, disable on Keycloak too
+    if (user.typeAccount === 'SSO' && user.idSSO) {
+      try {
+        await updateUser(user.idSSO, { enabled: false });
+      } catch (err) {
+        console.error('Failed to disable Keycloak user:', err);
+      }
+    }
+    
+    res.json({ success: true, message: 'User soft deleted successfully', data: user });
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Restore soft deleted user - Admin only
+ */
+exports.restore = async (req, res) => {
+  try {
+    const user = await userService.restoreUser(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found or not deleted' });
+    }
+    
+    // If SSO user, enable on Keycloak too
+    if (user.typeAccount === 'SSO' && user.idSSO) {
+      try {
+        await updateUser(user.idSSO, { enabled: true });
+      } catch (err) {
+        console.error('Failed to enable Keycloak user:', err);
+      }
+    }
+    
+    res.json({ success: true, message: 'User restored successfully', data: user });
+  } catch (error) {
+    console.error('Error restoring user:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get all users including deleted ones - Admin only
+ */
+exports.getAllWithDeleted = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    
+    const result = await userService.getAllUsersWithDeleted({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    });
+    
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error getting users with deleted:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get all deleted records across different entity types - Admin only
+ */
+exports.getAllDeletedRecords = async (req, res) => {
+  try {
+    const { type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' } = req.query;
+    
     const result = await userService.getAllDeletedRecords({
       type,
       page: parseInt(page),
@@ -575,8 +723,8 @@ exports.getAllDeletedRecords = async (req, res) => {
       sort,
       order
     });
-
-    return res.json(result);
+    
+    res.json(result);
   } catch (error) {
     console.error('Error in getAllDeletedRecords:', error);
     return res.status(500).json({ 

@@ -43,11 +43,17 @@ const TaskSchema = new mongoose.Schema({
     type: mongoose.Types.ObjectId, 
     ref: 'User' 
   },
-  deleted_at: { 
+  deleted_at: {
     type: Date, 
     default: null 
+  },
+  
+  // Field order để sắp xếp tasks trong column (Jira style)
+  order: {
+    type: Number,
+    default: 0
   }
-}, { 
+}, {
   collection: 'Tasks',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });

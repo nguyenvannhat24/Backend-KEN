@@ -52,6 +52,9 @@ router.get('/user/:user_id', authenticateAny, taskController.getByUser);
 // Kéo thả task giữa các cột - Story 16
 router.put('/:id/move', authenticateAny, taskController.moveTask);
 
+// Sắp xếp lại thứ tự tasks trong column (Jira style)
+router.put('/reorder', authenticateAny, taskController.reorderTasks);
+
 // ==================== DATE & TIME ROUTES ====================
 
 // Cập nhật ngày bắt đầu/kết thúc - Story 21

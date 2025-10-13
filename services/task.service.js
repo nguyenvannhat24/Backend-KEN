@@ -212,6 +212,7 @@ class TaskService {
     const assignedToId = task.assigned_to?._id?.toString() || task.assigned_to?.toString();
     
     if (createdById !== userIdStr && (!assignedToId || assignedToId !== userIdStr)) {
+
       throw new Error('Bạn không có quyền xóa task này');
     }
 
@@ -219,9 +220,10 @@ class TaskService {
     return await taskRepo.softDelete(id);
   }
 
-  // Kéo thả task (drag & drop)
+  // Kéo thả task kiểu Jira - HỖ TRỢ CẢ COLUMN VÀ SWIMLANE
   async moveTask(task_id, new_column_id, new_swimlane_id = null, userId) {
     try {
+      // 1. Validate input
       if (!mongoose.Types.ObjectId.isValid(task_id)) {
         throw new Error('Task ID không hợp lệ');
       }
@@ -229,23 +231,23 @@ class TaskService {
         throw new Error('Column ID không hợp lệ');
       }
 
-      // Kiểm tra task tồn tại
+      // 2. Kiểm tra task tồn tại
       const task = await taskRepo.findById(task_id);
       if (!task) throw new Error('Task không tồn tại');
 
-      // Kiểm tra user là thành viên của board
+      // 3. Kiểm tra user có quyền trên board
       const boardId = this._getObjectIdString(task.board_id);
       const isMember = await boardRepo.isMember(userId, boardId);
       if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
-      // Kiểm tra column thuộc cùng board
+      // 4. Kiểm tra column thuộc cùng board
       const newColumn = await columnRepo.findById(new_column_id);
       if (!newColumn || newColumn.board_id.toString() !== boardId) {
         throw new Error('Column không thuộc board này');
       }
 
-      // Kiểm tra swimlane nếu có
-      if (new_swimlane_id) {
+      // 5. Kiểm tra swimlane nếu có (cho phép null để bỏ swimlane)
+      if (new_swimlane_id !== null) {
         if (!mongoose.Types.ObjectId.isValid(new_swimlane_id)) {
           throw new Error('Swimlane ID không hợp lệ');
         }
@@ -256,7 +258,24 @@ class TaskService {
         }
       }
 
-      return await taskRepo.moveToColumn(task_id, new_column_id, new_swimlane_id);
+      // 6. Lấy thứ tự cao nhất trong column mới (Jira style)
+      const maxOrder = await taskRepo.getMaxOrderInColumn(new_column_id);
+      const newOrder = maxOrder + 1;
+
+      // 7. Cập nhật task (có thể thay đổi cả column và swimlane)
+      const updateData = {
+        column_id: new_column_id,
+        order: newOrder,
+        updated_at: new Date()
+      };
+
+      // Thêm swimlane_id nếu có (có thể là null)
+      if (new_swimlane_id !== undefined) {
+        updateData.swimlane_id = new_swimlane_id;
+      }
+
+      return await taskRepo.update(task_id, updateData);
+      
     } catch (error) {
       throw new Error(`Lỗi di chuyển task: ${error.message}`);
     }
@@ -275,25 +294,28 @@ class TaskService {
     return await taskRepo.search(board_id, searchQuery.trim());
   }
 
-  // Thống kê tasks theo board
-  async getTaskStats(board_id) {
-    if (!mongoose.Types.ObjectId.isValid(board_id)) {
-      throw new Error('Board ID không hợp lệ');
-    }
+  // Cập nhật thứ tự task trong column
+  async updateTaskOrder(task_id, new_order, userId) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(task_id)) {
+        throw new Error('Task ID không hợp lệ');
+      }
 
-    const stats = await taskRepo.countByBoard(board_id);
-    const allTasks = await taskRepo.findByBoard(board_id);
-    
-    return {
-      total_tasks: allTasks.length,
-      by_column: stats,
-      overdue_tasks: allTasks.filter(task => 
-        task.due_date && new Date(task.due_date) < new Date()
-      ).length,
-      completed_tasks: allTasks.filter(task => 
-        task.column_id.name && task.column_id.name.toLowerCase().includes('done')
-      ).length
-    };
+      // Kiểm tra task tồn tại
+      const task = await taskRepo.findById(task_id);
+      if (!task) throw new Error('Task không tồn tại');
+
+      // Kiểm tra user có quyền trên board
+      const boardId = this._getObjectIdString(task.board_id);
+      const isMember = await boardRepo.isMember(userId, boardId);
+      if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+
+      // Cập nhật thứ tự
+      return await taskRepo.updateTaskOrder(task_id, new_order);
+      
+    } catch (error) {
+      throw new Error(`Lỗi cập nhật thứ tự task: ${error.message}`);
+    }
   }
 }
 

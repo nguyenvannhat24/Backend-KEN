@@ -35,8 +35,27 @@ class TaskRepository {
       .populate('swimlane_id', 'name')
       .populate('created_by', 'username full_name')
       .populate('assigned_to', 'username full_name')
-      .sort({ created_at: -1 })
+      .sort({ order: 1, created_at: -1 }) // Sắp xếp theo order trước (Jira style)
       .lean();
+  }
+
+  // Lấy thứ tự cao nhất trong column (Jira algorithm)
+  async getMaxOrderInColumn(column_id) {
+    const result = await Task.findOne({ column_id })
+      .sort({ order: -1 })
+      .select('order')
+      .lean();
+    
+    return result ? result.order : 0;
+  }
+
+  // Cập nhật thứ tự task trong column
+  async updateTaskOrder(task_id, new_order) {
+    return await Task.findByIdAndUpdate(
+      task_id,
+      { order: new_order, updated_at: Date.now() },
+      { new: true }
+    ).lean();
   }
 
   // Lấy tasks theo swimlane

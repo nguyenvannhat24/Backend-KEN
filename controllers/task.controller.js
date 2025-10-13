@@ -180,15 +180,22 @@ class TaskController {
     }
   }
 
-  // Kéo thả task (drag & drop) - Story 16
+  // Kéo thả task kiểu Jira - HỖ TRỢ CẢ COLUMN VÀ SWIMLANE
   async moveTask(req, res) {
     try {
       const { id } = req.params;
-      const { new_column_id, new_swimlane_id } = req.body;
+      const { new_column_id, new_swimlane_id } = req.body; // Hỗ trợ cả column và swimlane
       const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      if (!new_column_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'new_column_id là bắt buộc' 
+        });
       }
 
       const movedTask = await taskService.moveTask(id, new_column_id, new_swimlane_id, userId);
@@ -278,30 +285,31 @@ class TaskController {
     }
   }
 
-  // Cập nhật thời gian ước tính - Story 22
-  async updateEstimate(req, res) {
+  // Sắp xếp lại thứ tự tasks trong column (Jira style)
+  async reorderTasks(req, res) {
     try {
-      const { id } = req.params;
-      const { estimate_hours } = req.body;
+      const { column_id, task_orders } = req.body;
       const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
 
-      if (estimate_hours === undefined || estimate_hours === null) {
-        return res.status(400).json({
-          success: false,
-          message: 'estimate_hours là bắt buộc'
+      if (!column_id || !task_orders || !Array.isArray(task_orders)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'column_id và task_orders là bắt buộc' 
         });
       }
 
-      const updatedTask = await taskService.updateTask(id, { estimate_hours }, userId);
-      
+      // Cập nhật thứ tự cho từng task
+      for (const taskOrder of task_orders) {
+        await taskService.updateTaskOrder(taskOrder.task_id, taskOrder.order, userId);
+      }
+
       res.json({
         success: true,
-        message: 'Cập nhật thời gian ước tính thành công',
-        data: updatedTask
+        message: 'Sắp xếp lại thứ tự thành công'
       });
     } catch (error) {
       res.status(400).json({

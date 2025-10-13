@@ -58,10 +58,6 @@ const UserSchema = new mongoose.Schema({
   idSSO: {
     type: String
   },
-    idSSO: {
-    type: String,
-      
-  },
 
   
   deleted_at: {

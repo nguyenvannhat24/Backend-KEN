@@ -208,17 +208,10 @@ class TaskService {
     if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
     // Chỉ cho phép creator hoặc assigned user xóa
-<<<<<<< Updated upstream
     const createdById = task.created_by?._id?.toString() || task.created_by?.toString();
     const assignedToId = task.assigned_to?._id?.toString() || task.assigned_to?.toString();
     
     if (createdById !== userIdStr && (!assignedToId || assignedToId !== userIdStr)) {
-=======
-    const createdById = this._getObjectIdString(task.created_by);
-    const assignedToId = this._getObjectIdString(task.assigned_to);
-    
-    if (createdById !== userId && (!assignedToId || assignedToId !== userId)) {
->>>>>>> Stashed changes
       throw new Error('Bạn không có quyền xóa task này');
     }
 

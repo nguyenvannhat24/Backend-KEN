@@ -111,7 +111,6 @@ async cloneBoard(id_template, { title, description, userId }) {
 
     const cleanTitle = title.trim();
 
-<<<<<<< Updated upstream
     // 1️⃣ Kiểm tra template tồn tại
     await require('./template.service').getTemplateById(id_template);
 
@@ -128,12 +127,6 @@ async cloneBoard(id_template, { title, description, userId }) {
     // 3️⃣ Lấy cấu trúc từ template
     const templateColumnService = require('./templateColumn.service');
     const templateSwimlaneService = require('./templateSwimlane.service');
-=======
-    // 1. Kiểm tra template tồn tại
-    await templateService.getTemplateById(id_template);
-
-    // 2. Lấy cấu trúc từ template (đảm bảo có thứ tự ổn định)
->>>>>>> Stashed changes
     const columns = (await templateColumnService.list(id_template)) || [];
     const swimlanes = (await templateSwimlaneService.list(id_template)) || [];
 

@@ -34,8 +34,6 @@ class TemplateRepository {
 
   // ==================== SOFT DELETE METHODS ====================
 
-}
-
   async findAllWithDeleted(options = {}) {
     try {
       const {
@@ -80,10 +78,4 @@ class TemplateRepository {
   }
 }
 
-<<<<<<< Updated upstream
-
-
-
-=======
->>>>>>> Stashed changes
 module.exports = new TemplateRepository();

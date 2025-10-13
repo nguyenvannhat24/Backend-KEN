@@ -1,6 +1,8 @@
 const boardRepo = require('../repositories/board.repository');
 const boardMemberRepo = require( "../repositories/boardMember.repository"); 
 const templateService = require("./template.service");
+const templateColumnService = require('./templateColumn.service');
+const templateSwimlaneService = require('./templateSwimlane.service');
 const columnRepo = require('../repositories/column.repository');
 const swimlaneRepo = require('../repositories/swimlane.repository');
 const mongoose = require("mongoose");
@@ -109,6 +111,7 @@ async cloneBoard(id_template, { title, description, userId }) {
 
     const cleanTitle = title.trim();
 
+<<<<<<< Updated upstream
     // 1️⃣ Kiểm tra template tồn tại
     await require('./template.service').getTemplateById(id_template);
 
@@ -125,6 +128,12 @@ async cloneBoard(id_template, { title, description, userId }) {
     // 3️⃣ Lấy cấu trúc từ template
     const templateColumnService = require('./templateColumn.service');
     const templateSwimlaneService = require('./templateSwimlane.service');
+=======
+    // 1. Kiểm tra template tồn tại
+    await templateService.getTemplateById(id_template);
+
+    // 2. Lấy cấu trúc từ template (đảm bảo có thứ tự ổn định)
+>>>>>>> Stashed changes
     const columns = (await templateColumnService.list(id_template)) || [];
     const swimlanes = (await templateSwimlaneService.list(id_template)) || [];
 
@@ -211,34 +220,48 @@ async cloneBoard(id_template, { title, description, userId }) {
 
       try {
         let result = { board: board };
+        const Task = require('../models/task.model');
 
         // Cấu hình columns nếu có
         if (columns && Array.isArray(columns)) {
-          // Soft delete columns cũ
-          await columnRepo.softDeleteManyByBoard(boardId, session);
-          
-          // Tạo columns mới
-          if (columns.length > 0) {
-            const newColumns = await columnRepo.insertMany(
-              columns.map((col, index) => ({
-                board_id: boardId,
-                name: col.name,
-                order: col.order || index
-              })),
-              session
-            );
-            result.columns = newColumns;
+          if (columns.length === 0) {
+            throw new Error('Board phải có ít nhất 1 column');
           }
+
+          // Tạo columns mới TRƯỚC KHI xóa columns cũ
+          const newColumns = await columnRepo.insertMany(
+            columns.map((col, index) => ({
+              board_id: boardId,
+              name: col.name,
+              order: col.order || index
+            })),
+            session
+          );
+          result.columns = newColumns;
+
+          // Di chuyển tất cả tasks từ columns cũ sang column mới đầu tiên
+          const firstNewColumnId = newColumns[0]._id;
+          await Task.updateMany(
+            { 
+              board_id: boardId,
+              deleted_at: null 
+            },
+            { 
+              column_id: firstNewColumnId,
+              updated_at: new Date()
+            }
+          ).session(session);
+
+          // SAU ĐÓ mới soft delete columns cũ
+          await columnRepo.softDeleteManyByBoard(boardId, session);
         }
 
         // Cấu hình swimlanes nếu có
         if (swimlanes && Array.isArray(swimlanes)) {
-          // Soft delete swimlanes cũ
-          await swimlaneRepo.softDeleteManyByBoard(boardId, session);
-          
-          // Tạo swimlanes mới
+          // Tạo swimlanes mới TRƯỚC
+          let newSwimlanes = [];
           if (swimlanes.length > 0) {
-            const newSwimlanes = await swimlaneRepo.insertMany(
+            newSwimlanes = await swimlaneRepo.insertMany(
               swimlanes.map((lane, index) => ({
                 board_id: boardId,
                 name: lane.name,
@@ -248,6 +271,22 @@ async cloneBoard(id_template, { title, description, userId }) {
             );
             result.swimlanes = newSwimlanes;
           }
+
+          // Set swimlane_id = null cho tất cả tasks (reset swimlanes)
+          // User sẽ phải tự assign lại swimlane sau khi cấu hình
+          await Task.updateMany(
+            { 
+              board_id: boardId,
+              deleted_at: null 
+            },
+            { 
+              swimlane_id: null,
+              updated_at: new Date()
+            }
+          ).session(session);
+
+          // SAU ĐÓ mới soft delete swimlanes cũ
+          await swimlaneRepo.softDeleteManyByBoard(boardId, session);
         }
 
         await session.commitTransaction();

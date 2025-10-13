@@ -1,8 +1,12 @@
 const mongoose = require('mongoose');
 const Template = require('../models/template.model');
 const templateRepo = require('../repositories/template.repository');
+<<<<<<< Updated upstream
 const roleRepository = require('../repositories/role.repository');
 const userRoleRepo = require('../repositories/userRole.repository');
+=======
+
+>>>>>>> Stashed changes
 class TemplateService {
   async createTemplate({ name, description, userId }) {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {

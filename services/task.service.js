@@ -5,6 +5,18 @@ const swimlaneRepo = require('../repositories/swimlane.repository');
 const mongoose = require('mongoose');
 
 class TaskService {
+  /**
+   * Helper: Lấy ObjectId string từ object hoặc ObjectId
+   * @param {Object|ObjectId} obj - Object có _id hoặc ObjectId
+   * @returns {string} - ObjectId string
+   */
+  _getObjectIdString(obj) {
+    if (!obj) return null;
+    if (typeof obj === 'string') return obj;
+    if (obj._id) return obj._id.toString();
+    return obj.toString();
+  }
+
   // Tạo task mới
   async createTask(taskData, userId) {
     try {
@@ -128,7 +140,8 @@ class TaskService {
       if (!existingTask) throw new Error('Task không tồn tại');
 
       // Kiểm tra user là thành viên của board
-      const isMember = await boardRepo.isMember(userId, existingTask.board_id._id?.toString?.() || existingTask.board_id.toString());
+      const boardId = this._getObjectIdString(existingTask.board_id);
+      const isMember = await boardRepo.isMember(userId, boardId);
       if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
       // Validate nếu thay đổi column
@@ -138,7 +151,7 @@ class TaskService {
         }
         
         const column = await columnRepo.findById(updateData.column_id);
-        if (!column || column.board_id.toString() !== existingTask.board_id.toString()) {
+        if (!column || column.board_id.toString() !== boardId) {
           throw new Error('Column không thuộc board này');
         }
       }
@@ -150,7 +163,7 @@ class TaskService {
         }
         
         const swimlane = await swimlaneRepo.findById(updateData.swimlane_id);
-        if (!swimlane || swimlane.board_id.toString() !== existingTask.board_id.toString()) {
+        if (!swimlane || swimlane.board_id.toString() !== boardId) {
           throw new Error('Swimlane không thuộc board này');
         }
       }
@@ -190,14 +203,22 @@ class TaskService {
     const userIdStr = userId?.toString();
 
     // Kiểm tra user là thành viên của board
-    const isMember = await boardRepo.isMember(userId, task.board_id._id?.toString?.() || task.board_id.toString());
+    const boardId = this._getObjectIdString(task.board_id);
+    const isMember = await boardRepo.isMember(userId, boardId);
     if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
     // Chỉ cho phép creator hoặc assigned user xóa
+<<<<<<< Updated upstream
     const createdById = task.created_by?._id?.toString() || task.created_by?.toString();
     const assignedToId = task.assigned_to?._id?.toString() || task.assigned_to?.toString();
     
     if (createdById !== userIdStr && (!assignedToId || assignedToId !== userIdStr)) {
+=======
+    const createdById = this._getObjectIdString(task.created_by);
+    const assignedToId = this._getObjectIdString(task.assigned_to);
+    
+    if (createdById !== userId && (!assignedToId || assignedToId !== userId)) {
+>>>>>>> Stashed changes
       throw new Error('Bạn không có quyền xóa task này');
     }
 
@@ -220,12 +241,13 @@ class TaskService {
       if (!task) throw new Error('Task không tồn tại');
 
       // Kiểm tra user là thành viên của board
-      const isMember = await boardRepo.isMember(userId, task.board_id._id?.toString?.() || task.board_id.toString());
+      const boardId = this._getObjectIdString(task.board_id);
+      const isMember = await boardRepo.isMember(userId, boardId);
       if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
       // Kiểm tra column thuộc cùng board
       const newColumn = await columnRepo.findById(new_column_id);
-      if (!newColumn || newColumn.board_id.toString() !== task.board_id._id.toString()) {
+      if (!newColumn || newColumn.board_id.toString() !== boardId) {
         throw new Error('Column không thuộc board này');
       }
 
@@ -236,7 +258,7 @@ class TaskService {
         }
         
         const newSwimlane = await swimlaneRepo.findById(new_swimlane_id);
-        if (!newSwimlane || newSwimlane.board_id.toString() !== task.board_id._id.toString()) {
+        if (!newSwimlane || newSwimlane.board_id.toString() !== boardId) {
           throw new Error('Swimlane không thuộc board này');
         }
       }

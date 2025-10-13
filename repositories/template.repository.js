@@ -32,19 +32,7 @@ class TemplateRepository {
     return await Template.find();
   }
 
-// ==================== SOFT DELETE METHODS ====================
-
-async softDelete(id) {
-  try {
-    return await Template.findByIdAndUpdate(
-      id,
-      { deleted_at: new Date() },
-      { new: true }
-    );
-  } catch (error) {
-    console.error('Error soft deleting template:', error);
-    throw error;
-  }
+  // ==================== SOFT DELETE METHODS ====================
 
 }
 
@@ -60,23 +48,21 @@ async softDelete(id) {
       const skip = (page - 1) * limit;
       const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-      const templates = await Template.find({
+      const query = {
         $or: [
           { deleted_at: null },
           { deleted_at: { $ne: null } }
         ]
-      })
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean();
+      };
 
-      const total = await Template.countDocuments({
-        $or: [
-          { deleted_at: null },
-          { deleted_at: { $ne: null } }
-        ]
-      });
+      const [templates, total] = await Promise.all([
+        Template.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Template.countDocuments(query)
+      ]);
 
       return {
         templates,
@@ -94,7 +80,10 @@ async softDelete(id) {
   }
 }
 
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes
 module.exports = new TemplateRepository();

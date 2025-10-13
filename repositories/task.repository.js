@@ -85,6 +85,12 @@ class TaskRepository {
 
   // Chuyển task sang column khác (drag & drop)
   async moveToColumn(task_id, new_column_id, new_swimlane_id = null) {
+    // Kiểm tra task tồn tại và chưa bị soft delete
+    const task = await Task.findOne({ _id: task_id, deleted_at: null });
+    if (!task) {
+      throw new Error('Task không tồn tại hoặc đã bị xóa');
+    }
+
     const updateData = { 
       column_id: new_column_id,
       updated_at: Date.now()

@@ -20,7 +20,8 @@ const RoleSchema = new mongoose.Schema({
 
 RoleSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model('Role', RoleSchema);('userCount', {
+// Virtual để đếm số users có role này
+RoleSchema.virtual('userCount', {
   ref: 'UserRole',
   localField: '_id',
   foreignField: 'role_id',

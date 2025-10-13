@@ -85,6 +85,7 @@ app.use('/api/centers', centerRouter);
 app.use('/api/userPoints', userPointRouter);
 app.use('/api/role', roleRouter);
 app.use('/api/boards', boardRouter);
+app.use('/api/board', boardRouter); // Alias cho frontend
 app.use('/api/templates', templateRouter);
 app.use('/api/boardMember',boardMemberRouter );
 app.use('/api/groups', groupRoutes);

@@ -21,8 +21,8 @@ class TaskRepository {
   // Lấy tất cả tasks của board
   async findByBoard(board_id) {
     return await Task.find({ board_id })
-      .populate('column_id', 'name order_index')
-      .populate('swimlane_id', 'name order_index')
+      .populate('column_id', 'name order')
+      .populate('swimlane_id', 'name order')
       .populate('created_by', 'username full_name')
       .populate('assigned_to', 'username full_name')
       .sort({ created_at: -1 })

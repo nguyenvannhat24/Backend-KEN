@@ -22,9 +22,6 @@ const TaskSchema = new mongoose.Schema({
   description: { 
     type: String 
   },
-  status: { 
-    type: String 
-  },
   priority: { 
     type: String 
   },

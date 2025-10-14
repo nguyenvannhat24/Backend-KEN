@@ -104,6 +104,26 @@ class ColumnController {
       res.status(400).json({ success: false, message: error.message });
     }
   }
+
+  async move (req , res){
+    try {
+      const iduser = req.user.id;
+      if(!iduser) return;
+
+      const idboard  = req.params.id;
+      const data = req.body;
+      const result = await columnService.moveService(iduser , idboard ,data);
+     res.json(
+      {
+        success: true,
+        data : result
+      }
+     )
+    } catch (error) {
+      console.error('❌ Column  error:', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = new ColumnController();

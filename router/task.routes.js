@@ -38,7 +38,7 @@ router.get('/board/:board_id/stats', authenticateAny, taskController.getStats);
 
 // Lấy tasks của column
 router.get('/column/:column_id', authenticateAny, taskController.getByColumn);
-
+    
 // ==================== USER RELATED ROUTES ====================
 
 // Lấy tasks được assign cho user hiện tại
@@ -48,6 +48,7 @@ router.get('/my/assigned', authenticateAny, taskController.getMyTasks);
 router.get('/user/:user_id', authenticateAny, taskController.getByUser);
 
 // ==================== DRAG & DROP ROUTES ====================
+// Cập nhật vị trí task (kéo thả)
 
 // Kéo thả task giữa các cột - Story 16
 router.put('/:id/move', authenticateAny, taskController.moveTask);
@@ -59,5 +60,7 @@ router.put('/:id/dates', authenticateAny, taskController.updateDates);
 
 // Cập nhật thời gian ước tính - Story 22
 router.put('/:id/estimate', authenticateAny, taskController.updateEstimate);
+// Lấy tất cả tasks của column theo board
+router.get('/board/:board_id/column/:column_id', authenticateAny, taskController.getByBoardAndColumn);
 
 module.exports = router;

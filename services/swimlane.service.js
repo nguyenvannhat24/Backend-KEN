@@ -56,32 +56,39 @@ class SwimlaneService {
   }
 
   // Reorder swimlanes
-  async reorderSwimlanes(boardId, swimlanes, userId) {
-    const boardRepo = require('../repositories/board.repository');
-    const isMember = await boardRepo.isMember(userId, boardId);
-    if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+ // Reorder swimlanes
+async reorderSwimlanes(boardId, swimlaneIds, userId) {
+  const boardRepo = require('../repositories/board.repository');
+  const swimlaneRepo = require('../repositories/swimlane.repository');
+  const mongoose = require('mongoose');
 
-    const mongoose = require('mongoose');
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  const isMember = await boardRepo.isMember(userId, boardId);
+  if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
-    try {
-      const results = [];
-      for (const { id, order } of swimlanes) {
-        const result = await swimlaneRepo.update(id, { order }, session);
-        if (result) results.push(result);
-      }
-      
-      await session.commitTransaction();
-      session.endSession();
-      
-      return results;
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const results = [];
+
+    for (let i = 0; i < swimlaneIds.length; i++) {
+      const id = swimlaneIds[i];
+      const result = await swimlaneRepo.update(id, { order: i }, session);
+      if (result) results.push(result);
     }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return results;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
+}
+
+
 }
 
 module.exports = new SwimlaneService();

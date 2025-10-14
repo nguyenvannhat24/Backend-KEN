@@ -19,45 +19,63 @@ class TaskRepository {
   }
 
   // Lấy tất cả tasks của board
-  async findByBoard(board_id) {
-    return await Task.find({ board_id })
-      .populate('column_id', 'name order')
-      .populate('swimlane_id', 'name order')
-      .populate('created_by', 'username full_name')
-      .populate('assigned_to', 'username full_name')
-      .sort({ created_at: -1 })
-      .lean();
-  }
+async findByBoard(board_id) {
+  const tasks = await Task.find({ board_id, deleted_at: null })
+    .populate('column_id', 'name order')
+    .populate('swimlane_id', 'name order')
+    .populate('created_by', 'username full_name')
+    .populate('assigned_to', 'username full_name')
+    .lean();
+
+  // Sắp xếp column → swimlane → position
+  tasks.sort((a, b) => {
+    if (a.column_id.name < b.column_id.name) return -1;
+    if (a.column_id.name > b.column_id.name) return 1;
+    if (a.swimlane_id.name < b.swimlane_id.name) return -1;
+    if (a.swimlane_id.name > b.swimlane_id.name) return 1;
+    return a.position - b.position;
+  });
+
+  return tasks;
+}
 
   // Lấy tasks theo column
-  async findByColumn(column_id) {
-    return await Task.find({ column_id })
-      .populate('swimlane_id', 'name')
-      .populate('created_by', 'username full_name')
-      .populate('assigned_to', 'username full_name')
-      .sort({ created_at: -1 })
-      .lean();
-  }
+async findByColumn(column_id) {
+  const tasks = await Task.find({ column_id, deleted_at: null })
+    .populate('swimlane_id', 'name')
+    .populate('created_by', 'username full_name')
+    .populate('assigned_to', 'username full_name')
+    .lean();
+
+  tasks.sort((a, b) => a.position - b.position); // sắp xếp theo position tăng dần
+  return tasks;
+}
+
 
   // Lấy tasks theo swimlane
-  async findBySwimlane(swimlane_id) {
-    return await Task.find({ swimlane_id })
-      .populate('column_id', 'name')
-      .populate('created_by', 'username full_name')
-      .populate('assigned_to', 'username full_name')
-      .sort({ created_at: -1 })
-      .lean();
-  }
+async findBySwimlane(swimlane_id) {
+  const tasks = await Task.find({ swimlane_id, deleted_at: null })
+    .populate('column_id', 'name')
+    .populate('created_by', 'username full_name')
+    .populate('assigned_to', 'username full_name')
+    .lean();
 
+  tasks.sort((a, b) => a.position - b.position); // sắp xếp theo position
+  return tasks;
+}
   // Lấy tasks được assign cho user
-  async findByAssignedUser(user_id) {
-    return await Task.find({ assigned_to: user_id })
-      .populate('board_id', 'title')
-      .populate('column_id', 'name')
-      .populate('created_by', 'username full_name')
-      .sort({ due_date: 1, created_at: -1 })
-      .lean();
-  }
+
+// Lấy tasks được tạo bởi user
+async findByCreator(user_id) {
+  const tasks = await Task.find({ created_by: user_id, deleted_at: null })
+    .populate('board_id', 'title')
+    .populate('column_id', 'name')
+    .populate('assigned_to', 'username full_name')
+    .lean();
+
+  tasks.sort((a, b) => a.position - b.position); // sort position
+  return tasks;
+}
 
   // Lấy tasks được tạo bởi user
   async findByCreator(user_id) {
@@ -111,18 +129,23 @@ class TaskRepository {
   }
 
   // Tìm kiếm tasks
-  async search(board_id, searchQuery) {
-    return await Task.find({
-      board_id,
-      $or: [
-        { title: { $regex: searchQuery, $options: 'i' } },
-        { description: { $regex: searchQuery, $options: 'i' } }
-      ]
-    })
-    .populate('column_id', 'name')
-    .populate('assigned_to', 'username full_name')
-    .lean();
-  }
+ // Tìm kiếm tasks
+async search(board_id, searchQuery) {
+  const tasks = await Task.find({
+    board_id,
+    deleted_at: null,
+    $or: [
+      { title: { $regex: searchQuery, $options: 'i' } },
+      { description: { $regex: searchQuery, $options: 'i' } }
+    ]
+  })
+  .populate('column_id', 'name')
+  .populate('assigned_to', 'username full_name')
+  .lean();
+
+  tasks.sort((a, b) => a.position - b.position); // sort position
+  return tasks;
+}
 
   async deleteManyByBoard(board_id, session = null) {
     const query = Task.deleteMany({ board_id });
@@ -186,6 +209,45 @@ async findAllWithDeleted(options = {}) {
     throw error;
   }
 }
+// Reorder tất cả task trong column (hoặc swimlane nếu có)
+async reorderColumnTasks(column_id, swimlane_id = null) {
+  const query = { column_id };
+  if (swimlane_id) query.swimlane_id = swimlane_id;
+
+  const tasks = await Task.find(query)
+    .sort({ position: 1 }) // sắp xếp theo position hiện tại
+    .lean();
+
+  let position = 10;
+  const increment = 10;
+
+  for (const task of tasks) {
+    await Task.findByIdAndUpdate(task._id, { position });
+    position += increment;
+  }
+
+  return true;
+}
+  /**
+   * Lấy danh sách task theo column và swimlane (nếu có)
+   * @param {ObjectId} column_id 
+   * @param {ObjectId | null} swimlane_id 
+   * @returns {Promise<Array>}
+   */
+  async findByColumnAndSwimlane(column_id, swimlane_id = null) {
+    const filter = { column_id };
+
+    if (swimlane_id) {
+      filter.swimlane_id = swimlane_id;
+    } else {
+      // Nếu swimlane không có, lọc các task không có swimlane
+      filter.$or = [{ swimlane_id: { $exists: false } }, { swimlane_id: null }];
+    }
+
+    // Sắp xếp theo position tăng dần
+    return await Task.find(filter).sort({ position: 1 }).lean();
+  }
+
 
 }
 

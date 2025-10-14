@@ -62,10 +62,16 @@ class TaskService {
       if (taskData.estimate_hours && taskData.estimate_hours < 0) {
         throw new Error('Thời gian ước tính phải lớn hơn 0');
       }
-
+let position = 0;
+const tasksInColumn = await taskRepo.findByColumn(taskData.column_id);
+if (tasksInColumn.length > 0) {
+  const lastTask = tasksInColumn[tasksInColumn.length - 1];
+  position = lastTask.position + 10;
+}
       // Tạo task
       const newTaskData = {
         ...taskData,
+        position,
         created_by: userId,
         created_at: new Date(),
         updated_at: new Date()
@@ -127,7 +133,7 @@ class TaskService {
       const existingTask = await taskRepo.findById(id);
       if (!existingTask) throw new Error('Task không tồn tại');
 
-      // Kiểm tra user là thành viên của board
+      //Kiểm tra user là thành viên của board
       const isMember = await boardRepo.isMember(userId, existingTask.board_id._id?.toString?.() || existingTask.board_id.toString());
       if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
 
@@ -206,46 +212,7 @@ class TaskService {
   }
 
   // Kéo thả task (drag & drop)
-  async moveTask(task_id, new_column_id, new_swimlane_id = null, userId) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(task_id)) {
-        throw new Error('Task ID không hợp lệ');
-      }
-      if (!mongoose.Types.ObjectId.isValid(new_column_id)) {
-        throw new Error('Column ID không hợp lệ');
-      }
-
-      // Kiểm tra task tồn tại
-      const task = await taskRepo.findById(task_id);
-      if (!task) throw new Error('Task không tồn tại');
-
-      // Kiểm tra user là thành viên của board
-      const isMember = await boardRepo.isMember(userId, task.board_id._id?.toString?.() || task.board_id.toString());
-      if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
-
-      // Kiểm tra column thuộc cùng board
-      const newColumn = await columnRepo.findById(new_column_id);
-      if (!newColumn || newColumn.board_id.toString() !== task.board_id._id.toString()) {
-        throw new Error('Column không thuộc board này');
-      }
-
-      // Kiểm tra swimlane nếu có
-      if (new_swimlane_id) {
-        if (!mongoose.Types.ObjectId.isValid(new_swimlane_id)) {
-          throw new Error('Swimlane ID không hợp lệ');
-        }
-        
-        const newSwimlane = await swimlaneRepo.findById(new_swimlane_id);
-        if (!newSwimlane || newSwimlane.board_id.toString() !== task.board_id._id.toString()) {
-          throw new Error('Swimlane không thuộc board này');
-        }
-      }
-
-      return await taskRepo.moveToColumn(task_id, new_column_id, new_swimlane_id);
-    } catch (error) {
-      throw new Error(`Lỗi di chuyển task: ${error.message}`);
-    }
-  }
+  
 
   // Tìm kiếm tasks
   async searchTasks(board_id, searchQuery) {
@@ -280,6 +247,123 @@ class TaskService {
       ).length
     };
   }
+async moveTask(
+  task_id,
+  new_column_id,
+  prev_task_id = null,
+  next_task_id = null,
+  new_swimlane_id = null,
+  userId
+) {
+  try {
+    // ====== Kiểm tra ID hợp lệ ======
+    if (!mongoose.Types.ObjectId.isValid(task_id))
+      throw new Error("Task ID không hợp lệ");
+    if (!mongoose.Types.ObjectId.isValid(new_column_id))
+      throw new Error("Column ID không hợp lệ");
+
+    const task = await taskRepo.findById(task_id);
+    if (!task) throw new Error("Task không tồn tại");
+
+    // ====== Kiểm tra column đích thuộc cùng board ======
+    const newColumn = await columnRepo.findById(new_column_id);
+    if (
+      !newColumn ||
+      newColumn.board_id.toString() !== task.board_id._id.toString()
+    ) {
+      throw new Error("Column không thuộc board này");
+    }
+
+    // ====== Kiểm tra swimlane (nếu có) ======
+    if (new_swimlane_id) {
+      if (!mongoose.Types.ObjectId.isValid(new_swimlane_id))
+        throw new Error("Swimlane ID không hợp lệ");
+
+      const newSwimlane = await swimlaneRepo.findById(new_swimlane_id);
+      if (
+        !newSwimlane ||
+        newSwimlane.board_id.toString() !== task.board_id._id.toString()
+      ) {
+        throw new Error("Swimlane không thuộc board này");
+      }
+    }
+
+    // ====== Lấy prev/next task (nếu có) ======
+    const [prevTask, nextTask] = await Promise.all([
+      prev_task_id ? taskRepo.findById(prev_task_id) : null,
+      next_task_id ? taskRepo.findById(next_task_id) : null,
+    ]);
+
+    // ====== Xác định column/swimlane hiện tại ======
+    const isSameColumn =
+      task.column_id.toString() === new_column_id.toString() &&
+      ((task.swimlane_id || null)?.toString() ===
+        (new_swimlane_id || null)?.toString());
+
+    // ====== Lấy tất cả task trong column/swimlane đích ======
+    const tasksInTarget = await taskRepo.findByColumnAndSwimlane(
+      new_column_id,
+      new_swimlane_id
+    );
+
+    // ====== Tính position mới ======
+    let newPosition;
+
+    if (tasksInTarget.length === 0) {
+      // Column rỗng
+      newPosition = 10;
+    } else if (!prevTask && nextTask) {
+      // Kéo lên đầu
+      newPosition = nextTask.position / 2;
+    } else if (prevTask && !nextTask) {
+      // Kéo xuống cuối
+      newPosition = prevTask.position + 10;
+    } else if (prevTask && nextTask) {
+      // Kéo vào giữa
+      newPosition = (prevTask.position + nextTask.position) / 2;
+    } else {
+      // Không xác định được thì mặc định cộng 10 vào cuối
+      newPosition = tasksInTarget[tasksInTarget.length - 1].position + 10;
+    }
+
+    // ====== Cập nhật task ======
+    const updateData = {
+      position: newPosition,
+      updated_at: Date.now(),
+    };
+
+    if (!isSameColumn) {
+      // Nếu di chuyển sang column/swimlane khác
+      updateData.column_id = new_column_id;
+      if (new_swimlane_id) updateData.swimlane_id = new_swimlane_id;
+    }
+
+    const movedTask = await taskRepo.update(task_id, updateData);
+
+    // ====== Reorder lại position nếu bị trùng hoặc quá sát ======
+    const needReorder =
+      !prevTask ||
+      !nextTask ||
+      Math.abs(
+        (prevTask?.position || 0) - (nextTask?.position || newPosition)
+      ) < 1;
+
+    if (needReorder) {
+      await taskRepo.reorderColumnTasks(new_column_id, new_swimlane_id);
+      if (!isSameColumn) {
+        // Reorder cả column cũ nếu chuyển cột
+        await taskRepo.reorderColumnTasks(task.column_id, task.swimlane_id);
+      }
+    }
+
+    return { success: true, data: movedTask };
+  } catch (error) {
+    throw new Error(`Lỗi di chuyển task: ${error.message}`);
+  }
+}
+
+
+
 }
 
 module.exports = new TaskService();

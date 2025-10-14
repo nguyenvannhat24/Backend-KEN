@@ -72,6 +72,46 @@ class ColumnService {
       throw error;
     }
   }
+
+ async  moveService(idUser, idBoard, data) {
+  try {
+    // 1️⃣ Kiểm tra dữ liệu đầu vào
+    if (!idUser || !idBoard) {
+      throw new Error("Thiếu thông tin người dùng hoặc bảng.");
+    }
+
+    // 2️⃣ Ép kiểu data thành mảng ID hợp lệ
+    const arrayData = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.ids)
+      ? data.ids
+      : [];
+
+    if (arrayData.length === 0) {
+      throw new Error("Không có dữ liệu để cập nhật thứ tự cột.");
+    }
+
+    console.log(`[API] Nhận yêu cầu cập nhật thứ tự cột cho board ${idBoard}`);
+    console.log("Dữ liệu nhận được:", arrayData);
+
+    // 3️⃣ Duyệt từng phần tử và cập nhật thứ tự (order)
+    for (let i = 0; i < arrayData.length; i++) {
+      const columnId = arrayData[i];
+      if (!columnId) continue;
+
+      await columnRepo.update(columnId, { order: i + 1 }); // cập nhật thứ tự
+    }
+
+    return {
+      success: true,
+      message: `Đã cập nhật thứ tự ${arrayData.length} cột cho board ${idBoard}.`,
+    };
+  } catch (error) {
+    console.error("Lỗi moveService:", error.message);
+    return { success: false, message: error.message };
+  }
+}
+
 }
 
 module.exports = new ColumnService();

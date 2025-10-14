@@ -108,34 +108,37 @@ class SwimlaneController {
   }
 
   // Reorder Swimlanes
-  async reorder(req, res) {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
-      }
-      
-      const { boardId } = req.params;
-      const { swimlanes } = req.body; // Array of {id, order}
-      
-      if (!Array.isArray(swimlanes)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'swimlanes phải là array' 
-        });
-      }
-
-      const result = await swimlaneService.reorderSwimlanes(boardId, swimlanes, userId);
-      res.json({ 
-        success: true, 
-        message: 'Sắp xếp lại swimlanes thành công',
-        data: result 
-      });
-    } catch (error) {
-      console.error('❌ Swimlane reorder error:', error);
-      res.status(400).json({ success: false, message: error.message });
+ // Reorder Swimlanes
+// controllers/swimlane.controller.js
+async reorder(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     }
+
+    const { boardId } = req.params;
+    const { ids } = req.body; // 👈 Frontend gửi { ids: [...] }
+
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Dữ liệu gửi lên phải có dạng { ids: [array các swimlaneId] }',
+      });
+    }
+
+    const result = await swimlaneService.reorderSwimlanes(boardId, ids, userId);
+
+    res.json({
+      success: true,
+      message: 'Sắp xếp lại Swimlanes thành công',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Swimlane reorder error:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 }
 
+}
 module.exports = new SwimlaneController();

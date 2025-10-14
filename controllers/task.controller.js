@@ -1,5 +1,5 @@
 const taskService = require('../services/task.service');
-
+const Task = require('../models/task.model');
 class TaskController {
   // Tạo task mới
   async create(req, res) {
@@ -134,14 +134,14 @@ class TaskController {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const userId = req.user?.id;
+     const userId = req.user?.id;
       const updateData = req.body;
 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
 
-      const updatedTask = await taskService.updateTask(id, updateData, userId);
+      const updatedTask = await taskService.updateTask(id, updateData ,userId);
       
       res.json({
         success: true,
@@ -182,29 +182,32 @@ class TaskController {
 
   // Kéo thả task (drag & drop) - Story 16
   async moveTask(req, res) {
-    try {
-      const { id } = req.params;
-      const { new_column_id, new_swimlane_id } = req.body;
-      const userId = req.user?.id;
+  try {
+    const { id } = req.params;
+    const { new_column_id, new_swimlane_id, prev_task_id, next_task_id } = req.body;
+    const userId = req.user?.id;
 
-      if (!userId) {
-        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
-      }
+    if (!userId) return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
 
-      const movedTask = await taskService.moveTask(id, new_column_id, new_swimlane_id, userId);
-      
-      res.json({
-        success: true,
-        message: 'Di chuyển task thành công',
-        data: movedTask
-      });
-    } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
+    const movedTask = await taskService.moveTask(
+      id,
+      new_column_id,
+      prev_task_id,
+      next_task_id,
+      new_swimlane_id,
+      userId
+    );
+
+    res.json({
+      success: true,
+      message: 'Di chuyển task thành công',
+      data: movedTask
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
+}
+
 
   // Tìm kiếm tasks
   async search(req, res) {
@@ -310,6 +313,42 @@ class TaskController {
       });
     }
   }
+
+  // controllers/task.controller.js
+
+// Lấy task theo board_id và column_id
+ async getByBoardAndColumn(req, res) {
+  try {
+    const { board_id, column_id } = req.params;
+
+    const tasks = await Task.find({
+      board_id,
+      column_id,
+      deleted_at: null // nếu bạn lưu soft delete
+    })
+      .populate('created_by', 'username full_name')
+      .populate('assigned_to', 'username full_name')
+      .populate('swimlane_id', 'name')
+      
+tasks.sort((a, b) => {
+  if (a.swimlane_id.name < b.swimlane_id.name) return -1;
+  if (a.swimlane_id.name > b.swimlane_id.name) return 1;
+  return a.position - b.position; // cùng swimlane thì sort theo position
+});
+    res.json({
+      success: true,
+      count: tasks.length,
+      data: tasks
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy task theo column trong board'
+    });
+  }
+};
+
 }
 
 module.exports = new TaskController();

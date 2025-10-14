@@ -179,6 +179,27 @@ class TagController {
       });
     }
   }
+
+  // Lấy tất cả tags của board
+async getTagsByBoard(req, res) {
+  try {
+    const { boardId } = req.params;
+    const tags = await tagService.getTagsByBoard(boardId);
+
+    res.json({
+      success: true,
+      count: tags.length,
+      data: tags
+    });
+  } catch (error) {
+    console.error('❌ getTagsByBoard error:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
 }
 
 module.exports = new TagController();

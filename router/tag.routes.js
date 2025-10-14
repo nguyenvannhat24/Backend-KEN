@@ -17,6 +17,9 @@ router.post('/', authenticateAny, authorizeAny('admin', 'System_Manager'), tagCo
 // Lấy tất cả tags - Story 43
 router.get('/', authenticateAny, tagController.getAll);
 
+// Lấy tất cả tags của board
+router.get('/board/:boardId', authenticateAny, tagController.getTagsByBoard);
+
 // Lấy tag theo ID
 router.get('/:id', authenticateAny, tagController.getById);
 

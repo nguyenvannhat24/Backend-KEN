@@ -2,7 +2,9 @@ const tagRepo = require('../repositories/tag.repository');
 const taskTagRepo = require('../repositories/taskTag.repository');
 const taskRepo = require('../repositories/task.repository');
 const mongoose = require('mongoose');
-
+const TaskModel = require('../models/task.model');
+const TaskTag = require('../models/taskTag.model');
+const TagModel = require('../models/tag.model')
 class TagService {
   // Tạo tag mới
   async createTag({ name, color }) {
@@ -147,38 +149,34 @@ class TagService {
   }
 
   // Thêm tag vào task
-  async addTagToTask(taskId, tagId) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(taskId) || !mongoose.Types.ObjectId.isValid(tagId)) {
-        throw new Error('ID task hoặc tag không hợp lệ');
-      }
-
-      // Kiểm tra task tồn tại
-      const task = await taskRepo.findById(taskId);
-      if (!task) {
-        throw new Error('Task không tồn tại');
-      }
-
-      // Kiểm tra tag tồn tại
-      const tag = await tagRepo.findById(tagId);
-      if (!tag) {
-        throw new Error('Tag không tồn tại');
-      }
-
-      // Kiểm tra tag đã được gán cho task chưa
-      const existingTaskTag = await taskTagRepo.findByTaskAndTag(taskId, tagId);
-      if (existingTaskTag) {
-        throw new Error('Tag đã được gán cho task này');
-      }
-
-      const taskTag = await taskTagRepo.create({ task_id: taskId, tag_id: tagId });
-      console.log(`✅ [TagService] Added tag ${tag.name} to task ${taskId}`);
-      return taskTag;
-    } catch (error) {
-      console.error('❌ [TagService] addTagToTask error:', error);
-      throw error;
+ async addTagToTask(taskId, tagId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(taskId) || !mongoose.Types.ObjectId.isValid(tagId)) {
+      throw new Error('ID task hoặc tag không hợp lệ');
     }
+
+    // Kiểm tra task tồn tại
+    const task = await taskRepo.findById(taskId);
+    if (!task) throw new Error('Task không tồn tại');
+
+    // Kiểm tra tag tồn tại
+    const tag = await tagRepo.findById(tagId);
+    if (!tag) throw new Error('Tag không tồn tại');
+
+    // Xóa tất cả tag hiện tại của task
+    await taskTagRepo.deleteByTaskId(taskId);
+
+    // Gán tag mới cho task
+    const taskTag = await taskTagRepo.create({ task_id: taskId, tag_id: tagId });
+
+    console.log(`✅ [TagService] Assigned tag ${tag.name} to task ${taskId}`);
+    return taskTag;
+  } catch (error) {
+    console.error('❌ [TagService] addTagToTask error:', error);
+    throw error;
   }
+}
+
 
   // Xóa tag khỏi task
   async removeTagFromTask(taskId, tagId) {
@@ -201,6 +199,37 @@ class TagService {
       throw error;
     }
   }
+
+
+async getTagsByBoard(boardId) {
+  if (!mongoose.Types.ObjectId.isValid(boardId)) {
+    throw new Error('Board ID không hợp lệ');
+  }
+
+  // 1️⃣ Lấy tất cả task của board
+  const tasks = await TaskModel.find({ board_id: boardId }).select('_id');
+  const taskIds = tasks.map(t => t._id);
+
+  if (taskIds.length === 0) return []; // Nếu board chưa có task
+
+  // 2️⃣ Lấy tất cả taskTag liên quan đến các task này
+  const taskTags = await TaskTag.find({ task_id: { $in: taskIds } }).select('tag_id');
+
+  const tagIds = [...new Set(taskTags.map(tt => tt.tag_id.toString()))]; // loại bỏ trùng lặp
+
+  if (tagIds.length === 0) return []; // nếu chưa có tag gán cho task nào
+
+  // 3️⃣ Lấy thông tin tag
+  const tags = await TagModel.find({ _id: { $in: tagIds } }).lean();
+
+  return tags;
+}
+
+async findByBoardId(boardId) {
+  return await TagModel.find({ board_id: boardId }).lean();
+}
+
+
 }
 
 module.exports = new TagService();

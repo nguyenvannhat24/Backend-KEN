@@ -3,6 +3,7 @@ const Column = require('../models/column.model');
 const Swimlane = require('../models/swimlane.model');
 const User = require('../models/usersModel');
 const BoardMember = require('../models/boardMember.model');
+const Task = require('../models/task.model'); // ✅ cần thêm để tính position
 
 // 🔹 Hàm parse định dạng ngày: "20/10/2025" -> new Date("2025-10-20")
 function parseDate(value) {
@@ -106,6 +107,16 @@ async function mapNamesToIds(taskData, userIdFromToken) {
       })
     : null;
 
+  // 🔹 Lấy vị trí cao nhất trong cột (và swimlane nếu có)
+  const lastTask = await Task.findOne({
+    column_id: column._id,
+    swimlane_id: swimlane?._id || null,
+  })
+    .sort({ position: -1 })
+    .select('position');
+
+  const newPosition = lastTask ? lastTask.position + 10 : 10;
+
   // ✅ Trả về dữ liệu task đã map
   return {
     board_id: board._id,
@@ -118,8 +129,9 @@ async function mapNamesToIds(taskData, userIdFromToken) {
     start_date: parseDate(taskData.StartDate),
     due_date: parseDate(taskData.DueDate),
     estimate_hours: Number(taskData.EstimateHours) || null,
-    created_by: createdBy?._id || userIdFromToken, // fallback: người import
+    created_by: createdBy?._id || userIdFromToken,
     assigned_to: assignedTo?._id || null,
+    position: newPosition, // ✅ thêm vị trí tự động
   };
 }
 

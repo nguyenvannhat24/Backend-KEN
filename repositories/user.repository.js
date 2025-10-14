@@ -295,6 +295,105 @@ class UserRepository {
       throw error;
     }
   }
+
+  async findDeleted(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'deleted_at',
+      sortOrder = 'desc'
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    // 🔹 Chỉ lấy user đã bị soft delete
+    const query = { deleted_at: { $ne: null } };
+
+    // 🔹 Gộp lookup role giống findAll()
+    const pipeline = [
+      { $match: query },
+      {
+        $lookup: {
+          from: "UserRoles",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "user_roles"
+        }
+      },
+      {
+        $lookup: {
+          from: "Roles",
+          localField: "user_roles.role_id",
+          foreignField: "_id",
+          as: "roles"
+        }
+      },
+      {
+        $addFields: {
+          role_name: { $arrayElemAt: ["$roles.name", 0] }
+        }
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    const users = await User.aggregate(pipeline);
+    const total = await User.countDocuments(query);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error finding deleted users:', error);
+    throw error;
+  }
+}
+
+async isEmailExists(email, excludeUserId = null) {
+  try {
+    const query = { email: email.toLowerCase().trim() };
+    if (excludeUserId) query._id = { $ne: excludeUserId };
+    const existingUser = await User.findOne(query).lean();
+    return !!existingUser;
+  } catch (error) {
+    console.error('Error checking existing email:', error);
+    throw error;
+  }
+}
+
+async isUsernameExists(username, excludeUserId = null) {
+  try {
+    const query = { username: username.trim() };
+    if (excludeUserId) query._id = { $ne: excludeUserId };
+    const existingUser = await User.findOne(query).lean();
+    return !!existingUser;
+  } catch (error) {
+    console.error('Error checking existing username:', error);
+    throw error;
+  }
+}
+
+async findbyIdSSO(idSSO) {
+  try {
+    return await User.findOne({ idSSO }).lean();
+  } catch (error) {
+    console.error('Error finding user by idSSO:', error);
+    throw error;
+  }
+}
+async update(id, updateData) {
+  return await this.updateById(id, updateData);
+}
+
 }
 
 module.exports = new UserRepository();

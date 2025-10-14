@@ -1,5 +1,8 @@
 const taskService = require('../services/task.service');
 const Task = require('../models/task.model');
+const taskTag = require('../repositories/taskTag.repository');
+const taskTagRepo = require('../repositories/taskTag.repository');
+
 class TaskController {
   // Tạo task mới
   async create(req, res) {
@@ -11,7 +14,17 @@ class TaskController {
 
       const taskData = req.body;
       const task = await taskService.createTask(taskData, userId);
-      
+      // nếu gửi cả tag theo dạng tên task thì gán vào luôn 
+    if(taskData.nameTag){
+       
+      await taskTag.addTag(
+        taskData.nameTag ,
+        task._id
+      ) 
+
+    }
+   
+
       res.status(201).json({
         success: true,
         message: 'Tạo task thành công',
@@ -131,30 +144,41 @@ class TaskController {
   }
 
   // Cập nhật task
-  async update(req, res) {
-    try {
-      const { id } = req.params;
-     const userId = req.user?.id;
-      const updateData = req.body;
+async update(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const updateData = req.body;
 
-      if (!userId) {
-        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
-      }
-
-      const updatedTask = await taskService.updateTask(id, updateData ,userId);
-      
-      res.json({
-        success: true,
-        message: 'Cập nhật task thành công',
-        data: updatedTask
-      });
-    } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error.message
-      });
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     }
+
+    // 1️⃣ Cập nhật thông tin cơ bản của task
+    const updatedTask = await taskService.updateTask(id, updateData, userId);
+
+    // 2️⃣ Nếu có gửi kèm tag → xử lý thêm
+    if (updateData.nameTag) {
+      // Nếu mỗi task chỉ có 1 tag → xóa tag cũ trước
+      await taskTagRepo.deleteByTaskId(id);
+
+      // Sau đó thêm tag mới
+      await taskTagRepo.addTag(updateData.nameTag, id);
+    }
+
+    res.json({
+      success: true,
+      message: 'Cập nhật task thành công',
+      data: updatedTask
+    });
+  } catch (error) {
+    console.error("❌ update task error:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
+}
 
   // Xóa task
   async delete(req, res) {

@@ -123,7 +123,7 @@ class RoleService {
         throw new Error('Tên role đã tồn tại');
       }
       
-     // if(updateData.name === 'admin' || updateData.name === 'user') throw new Error('Tên role này của hệ thống ko đc sửa');
+      if(updateData.name === 'admin' || updateData.name === 'user') throw new Error('Tên role này của hệ thống ko đc sửa');
     }
 
     const updatedRole = await RoleRepository.update(id, updateData);
@@ -153,15 +153,15 @@ async deleteRole(id) {
     }
 
     // ❌ Không cho xóa role System_Manager
-    if (existingRole.name === "System_Manager") {
+    if (existingRole.name === "System_Manager" ||existingRole.name === "admin"  )  {
       throw new Error("Role System_Manager không được xóa");
     }
 
-    // Check if role is being used by any user
-    // const usersWithRole = await UserRoleRepository.findByRoleId(id);
-    // if (usersWithRole && usersWithRole.length > 0) {
-    //   throw new Error('Không thể xóa role đang được sử dụng bởi user');
-    // }
+   // Check if role is being used by any user
+    const usersWithRole = await UserRoleRepository.findByRoleId(id);
+    if (usersWithRole && usersWithRole.length > 0) {
+      throw new Error('Không thể xóa role đang được sử dụng bởi user');
+    }
 
     const deletedRole = await RoleRepository.delete(id);
     console.log(`✅ [RoleService] deleteRole - Deleted role: ${deletedRole.name}`);

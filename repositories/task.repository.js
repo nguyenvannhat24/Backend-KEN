@@ -1,5 +1,5 @@
 const Task = require('../models/task.model');
-
+const TaskTag = require('../models/taskTag.model');
 class TaskRepository {
   // Tạo task mới
   async create(taskData) {
@@ -8,15 +8,33 @@ class TaskRepository {
   }
 
   // Lấy task theo ID
-  async findById(id) {
-    return await Task.findById(id)
-      .populate('board_id', 'title description')
-      .populate('column_id', 'name')
-      .populate('swimlane_id', 'name')
-      .populate('created_by', 'username full_name email')
-      .populate('assigned_to', 'username full_name email')
-      .lean();
+async findById(id) {
+  const task = await Task.findById(id)
+    .populate('column_id', 'name order')
+    .populate('swimlane_id', 'name order')
+    .populate('created_by', 'username full_name')
+    .populate('assigned_to', 'username full_name')
+    .lean();
+
+  if (!task) return null;
+
+  // ✅ Lấy luôn tag gắn với task này
+  const taskTag = await TaskTag.findOne({ task_id: id })
+    .populate('tag_id', 'name color') // chỉ lấy name & color của tag
+    .lean();
+
+  if (taskTag && taskTag.tag_id) {
+    task.tag = {
+      _id: taskTag.tag_id._id,
+      name: taskTag.tag_id.name,
+      color: taskTag.tag_id.color
+    };
+  } else {
+    task.tag = null;
   }
+
+  return task;
+}
 
   // Lấy tất cả tasks của board
 async findByBoard(board_id) {
@@ -29,11 +47,36 @@ async findByBoard(board_id) {
 
   // Sắp xếp column → swimlane → position
   tasks.sort((a, b) => {
-    if (a.column_id.name < b.column_id.name) return -1;
-    if (a.column_id.name > b.column_id.name) return 1;
-    if (a.swimlane_id.name < b.swimlane_id.name) return -1;
-    if (a.swimlane_id.name > b.swimlane_id.name) return 1;
-    return a.position - b.position;
+    const colA = a.column_id?.name || '';
+    const colB = b.column_id?.name || '';
+    const swimA = a.swimlane_id?.name || '';
+    const swimB = b.swimlane_id?.name || '';
+
+    if (colA < colB) return -1;
+    if (colA > colB) return 1;
+    if (swimA < swimB) return -1;
+    if (swimA > swimB) return 1;
+    return (a.position || 0) - (b.position || 0);
+  });
+
+  // Lấy tất cả task IDs
+  const taskIds = tasks.map(t => t._id);
+
+  // Lấy tất cả TaskTags của board
+  const taskTags = await TaskTag.find({ task_id: { $in: taskIds } })
+    .populate('tag_id', 'name color')
+    .lean();
+
+  // Gán tag cho task
+  const taskTagMap = {};
+  taskTags.forEach(tt => {
+    taskTagMap[tt.task_id.toString()] = tt.tag_id
+      ? { _id: tt.tag_id._id, name: tt.tag_id.name, color: tt.tag_id.color }
+      : null;
+  });
+
+  tasks.forEach(task => {
+    task.tag = taskTagMap[task._id.toString()] || null;
   });
 
   return tasks;

@@ -27,7 +27,7 @@ const commentRoutes = require('./router/comment.routes');
 const importRoutes = require('./router/import.routes');
 const permissionRoutes = require('./router/permission.routes');
 const RolePermissionRoutes = require('./router/rolePermission.routes');
-
+const taskTag = require('./router/taskTag.routes');
 const uploadImg  =require('./router/uploadimg.router');
 const taskImportRoutes = require('./router/taskImport.routes');
 // --- Keycloak setup ---
@@ -98,7 +98,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/import', importRoutes);
-
+app.use('/api/taskTag',taskTag);
 
 app.use('/api/permission',permissionRoutes);
 app.use("/api/RolePermission",RolePermissionRoutes);

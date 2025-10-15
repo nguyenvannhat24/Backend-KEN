@@ -7,22 +7,28 @@ const TaskTag = require('../models/taskTag.model');
 const TagModel = require('../models/tag.model')
 class TagService {
   // Tạo tag mới
-  async createTag({ name, color }) {
+  async createTag({ name, color ,boardId}) {
     try {
       // Validate input
       if (!name || name.trim() === '') {
         throw new Error('Tên tag là bắt buộc');
       }
+      
+        if (!boardId) {
+        throw new Error('id board là bắt buộc');
+      }
 
-      // Kiểm tra tag đã tồn tại chưa
-      const existingTag = await tagRepo.findByName(name);
+
+      // Kiểm tra tag đã tồn tại chưa trong bảng chưa
+      const existingTag = await tagRepo.findByNameAndBoardId(name ,boardId); ;
       if (existingTag) {
         throw new Error('Tag với tên này đã tồn tại');
       }
 
       const tagData = {
         name: name.trim(),
-        color: color || '#007bff' // Màu mặc định
+        color: color || '#007bff' ,
+        board_id : boardId// Màu mặc định
       };
 
       const tag = await tagRepo.create(tagData);
@@ -206,23 +212,16 @@ async getTagsByBoard(boardId) {
     throw new Error('Board ID không hợp lệ');
   }
 
-  // 1️⃣ Lấy tất cả task của board
-  const tasks = await TaskModel.find({ board_id: boardId }).select('_id');
-  const taskIds = tasks.map(t => t._id);
+  try {
+    const   tags = await TagModel.find({board_id : boardId}) ;
+    return tags
+  } catch (error) {
+     console.error('❌ [TagService] getTagsByBoard error:', error);
+      throw error;
+  }
+  
 
-  if (taskIds.length === 0) return []; // Nếu board chưa có task
-
-  // 2️⃣ Lấy tất cả taskTag liên quan đến các task này
-  const taskTags = await TaskTag.find({ task_id: { $in: taskIds } }).select('tag_id');
-
-  const tagIds = [...new Set(taskTags.map(tt => tt.tag_id.toString()))]; // loại bỏ trùng lặp
-
-  if (tagIds.length === 0) return []; // nếu chưa có tag gán cho task nào
-
-  // 3️⃣ Lấy thông tin tag
-  const tags = await TagModel.find({ _id: { $in: tagIds } }).lean();
-
-  return tags;
+  
 }
 
 async findByBoardId(boardId) {

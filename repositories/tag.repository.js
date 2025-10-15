@@ -113,6 +113,21 @@ class TagRepository {
       throw error;
     }
   }
+  async findByNameAndBoardId(nameTag , boardId) {
+    try {
+      const tags = await Tag.findOne({ 
+        board_id: boardId ,
+        name : nameTag
+
+      }).lean();
+      return tags;
+    } catch (error) {
+        console.error('Error finding all tags with deleted:', error);
+      throw error;
+    }
+   
+  }
+
 }
 
 module.exports = new TagRepository();

@@ -27,6 +27,7 @@ const TagSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+TagSchema.index({ board_id: 1, name: 1 }, { unique: true });
 // Index for soft delete
 TagSchema.index({ deleted_at: 1 });
 

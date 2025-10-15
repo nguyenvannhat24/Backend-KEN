@@ -75,6 +75,7 @@ class CommentController {
   // Cập nhật comment
   async update(req, res) {
     try {
+      console.log('🚀 Vào hàm update comment');
       const { id } = req.params;
       const userId = req.user?.id;
       const { content } = req.body;
@@ -82,6 +83,7 @@ class CommentController {
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
+      console.log('id người dùng bạn muốn comment là: ', userId)
 
       const updatedComment = await commentService.updateComment(id, { content }, userId);
       

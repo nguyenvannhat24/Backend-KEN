@@ -4,8 +4,10 @@ class TagController {
   // Tạo tag mới
   async create(req, res) {
     try {
-      const { name, color ,boardId  } = req.body;
-      const tag = await tagService.createTag({ name, color ,boardId });
+
+      const { name, color , boardId } = req.body;
+      const tag = await tagService.createTag({ name, color ,boardId});
+
       
       res.status(201).json({
         success: true,

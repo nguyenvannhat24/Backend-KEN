@@ -81,46 +81,51 @@ class CommentService {
     }
   }
 
-  // Cập nhật comment
-  async updateComment(id, updateData, userId) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error('ID comment không hợp lệ');
-      }
-
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        throw new Error('user_id không hợp lệ');
-      }
-
-      // Validate input
-      if (updateData.content && updateData.content.trim() === '') {
-        throw new Error('Nội dung comment không được để trống');
-      }
-
-      // Kiểm tra comment tồn tại và user có quyền chỉnh sửa
-      const commentUserId =
-        typeof existingComment.user_id === 'object'
-          ? existingComment.user_id._id
-          : existingComment.user_id;
-
-      if (commentUserId.toString() !== userId.toString()) {
-        console.log(
-          '❌ Không trùng user:',
-          '\n  existingComment.user_id =', existingComment.user_id,
-          '\n  userId =', userId
-        );
-        throw new Error('Bạn không có quyền chỉnh sửa comment này');
-      }
-
-
-      const updatedComment = await commentRepo.update(id, updateData);
-      console.log(`✅ [CommentService] Updated comment ${id}`);
-      return updatedComment;
-    } catch (error) {
-      console.error('❌ [CommentService] updateComment error:', error);
-      throw error;
+ async updateComment(id, updateData, userId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error('ID comment không hợp lệ');
     }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error('user_id không hợp lệ');
+    }
+
+    if (updateData.content && updateData.content.trim() === '') {
+      throw new Error('Nội dung comment không được để trống');
+    }
+
+    // Lấy comment từ DB
+    const existingComment = await commentRepo.findById(id);
+    if (!existingComment) {
+      throw new Error('Comment không tồn tại');
+    }
+
+    // Kiểm tra quyền
+    const commentUserId =
+      typeof existingComment.user_id === 'object'
+        ? existingComment.user_id._id
+        : existingComment.user_id;
+
+    if (commentUserId.toString() !== userId.toString()) {
+      console.log(
+        '❌ Không trùng user:',
+        '\n  existingComment.user_id =', existingComment.user_id,
+        '\n  userId =', userId
+      );
+      throw new Error('Bạn không có quyền chỉnh sửa comment này');
+    }
+
+    // Cập nhật
+    const updatedComment = await commentRepo.update(id, updateData);
+    console.log(`✅ [CommentService] Updated comment ${id}`);
+    return updatedComment;
+  } catch (error) {
+    console.error('❌ [CommentService] updateComment error:', error);
+    throw error;
   }
+}
+
 
   // Xóa comment
   async deleteComment(id, userId) {

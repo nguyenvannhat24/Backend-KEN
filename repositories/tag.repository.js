@@ -113,6 +113,7 @@ class TagRepository {
       throw error;
     }
   }
+
   async findByNameAndBoardId(nameTag , boardId) {
     try {
       const tags = await Tag.findOne({ 
@@ -128,6 +129,5 @@ class TagRepository {
    
   }
 
-}
-
+  }
 module.exports = new TagRepository();

@@ -415,7 +415,12 @@ exports.delete = async (req, res) => {
     // Lấy thông tin user từ DB
     const checkUser = await userService.getUserById(req.params.id);
     if (!checkUser) return res.status(404).json({ message: "User not found" });
-
+   if (checkUser.username === "admin" || checkUser.role?.includes("admin")) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Cannot delete user with system_manager role" 
+      });
+    }
     // Soft delete user trong DB
     const user = await userService.softDeleteUser(req.params.id);
     if (!user) {

@@ -7,28 +7,32 @@ const TaskTag = require('../models/taskTag.model');
 const TagModel = require('../models/tag.model')
 class TagService {
   // Tạo tag mới
-  async createTag({ name, color ,boardId}) {
+
+  async createTag({ name, color , boardId}) {
     try {
       // Validate input
       if (!name || name.trim() === '') {
         throw new Error('Tên tag là bắt buộc');
       }
-      
-        if (!boardId) {
-        throw new Error('id board là bắt buộc');
+
+    if (!boardId ) {
+        throw new Error('id board tag là bắt buộc');
       }
+      // Kiểm tra tag đã tồn tại chưa trong cùng bảng chưa
+      // bảng tag có thể trung tên 
+      // nhưng bảng tasktag ko được trùng tên
+      const existingTag = await tagRepo.findByNameAndIdBoard(name ,boardId);
 
-
-      // Kiểm tra tag đã tồn tại chưa trong bảng chưa
-      const existingTag = await tagRepo.findByNameAndBoardId(name ,boardId); ;
       if (existingTag) {
-        throw new Error('Tag với tên này đã tồn tại');
+        throw new Error('Tag của board đã có với tên này rồi');
       }
 
       const tagData = {
         name: name.trim(),
-        color: color || '#007bff' ,
-        board_id : boardId// Màu mặc định
+
+        color: color || '#007bff',
+        board_id :  boardId// Màu mặc định
+
       };
 
       const tag = await tagRepo.create(tagData);
@@ -211,16 +215,15 @@ async getTagsByBoard(boardId) {
   if (!mongoose.Types.ObjectId.isValid(boardId)) {
     throw new Error('Board ID không hợp lệ');
   }
-
   try {
-    const   tags = await TagModel.find({board_id : boardId}) ;
-    return tags
+    const tags = await TagModel.find({board_id : boardId});
+      return tags;
   } catch (error) {
-     console.error('❌ [TagService] getTagsByBoard error:', error);
+     console.error('❌ [TagService] removeTagFromTask error:', error);
       throw error;
   }
-  
-
+   
+ 
   
 }
 

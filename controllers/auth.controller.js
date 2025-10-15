@@ -98,32 +98,44 @@ class AuthController {
     }
 }
 
-  async logout(req, res) {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({
-          success: false,
-          message: "Token không hợp lệ hoặc không cung cấp"
-        });
-      }
+ async logout(req, res) {
+  try {
+    const authHeader = req.headers.authorization;
+    const { refreshToken } = req.body; // 👈 lấy refreshToken từ body
 
-      const token = authHeader.split(' ')[1];
-      tokenBlacklist.add(token);
-
-      res.json({
-        success: true,
-        message: 'Đăng xuất thành công'
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      res.status(500).json({
+    // Kiểm tra access token hợp lệ
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
         success: false,
-        error: 'Lỗi server',
-        message: 'Có lỗi xảy ra trong quá trình đăng xuất'
+        message: "Token không hợp lệ hoặc không cung cấp"
       });
     }
+
+    // Thu hồi access token
+    const accessToken = authHeader.split(' ')[1];
+    tokenBlacklist.add(accessToken);
+
+    // Nếu có refresh token thì thu hồi luôn
+    if (refreshToken) {
+      tokenBlacklist.add(refreshToken); 
+      console.log('🔒 Refresh token đã bị thu hồi.');
+    }
+
+    res.json({
+      success: true,
+      message: 'Đăng xuất thành công. Token đã bị thu hồi.'
+    });
+
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Lỗi server',
+      message: 'Có lỗi xảy ra trong quá trình đăng xuất'
+    });
   }
+}
+
 
   async verifyKeycloakToken(req, res) {
     const { token } = req.body;
@@ -151,63 +163,111 @@ class AuthController {
       });
     }
   }
-  async refreshToken(req, res) {
-    try {
-      const { refreshToken } = req.body;
+async refreshToken(req, res) {
+  try {
+    const { refreshToken } = req.body;
 
-      if (!refreshToken) {
-        return res.status(400).json({
-          success: false,
-          error: 'refreshToken là bắt buộc',
-          message: 'Vui lòng cung cấp refreshToken để cấp mới access token'
-        });
-      }
-
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-
-      const newAccessToken = jwt.sign(
-        {
-          userId: decoded.userId,
-          email: decoded.email,
-          username: decoded.username,
-          roles: decoded.roles
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      res.json({
-        success: true,
-        message: 'Cấp mới access token thành công',
-        data: {
-          token: newAccessToken
-        }
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        error: 'Thiếu refreshToken',
+        message: 'Vui lòng gửi kèm refreshToken'
       });
-    } catch (error) {
-      console.error('Refresh token error:', error);
+    }
 
-      if (error.name === 'TokenExpiredError') {
+    // ✅ 1️⃣ Kiểm tra xem refresh token có trong blacklist không
+    if (tokenBlacklist.has(refreshToken)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Refresh token đã bị thu hồi',
+        message: 'Vui lòng đăng nhập lại'
+      });
+    }
+
+    // ✅ 2️⃣ Xác minh refresh token hợp lệ
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
           error: 'Refresh token hết hạn',
           message: 'Vui lòng đăng nhập lại'
         });
       }
-      if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-          success: false,
-          error: 'Refresh token không hợp lệ',
-          message: 'Vui lòng đăng nhập lại'
-        });
-      }
-
-      res.status(500).json({
+      return res.status(401).json({
         success: false,
-        error: 'Lỗi server',
-        message: 'Có lỗi xảy ra trong quá trình refresh token'
+        error: 'Refresh token không hợp lệ',
+        message: 'Vui lòng đăng nhập lại'
       });
     }
+
+    // ✅ 3️⃣ Lấy lại thông tin người dùng
+    const user = await userService.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // ✅ 4️⃣ Lấy lại danh sách vai trò
+    const userRoles = await role.getUserRoles(user._id);
+
+    // ✅ 5️⃣ Tạo token mới
+    const newAccessToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        username: user.username,
+        roles: userRoles
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // 🔁 Tùy chọn: tạo refresh token mới và thu hồi cái cũ
+    const newRefreshToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        username: user.username,
+        roles: userRoles
+      },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // ✅ 6️⃣ Thu hồi refresh token cũ (đưa vào blacklist)
+    tokenBlacklist.add(refreshToken);
+
+    return res.json({
+      success: true,
+      message: 'Làm mới token thành công',
+      data: {
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          roles: userRoles
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Lỗi server',
+      message: 'Có lỗi xảy ra khi làm mới token'
+    });
   }
+}
+
+
 }
 
 const authController = new AuthController();

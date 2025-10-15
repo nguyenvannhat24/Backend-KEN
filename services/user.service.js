@@ -89,18 +89,66 @@ class UserService {
     }
   }
 
-  async createUser(userData) {
-    try {
-      if (userData.password) {
-        userData.password_hash = bcrypt.hashSync(userData.password, 10);
-        delete userData.password;
-      }
-      return await userRepo.create(userData);
-    } catch (error) {
-      console.error('Error in createUser:', error.message);
-      throw error;
+async createUser(userData) {
+  try {
+    // Validate input
+    if (!userData || !userData.email) {
+      throw new Error('Email là bắt buộc');
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      throw new Error('Email không đúng định dạng');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const emailExists = await userRepo.isEmailExists(userData.email);
+    if (emailExists) {
+      throw new Error('Email đã tồn tại trong hệ thống');
+    }
+
+    // Kiểm tra username đã tồn tại chưa
+    if (userData.username) {
+      const usernameExists = await userRepo.isUsernameExists(userData.username);
+      if (usernameExists) {
+        throw new Error('Username đã tồn tại trong hệ thống');
+      }
+    }
+
+    // Hash password nếu có
+    if (userData.password) {
+      userData.password_hash = bcrypt.hashSync(userData.password, 10);
+    }
+
+    // Lấy ra biến từ userData
+      const { username, email, full_name, status, password } = userData;
+
+    // Tạo trên Keycloak trước
+  
+    const userKeyCloak = await keycloack.createUserWithPassword(
+      { username, email, full_name, status },
+      password
+    );
+
+    // Tạo local user
+    console.log(`➕ Creating new local user: ${email}`);
+    const localUser = await userRepo.create({
+      username,
+      email,
+      full_name,
+      status,
+      idSSO: userKeyCloak.id, 
+      typeAccount: "SSO",
+      password_hash: userData.password_hash, 
+    });
+
+    return localUser;
+  } catch (error) {
+    console.error('❌ Error in createUser:', error.message);
+    throw error;
   }
+}
 
   async createUserSSO(userData) {
     try {

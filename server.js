@@ -30,8 +30,8 @@ const RolePermissionRoutes = require('./router/rolePermission.routes');
 const taskTag = require('./router/taskTag.routes');
 const uploadImg  =require('./router/uploadimg.router');
 const taskImportRoutes = require('./router/taskImport.routes');
-// --- Keycloak setup ---
 const memoryStore = new session.MemoryStore();
+
 app.use(session({
   secret: 'some secret',
   resave: false,
@@ -50,19 +50,13 @@ const keycloakConfig = {
 };
 const keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
 
-// Middleware Keycloak
 app.use(keycloak.middleware());
 
-// --- Body parser ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- Database connection ---
 require('./config/db');
 
-
-// Keycloak admin features disabled (not required for basic authentication)
-// --- Routes ---
 app.use(cors({
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true
@@ -77,7 +71,6 @@ const userController = require('./controllers/user.controller');
 const { authenticateAny, authorizeAny } = require('./middlewares/auth');
 app.get('/api/admin/deleted', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getAllDeletedRecords);
 
-//k
 app.use('/api/user', user);
 app.use('/api/userRole', userRole);
 
@@ -103,9 +96,9 @@ app.use('/api/taskTag',taskTag);
 app.use('/api/permission',permissionRoutes);
 app.use("/api/RolePermission",RolePermissionRoutes);
 
-//app.use('/api',user);
+
 app.use('/api/user', user);
-app.use('/api/img',uploadImg); // thêm và lấu ulr
+app.use('/api/img',uploadImg); 
 app.use('/api/tasks', taskImportRoutes);
 app.use('/api/uploads', express.static('uploads'));
 

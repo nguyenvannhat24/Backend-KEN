@@ -52,7 +52,6 @@ class SwimlaneRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting swimlane:', error);
       throw error;
     }
   }
@@ -95,7 +94,6 @@ class SwimlaneRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all swimlanes with deleted:', error);
       throw error;
     }
   }

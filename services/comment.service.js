@@ -36,7 +36,6 @@ class CommentService {
       };
 
       const comment = await commentRepo.create(commentData);
-      console.log(`✅ [CommentService] Created comment for task ${task_id}`);
       return comment;
     } catch (error) {
       console.error('❌ [CommentService] createComment error:', error);
@@ -58,7 +57,6 @@ class CommentService {
       }
 
       const comments = await commentRepo.findByTaskId(taskId);
-      console.log(`✅ [CommentService] Found ${comments.length} comments for task ${taskId}`);
       return comments;
     } catch (error) {
       console.error('❌ [CommentService] getCommentsByTask error:', error);
@@ -110,11 +108,6 @@ const commentUserId =
     : existingComment.user_id;
 
 if (commentUserId.toString() !== userId.toString()) {
-  console.log(
-    '❌ Không trùng user:',
-    '\n  existingComment.user_id =', existingComment.user_id,
-    '\n  userId =', userId
-  );
   throw new Error('Bạn không có quyền chỉnh sửa comment này');
 }
 
@@ -123,10 +116,8 @@ if (commentUserId.toString() !== userId.toString()) {
 
 
       const updatedComment = await commentRepo.update(id, updateData);
-      console.log(`✅ [CommentService] Updated comment ${id}`);
       return updatedComment;
     } catch (error) {
-      console.error('❌ [CommentService] updateComment error:', error);
       throw error;
     }
   }
@@ -148,16 +139,18 @@ if (commentUserId.toString() !== userId.toString()) {
         throw new Error('Comment không tồn tại');
       }
 
-      if (existingComment.user_id.toString() !== userId) {
-        throw new Error('Bạn không có quyền xóa comment này');
-      }
+ const commentUserId =
+  typeof existingComment.user_id === 'object'
+    ? existingComment.user_id._id
+    : existingComment.user_id;
 
+if (commentUserId.toString() !== userId.toString()) {
+  throw new Error('Bạn không có quyền chỉnh sửa comment này');
+}
       // Soft delete comment
       const deleted = await commentRepo.softDelete(id);
-      console.log(`✅ [CommentService] Soft deleted comment ${id}`);
       return deleted;
     } catch (error) {
-      console.error('❌ [CommentService] deleteComment error:', error);
       throw error;
     }
   }
@@ -170,7 +163,6 @@ if (commentUserId.toString() !== userId.toString()) {
       }
 
       const comments = await commentRepo.findByUserId(userId);
-      console.log(`✅ [CommentService] Found ${comments.length} comments for user ${userId}`);
       return comments;
     } catch (error) {
       console.error('❌ [CommentService] getCommentsByUser error:', error);

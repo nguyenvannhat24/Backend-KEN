@@ -68,9 +68,6 @@ class UserRoleRepository {
     const users = await UserRole.find({ role_id: roleId, status: 'active' })
       .populate('user_id', 'username email');
 
-    console.log(`✅ Role ID "${roleId}" hiện có ${count} người dùng đang active.`);
-    console.log('👥 Danh sách người dùng:', users.map(u => u.user_id));
-
     return count;
   } catch (error) {
     console.error('❌ Lỗi khi đếm người dùng theo role_id:', error);
@@ -133,7 +130,6 @@ const hasSystemManager = currentRoles.some(
     return result;
 
   } catch (error) {
-    console.error('❌ Error in updateByIdUser:', error);
     throw error;
   }
 }

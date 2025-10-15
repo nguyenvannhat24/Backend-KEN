@@ -26,7 +26,7 @@ class GroupService {
 
     const group = await groupRepo.create({ center_id, name: name.trim(), description });
 
-  // Thêm người tạo vào group member
+  
   await groupMemberRepo.addMember({
     group_id: group._id,
     user_id: userId,
@@ -36,8 +36,6 @@ class GroupService {
   return group;
 }
 
-
-  // Lấy group theo ID
   async getGroupById(id) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
@@ -48,12 +46,10 @@ class GroupService {
     return group;
   }
 
-  // Lấy tất cả group (chỉ admin)
   async getAllGroups() {
     return await groupRepo.findAll();
   }
 
-  // Lấy groups mà user là thành viên
   async getUserGroups(userId) {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("userId không hợp lệ");
@@ -62,13 +58,11 @@ class GroupService {
     return await groupMemberRepo.getByGroupMembers(userId);
   }
 
-  // Cập nhật group (chỉ group owner)
   async updateGroup(id, data, userId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
     }
 
-    // Kiểm tra quyền - chỉ group owner mới được cập nhật
     const groupMember = await groupMemberRepo.findMember(userId, id);
     if (!groupMember || groupMember.role_in_group !== 'Người tạo') {
       throw new Error("Chỉ người tạo group mới được cập nhật group");
@@ -105,49 +99,40 @@ class GroupService {
     return updated;
   }
 
-  // Xoá group (chỉ group owner)
   async deleteGroup(id, userId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
     }
 
-    // Kiểm tra quyền - chỉ group owner mới được xóa
     const groupMember = await groupMemberRepo.findMember(userId, id);
     if (!groupMember || groupMember.role_in_group !== 'Người tạo') {
       throw new Error("Chỉ người tạo group mới được xóa group");
     }
 
-    // Soft delete group
     const deleted = await groupRepo.softDelete(id);
     if (!deleted) throw new Error("Không tìm thấy group để xoá");
 
-    // Xóa tất cả group members
     await groupMemberRepo.deleteAllByGroup(id);
 
     return true;
   }
 
-  // Xóa group (Admin hệ thống) - xử lý trường hợp group không có người tạo
   async adminDeleteGroup(id, adminId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID group không hợp lệ");
     }
 
-    // TODO: Kiểm tra adminId có phải admin hệ thống không
-    // const admin = await userService.getUserById(adminId);
-    // if (!admin || !admin.roles.includes('admin')) {
-    //   throw new Error("Chỉ admin hệ thống mới có quyền này");
-    // }
+    const admin = await userService.getUserById(adminId);
+    if (!admin || !admin.roles.includes('admin')) {
+      throw new Error("Chỉ admin hệ thống mới có quyền này");
+    }
 
-    // Kiểm tra group tồn tại
     const group = await groupRepo.findById(id);
     if (!group) throw new Error("Group không tồn tại");
 
-    // Soft delete group
     const deleted = await groupRepo.softDelete(id);
     if (!deleted) throw new Error("Không thể xóa group");
 
-    // Xóa tất cả group members
     await groupMemberRepo.deleteAllByGroup(id);
 
     return true;

@@ -82,8 +82,7 @@ class CommentController {
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      console.log('id người dùng bạn muốn comment là: ', userId)
-
+      
       const updatedComment = await commentService.updateComment(id, { content }, userId);
       
       if (!updatedComment) {

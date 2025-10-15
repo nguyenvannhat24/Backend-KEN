@@ -316,9 +316,9 @@ exports.cloneUser = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const userId = req.user.id; // lấy id từ token
+    const userId = req.user.id; 
     const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
- const isAdmin = roles.includes('admin') || roles.includes('System_Manager'); // ✅ sửa ở đây
+ const isAdmin = roles.includes('admin') || roles.includes('System_Manager');
 
     if (userId == req.params.id || isAdmin) {
       const checkUser = await userService.getUserById(req.params.id);
@@ -330,14 +330,10 @@ exports.update = async (req, res) => {
 
       const typeAccount = checkUser.typeAccount;
 
-      // Luôn update trên DB trước
       let user = await userService.updateUser(userId, req.params.id, req.body);
-      console.log("✅ User updated in local DB:", user);
-      //cập nhật role cho user
 
-      // Nếu user này thuộc SSO thì cập nhật bên Keycloak
       if (typeAccount === 'SSO') {
-        const id = checkUser.idSSO; // ID user trên Keycloak
+        const id = checkUser.idSSO; 
         const keycloakPayload = {
           username: req.body.username || checkUser.username,
           email: req.body.email || checkUser.email,
@@ -492,33 +488,23 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
     }
 
-    // Lấy thông tin user trong DB
     const user = await userService.getProfile(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User không tồn tại' });
     }
 
-    // Nếu user có password_hash => local account => yêu cầu current_password
     if (user.password_hash && !current_password) {
       return res.status(400).json({ success: false, message: 'Cần nhập mật khẩu hiện tại' });
     }
 
-    // 1️⃣ Đổi mật khẩu trong database local
     const result = await userService.changePassword(userId, current_password, new_password);
-    console.log('✅ Đã đổi mật khẩu trong local DB');
-
-    // 2️⃣ Nếu là tài khoản SSO, đổi thêm mật khẩu trên Keycloak
+ 
     if (user.typeAccount === 'SSO' && user.idSSO) {
       try {
-        console.log(`🔹 Đang đổi mật khẩu trên Keycloak cho user ${user.username} (${user.idSSO})`);
-
-        // Gọi sang keycloak.service
         await changeUserPassword(user.idSSO, new_password);
 
-        console.log('✅ Đã đổi mật khẩu trên Keycloak');
       } catch (kcError) {
         console.error('❌ Lỗi đổi mật khẩu Keycloak:', kcError);
-        // Không cần throw ra ngoài, chỉ cảnh báo — vì local vẫn đã đổi
       }
     }
 
@@ -556,7 +542,6 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     }
 
-    // Lấy dữ liệu người dùng hiện tại để kiểm tra loại tài khoản
     const userInDB = await userService.getUserById(userId);
     if (!userInDB) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
@@ -568,14 +553,10 @@ exports.updateMyProfile = async (req, res) => {
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (email !== undefined) updateData.email = email;
 
-    // Cập nhật trước trong database
     const updatedUser = await userService.updateProfile(userId, updateData);
-    console.log("✅ Updated user in DB:", updatedUser);
 
-    // Nếu user dùng SSO, cập nhật bên Keycloak
     if (userInDB.typeAccount === 'SSO') {
       const id = userInDB.idSSO;
-      console.log(`🔹 Updating user on Keycloak with ID: ${id}`);
 
       // Map sang định dạng của Keycloak
       const keycloakPayload = {
@@ -590,7 +571,6 @@ exports.updateMyProfile = async (req, res) => {
 
       // Gọi API cập nhật Keycloak
       await updateUser(id, keycloakPayload);
-      console.log("✅ User profile updated on Keycloak");
     }
 
     res.json({
@@ -605,14 +585,6 @@ exports.updateMyProfile = async (req, res) => {
   }
 };
 
-
-
-
-// ==================== SOFT DELETE ENDPOINTS ====================
-
-/**
- * Soft delete user - Admin only
- */
 exports.softDelete = async (req, res) => {
   try {
     const user = await userService.softDeleteUser(req.params.id);
@@ -620,7 +592,6 @@ exports.softDelete = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    // If SSO user, disable on Keycloak too
     if (user.typeAccount === 'SSO' && user.idSSO) {
       try {
         await updateUser(user.idSSO, { enabled: false });
@@ -636,9 +607,6 @@ exports.softDelete = async (req, res) => {
   }
 };
 
-/**
- * Restore soft deleted user - Admin only
- */
 exports.restore = async (req, res) => {
   try {
     const user = await userService.restoreUser(req.params.id);
@@ -646,7 +614,6 @@ exports.restore = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found or not deleted' });
     }
     
-    // If SSO user, enable on Keycloak too
     if (user.typeAccount === 'SSO' && user.idSSO) {
       try {
         await updateUser(user.idSSO, { enabled: true });
@@ -662,9 +629,6 @@ exports.restore = async (req, res) => {
   }
 };
 
-/**
- * Get all users including deleted ones - Admin only
- */
 exports.getAllWithDeleted = async (req, res) => {
   try {
     const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
@@ -683,9 +647,6 @@ exports.getAllWithDeleted = async (req, res) => {
   }
 };
 
-/**
- * Get all deleted records across different entity types - Admin only
- */
 exports.getAllDeletedRecords = async (req, res) => {
   try {
     const { type = 'all', page = 1, limit = 10, sort = 'deleted_at', order = 'desc' } = req.query;

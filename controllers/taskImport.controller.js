@@ -4,20 +4,19 @@ const Task = require('../models/task.model');
 
 exports.importTasks = async (req, res) => {
   try {
-    if (!req.file)
+    if (!req.file) {
       return res.status(400).json({ message: 'Chưa có file upload!' });
+    }
 
     const filePath = req.file.path;
 
-    // 📘 1️⃣ Đọc dữ liệu từ file
     const data = await readFileData(filePath);
 
-    // Nếu không có dữ liệu thì trả lỗi
     if (!data || data.length === 0) {
       return res.status(400).json({ message: 'File không có dữ liệu hợp lệ!' });
     }
 
-    // 📗 2️⃣ Xem trước dữ liệu gốc (chưa map)
+  
     if (req.query.preview === 'true') {
       return res.json({
         message: 'Xem trước dữ liệu gốc thành công',
@@ -25,34 +24,44 @@ exports.importTasks = async (req, res) => {
         totalRows: data.length,
       });
     }
-  // 🔹 Lấy userId từ token (middleware đã decode trước đó)
+
+    // 🔹 Lấy userId từ token (middleware đã decode trước đó)
     const userIdFromToken = req.user?.id || req.user?._id;
 
     if (!userIdFromToken) {
       return res.status(401).json({ message: 'Không xác định được người dùng từ token' });
     }
 
-    // 📙 3️⃣ Map dữ liệu sang ID
- const mappedTasks = await Promise.all(
+    const mappedTasks = await Promise.all(
       data.map((task) => mapNamesToIds(task, userIdFromToken))
     );
 
-    // 📒 4️⃣ Xem trước dữ liệu đã map (chưa lưu DB)
+
+    const validTasks = mappedTasks.filter(task => task !== null);
+    const invalidCount = mappedTasks.length - validTasks.length;
+
     if (req.query.previewMapped === 'true') {
       return res.json({
         message: 'Xem trước dữ liệu sau khi map thành công',
-        mappedPreview: mappedTasks.slice(0, 20),
-        totalMappedRows: mappedTasks.length,
+        mappedPreview: validTasks.slice(0, 20),
+        totalMappedRows: validTasks.length,
+        skippedRows: invalidCount,
       });
     }
 
-    // 📕 5️⃣ Nếu không có preview nào thì thực hiện lưu vào DB
-    await Task.insertMany(mappedTasks);
+    if (validTasks.length === 0) {
+      return res.status(400).json({ message: 'Không có dòng hợp lệ để import!' });
+    }
+
+ 
+    await Task.insertMany(validTasks);
 
     res.json({
       message: 'Import thành công!',
-      count: mappedTasks.length,
+      count: validTasks.length,
+      skippedRows: invalidCount,
     });
+
   } catch (err) {
     console.error('❌ Lỗi import:', err);
     res.status(500).json({

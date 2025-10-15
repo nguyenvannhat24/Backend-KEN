@@ -16,9 +16,7 @@ class TagService {
     if (!boardId ) {
         throw new Error('id board tag là bắt buộc');
       }
-      // Kiểm tra tag đã tồn tại chưa trong cùng bảng chưa
-      // bảng tag có thể trung tên 
-      // nhưng bảng tasktag ko được trùng tên
+
       const existingTag = await tagRepo.findByNameAndIdBoard(name ,boardId);
       if (existingTag) {
         throw new Error('Tag của board đã có với tên này rồi');
@@ -31,7 +29,6 @@ class TagService {
       };
 
       const tag = await tagRepo.create(tagData);
-      console.log(`✅ [TagService] Created tag: ${tag.name}`);
       return tag;
     } catch (error) {
       console.error('❌ [TagService] createTag error:', error);
@@ -43,7 +40,6 @@ class TagService {
   async getAllTags() {
     try {
       const tags = await tagRepo.findAll();
-      console.log(`✅ [TagService] Found ${tags.length} tags`);
       return tags;
     } catch (error) {
       console.error('❌ [TagService] getAllTags error:', error);
@@ -97,7 +93,6 @@ class TagService {
       }
 
       const updatedTag = await tagRepo.update(id, updateData);
-      console.log(`✅ [TagService] Updated tag: ${updatedTag.name}`);
       return updatedTag;
     } catch (error) {
       console.error('❌ [TagService] updateTag error:', error);
@@ -123,7 +118,6 @@ class TagService {
 
       // Soft delete tag
       const deleted = await tagRepo.softDelete(id);
-      console.log(`✅ [TagService] Soft deleted tag: ${existingTag.name}`);
       return deleted;
     } catch (error) {
       console.error('❌ [TagService] deleteTag error:', error);
@@ -145,7 +139,6 @@ class TagService {
       }
 
       const tags = await tagRepo.findByTaskId(taskId);
-      console.log(`✅ [TagService] Found ${tags.length} tags for task ${taskId}`);
       return tags;
     } catch (error) {
       console.error('❌ [TagService] getTagsByTask error:', error);
@@ -174,7 +167,6 @@ class TagService {
     // Gán tag mới cho task
     const taskTag = await taskTagRepo.create({ task_id: taskId, tag_id: tagId });
 
-    console.log(`✅ [TagService] Assigned tag ${tag.name} to task ${taskId}`);
     return taskTag;
   } catch (error) {
     console.error('❌ [TagService] addTagToTask error:', error);
@@ -197,7 +189,6 @@ class TagService {
       }
 
       const deleted = await taskTagRepo.deleteByTaskAndTag(taskId, tagId);
-      console.log(`✅ [TagService] Removed tag ${tagId} from task ${taskId}`);
       return deleted;
     } catch (error) {
       console.error('❌ [TagService] removeTagFromTask error:', error);

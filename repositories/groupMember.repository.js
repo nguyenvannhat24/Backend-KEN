@@ -11,14 +11,12 @@ class GroupMemberRepository {
  // Kiểm tra thành viên đã có trong group chưa
 async findMember(user_id, group_id) {
   const member = await GroupMember.findOne({ user_id, group_id }).lean();
-  console.log("⚡ [DEBUG] findMember result:", member); // log ra kết quả
   return member;
 }
 
 
   // Lấy danh sách thành viên theo group
 async getMembersByGroup(group_id) {
-  console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
 
   const members = await GroupMember.find({
     group_id: group_id
@@ -37,8 +35,6 @@ async getMembersByGroup(group_id) {
 
   // Lọc member mà cả user và group đều hợp lệ
   const validMembers = members.filter(m => m.user_id !== null && m.group_id !== null);
-
-  console.log('🔍 [DEBUG] getMembersByGroup - valid members:', validMembers);
   return validMembers;
 }
 

@@ -3,7 +3,7 @@ const Column = require('../models/column.model');
 const Swimlane = require('../models/swimlane.model');
 const User = require('../models/usersModel');
 const BoardMember = require('../models/boardMember.model');
-const Task = require('../models/task.model'); // ✅ cần thêm để tính position
+const Task = require('../models/task.model'); // ✅ cần để tính position
 
 // 🔹 Hàm parse định dạng ngày: "20/10/2025" -> new Date("2025-10-20")
 function parseDate(value) {
@@ -19,74 +19,67 @@ function parseDate(value) {
 }
 
 async function mapNamesToIds(taskData, userIdFromToken) {
-  // 🔸 Lấy tất cả board mà user này là thành viên
-  const userBoards = await BoardMember.find({ user_id: userIdFromToken }).select('board_id role_in_board');
-  const boardIds = userBoards.map((b) => b.board_id);
-
   const boardName = String(taskData.BoardName || '').trim();
   const columnName = String(taskData.ColumnName || '').trim();
   const swimlaneName = String(taskData.SwimlaneName || '').trim();
+  const taskTitle = String(taskData.Title || '').trim();
 
-  // 🔸 Tìm board theo tên (không phân biệt hoa thường)
-  let board = await Board.findOne({
-    $and: [
-      { title: { $regex: new RegExp(`^${boardName}$`, 'i') } },
-      {
-        $or: [
-          { _id: { $in: boardIds } }, // là thành viên
-          { created_by: userIdFromToken }, // hoặc là người tạo
-        ],
+
+  if (!boardName || !columnName || !taskTitle) {
+
+    return null;
+  }
+
+  // 🔸 Lấy tất cả board mà user này là thành viên
+  const userBoards = await BoardMember.find({ user_id: userIdFromToken }).select('board_id');
+  const boardIds = userBoards.map((b) => b.board_id);
+
+  // ⚙️ Tìm hoặc tạo Board (bỏ qua board soft-deleted)
+  let board = await Board.findOneAndUpdate(
+    {
+      title: { $regex: new RegExp(`^${boardName}$`, 'i') },
+      deleted_at: null,
+      $or: [{ _id: { $in: boardIds } }, { created_by: userIdFromToken }],
+    },
+    {
+      $setOnInsert: {
+        title: boardName,
+        description: String(taskData.Description || '').trim(),
+        created_by: userIdFromToken,
+        is_template: false,
       },
-    ],
-  });
+    },
+    { new: true, upsert: true }
+  );
 
-  // 🔸 Nếu board chưa tồn tại => tạo mới
-  if (!board) {
-    board = await Board.create({
-      title: boardName,
-      description: String(taskData.Description || '').trim(),
-      created_by: userIdFromToken,
-      is_template: false,
-    });
+  // ➕ Đảm bảo user là thành viên Board
+  await BoardMember.updateOne(
+    { board_id: board._id, user_id: userIdFromToken },
+    { $setOnInsert: { role_in_board: 'Người tạo', Creator: true } },
+    { upsert: true }
+  );
 
-    // ➕ Thêm người dùng hiện tại vào bảng member với role là "Người tạo"
-    await BoardMember.create({
+  // ⚙️ Tìm hoặc tạo Column
+  let column = await Column.findOneAndUpdate(
+    {
       board_id: board._id,
-      user_id: userIdFromToken,
-      role_in_board: 'Người tạo',
-      Creator: true,
-    });
-  }
+      name: { $regex: new RegExp(`^${columnName}$`, 'i') },
+    },
+    { $setOnInsert: { board_id: board._id, name: columnName, order: 0 } },
+    { new: true, upsert: true }
+  );
 
-  // 🔸 Tìm column trong board (không phân biệt hoa thường)
-  let column = await Column.findOne({
-    board_id: board._id,
-    name: { $regex: new RegExp(`^${columnName}$`, 'i') },
-  });
-
-  if (!column) {
-    column = await Column.create({
-      board_id: board._id,
-      name: columnName,
-      order: 0,
-    });
-  }
-
-  // 🔸 Tìm swimlane (nếu có)
+  // ⚙️ Tìm hoặc tạo Swimlane nếu có
   let swimlane = null;
   if (swimlaneName) {
-    swimlane = await Swimlane.findOne({
-      board_id: board._id,
-      name: { $regex: new RegExp(`^${swimlaneName}$`, 'i') },
-    });
-
-    if (!swimlane) {
-      swimlane = await Swimlane.create({
+    swimlane = await Swimlane.findOneAndUpdate(
+      {
         board_id: board._id,
-        name: swimlaneName,
-        order: 0,
-      });
-    }
+        name: { $regex: new RegExp(`^${swimlaneName}$`, 'i') },
+      },
+      { $setOnInsert: { board_id: board._id, name: swimlaneName, order: 0 } },
+      { new: true, upsert: true }
+    );
   }
 
   // 🔸 Tìm người tạo task (theo username hoặc email)
@@ -122,7 +115,7 @@ async function mapNamesToIds(taskData, userIdFromToken) {
     board_id: board._id,
     column_id: column._id,
     swimlane_id: swimlane?._id || null,
-    title: String(taskData.Title || '').trim(),
+    title: taskTitle,
     description: String(taskData.Description || '').trim(),
     status: String(taskData.Status || '').trim(),
     priority: String(taskData.Priority || '').trim(),
@@ -131,7 +124,7 @@ async function mapNamesToIds(taskData, userIdFromToken) {
     estimate_hours: Number(taskData.EstimateHours) || null,
     created_by: createdBy?._id || userIdFromToken,
     assigned_to: assignedTo?._id || null,
-    position: newPosition, // ✅ thêm vị trí tự động
+    position: newPosition,
   };
 }
 

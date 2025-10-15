@@ -20,9 +20,7 @@ async function initKeycloak() {
       grantType: 'password',
       clientId: 'admin-cli',
     });
-    console.log('✅ Keycloak admin authenticated');
   } catch (err) {
-    console.error('❌ Keycloak admin auth failed:', err);
     throw err;
   }
 }
@@ -38,7 +36,6 @@ function isTokenExpired(token) {
 // 🔄 Refresh token nếu cần
 async function refreshTokenIfNeeded() {
   if (!kcAdminClient.accessToken || isTokenExpired(kcAdminClient.accessToken)) {
-    console.log('🔄 Refreshing admin token...');
     await initKeycloak();
   }
 }
@@ -51,7 +48,6 @@ async function withRetry(fn) {
   } catch (err) {
     // nếu lỗi 401, refresh token và retry 1 lần
     if (err.response && err.response.status === 401) {
-      console.log('⚠️ 401 detected, retrying after refresh...');
       await refreshTokenIfNeeded();
       return await fn();
     }
@@ -94,10 +90,8 @@ async function deleteUser(userId) {
   return withRetry(() => kcAdminClient.users.del({ id: userId }));
 }
 
-// 🧪 TEST CONNECTION
 async function testConnection() {
   const users = await getUsers({ max: 2 });
-  console.log('✅ Keycloak connection OK, sample users:', users.map(u => u.username));
 }
 
 async function deactivateUserOnKeycloak(userId) {
@@ -135,7 +129,6 @@ async function createUserWithPassword(userData, password) {
 // 🟣 CHANGE USER PASSWORD
 async function changeUserPassword(userId, newPassword) {
   return withRetry(async () => {
-    console.log(`🔐 [KeycloakService] Changing password for userId: ${userId}`);
     await kcAdminClient.users.resetPassword({
       id: userId,
       credential: {
@@ -144,7 +137,6 @@ async function changeUserPassword(userId, newPassword) {
         temporary: false, // false = người dùng không cần đổi lại khi đăng nhập
       },
     });
-    console.log(`✅ [KeycloakService] Password changed successfully for user ${userId}`);
     return true;
   });
 }

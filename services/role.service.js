@@ -13,9 +13,7 @@ class RoleService {
    */
   async getAllRoles() {
     try {
-      console.log('📋 [RoleService] getAllRoles - Getting all roles');
       const roles = await RoleRepository.findAll();
-      console.log(`✅ [RoleService] getAllRoles - Found ${roles.length} roles`);
       return roles;
     } catch (error) {
       console.error('❌ [RoleService] getAllRoles - Error:', error);
@@ -30,12 +28,9 @@ class RoleService {
    */
   async getRoleById(id) {
     try {
-      console.log(`📋 [RoleService] getRoleById - Getting role with ID: ${id}`);
       const role = await RoleRepository.findById(id);
       if (role) {
-        console.log(`✅ [RoleService] getRoleById - Found role: ${role.name}`);
       } else {
-        console.log(`⚠️ [RoleService] getRoleById - Role not found with ID: ${id}`);
       }
       return role;
     } catch (error) {
@@ -51,12 +46,9 @@ class RoleService {
    */
   async getRoleByName(name) {
     try {
-      console.log(`📋 [RoleService] getRoleByName - Getting role with name: ${name}`);
       const role = await RoleRepository.findByName(name);
       if (role) {
-        console.log(`✅ [RoleService] getRoleByName - Found role: ${role.name}`);
       } else {
-        console.log(`⚠️ [RoleService] getRoleByName - Role not found with name: ${name}`);
       }
       return role;
     } catch (error) {
@@ -72,7 +64,6 @@ class RoleService {
    */
   async createRole(roleData) {
     try {
-      console.log('📋 [RoleService] createRole - Creating new role:', roleData);
       
       // Validate input
       if (!roleData.name || !roleData.name.trim()) {
@@ -86,7 +77,6 @@ class RoleService {
       }
 
       const newRole = await RoleRepository.create(roleData);
-      console.log(`✅ [RoleService] createRole - Created role: ${newRole.name}`);
       return newRole;
     } catch (error) {
       console.error('❌ [RoleService] createRole - Error:', error);
@@ -102,12 +92,9 @@ class RoleService {
    */
   async updateRole(id, updateData) {
   try {
-    console.log(`📋 [RoleService] updateRole - Updating role ID: ${id}`, updateData);
-    
     // Check if role exists
     const existingRole = await RoleRepository.findById(id);
     if (!existingRole) {
-      console.log(`⚠️ [RoleService] updateRole - Role not found with ID: ${id}`);
       return null;
     }
 
@@ -127,7 +114,6 @@ class RoleService {
     }
 
     const updatedRole = await RoleRepository.update(id, updateData);
-    console.log(`✅ [RoleService] updateRole - Updated role: ${updatedRole.name}`);
     return updatedRole;
   } catch (error) {
     console.error('❌ [RoleService] updateRole - Error:', error);
@@ -143,12 +129,10 @@ class RoleService {
    */
 async deleteRole(id) {
   try {
-    console.log(`📋 [RoleService] deleteRole - Deleting role ID: ${id}`);
 
     // Check if role exists
     const existingRole = await RoleRepository.findById(id);
     if (!existingRole) {
-      console.log(`⚠️ [RoleService] deleteRole - Role not found with ID: ${id}`);
       return null;
     }
 
@@ -164,7 +148,6 @@ async deleteRole(id) {
     }
 
     const deletedRole = await RoleRepository.delete(id);
-    console.log(`✅ [RoleService] deleteRole - Deleted role: ${deletedRole.name}`);
     return deletedRole;
   } catch (error) {
     console.error('❌ [RoleService] deleteRole - Error:', error);
@@ -180,7 +163,6 @@ async deleteRole(id) {
    */
 async getUserRoles(userId) {
   try {
-    console.log(`📋 [RoleService] getUserRoles - Getting roles for user ID: ${userId}`);
     const roles = await RoleRepository.GetRoles(userId);
     return roles;
   } catch (error) {
@@ -197,7 +179,6 @@ async getUserRoles(userId) {
    * @returns {String|null} Tên role hoặc null
    */
   async viewRole(userId) {
-    console.log('⚠️ [RoleService] viewRole - This method is deprecated, use getUserRole instead');
     return this.getUserRole(userId);
   }
   async getIdByName(nameRole){

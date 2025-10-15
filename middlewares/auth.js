@@ -41,8 +41,6 @@ const authenticateAny = async (req, res, next) => {
         username: user.username,
         roles: roleNames
       };
-
-      console.log(`🔐 [AUTH] Local JWT verified: ${user.email}`);
       return next();
     } catch (errLocal) {
       // Nếu Local JWT thất bại → thử Keycloak
@@ -88,7 +86,6 @@ const authenticateAny = async (req, res, next) => {
         roles: dbRoles?.map(r => r.role_id?.name).filter(Boolean) || []
       };
 
-      console.log(`✅ [AUTH] Keycloak verified via /userinfo: ${req.user.email}`);
       return next();
     } catch (errKC) {
       console.error('❌ [AUTH] Keycloak verification failed:', errKC.response?.data || errKC.message);

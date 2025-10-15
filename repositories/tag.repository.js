@@ -66,7 +66,6 @@ class TagRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting tag:', error);
       throw error;
     }
   }

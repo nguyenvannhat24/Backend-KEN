@@ -28,24 +28,22 @@ async selectedAll(){
       throw new Error("title và userId là bắt buộc");
     }
 
-    // Kiểm tra trùng tên
+   
     const existingBoard = await boardRepo.findByTitleAndUser(title, userId);
     if (existingBoard) {
       throw new Error("Bạn đã có board với tên này rồi!");
     }
 
-    // Bắt đầu session transaction
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Tạo mới board
       const board = await boardRepo.createWithSession(
         { title, description, is_template, created_by: userId },
         session
       );
 
-      // Thêm vào BoardMembers
       await boardMemberRepo.addMember(
         {
           board_id: board._id,
@@ -56,13 +54,12 @@ async selectedAll(){
         session
       );
 
-      // Commit transaction
       await session.commitTransaction();
       session.endSession();
 
       return board;
     } catch (err) {
-      // Rollback
+   
       await session.abortTransaction();
       session.endSession();
       throw err;
@@ -73,7 +70,7 @@ async selectedAll(){
   async getBoardIfPermitted(boardId, userId) {
     const board = await boardRepo.findById(boardId);
     if (!board) return null;
-    // Quyền truy cập dựa trên BoardMember (Creator/Member)
+
     const permitted = await boardRepo.isMember(userId, boardId);
     return permitted ? board : 'forbidden';
   }
@@ -90,11 +87,10 @@ async selectedAll(){
   }
 
   async deleteBoard(boardId, userId) {
-    // Chỉ Creator (trong BoardMember) mới được xóa
+
     const isCreator = await boardRepo.isCreatorFromMember(userId, boardId);
     if (!isCreator) throw new Error('FORBIDDEN');
-    
-    // Soft delete thay vì hard delete
+
     await boardRepo.softDelete(boardId);
     return true;
   }
@@ -102,17 +98,15 @@ async selectedAll(){
 
 async cloneBoard(id_template, { title, description, userId }) {
   try {
-    // 0️⃣ Validate input
+
     if (!id_template) throw new Error('Thiếu id_template');
     if (!title || title.trim() === '') throw new Error('Tên board không được để trống');
     if (!userId) throw new Error('Thiếu userId');
 
     const cleanTitle = title.trim();
 
-    // 1️⃣ Kiểm tra template tồn tại
     await require('./template.service').getTemplateById(id_template);
 
-    // 2️⃣ Kiểm tra trùng tên board của người dùng
     const existingBoard = await boardRepo.findOne({
       created_by: userId,
       title: { $regex: new RegExp(`^${cleanTitle}$`, 'i') } // không phân biệt hoa thường
@@ -122,7 +116,6 @@ async cloneBoard(id_template, { title, description, userId }) {
       throw new Error(`Bạn đã có board với tên "${cleanTitle}" rồi.`);
     }
 
-    // 3️⃣ Lấy cấu trúc từ template
     const templateColumnService = require('./templateColumn.service');
     const templateSwimlaneService = require('./templateSwimlane.service');
     const columns = (await templateColumnService.list(id_template)) || [];
@@ -132,14 +125,14 @@ async cloneBoard(id_template, { title, description, userId }) {
       throw new Error('Template không hợp lệ: dữ liệu không phải mảng');
     }
 
-    // 4️⃣ Clone trong transaction
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
     let newBoard, newColumns = [], newSwimlanes = [];
 
     try {
-      // 4.1️⃣ Tạo board mới
+
       newBoard = await boardRepo.createWithSession({
         title: cleanTitle,
         description,
@@ -147,7 +140,6 @@ async cloneBoard(id_template, { title, description, userId }) {
         created_by: userId
       }, session);
 
-      // 4.2️⃣ Thêm người tạo vào BoardMembers
       await boardMemberRepo.addMember({
         board_id: newBoard._id,
         user_id: userId,
@@ -155,7 +147,7 @@ async cloneBoard(id_template, { title, description, userId }) {
         Creator: true,
       }, session);
 
-      // 4.3️⃣ Clone columns
+    
       if (columns.length > 0) {
         newColumns = await columnRepo.insertMany(
           columns.map(col => ({
@@ -167,7 +159,7 @@ async cloneBoard(id_template, { title, description, userId }) {
         );
       }
 
-      // 4.4️⃣ Clone swimlanes
+   
       if (swimlanes.length > 0) {
         newSwimlanes = await swimlaneRepo.insertMany(
           swimlanes.map(lane => ({
@@ -198,7 +190,6 @@ async cloneBoard(id_template, { title, description, userId }) {
   }
 }
 
-  // Cấu hình Board settings - Story 24
   async configureBoardSettings(boardId, { columns, swimlanes }, userId) {
     try {
       // Kiểm tra quyền truy cập
@@ -233,7 +224,7 @@ async cloneBoard(id_template, { title, description, userId }) {
 
         // Cấu hình swimlanes nếu có
         if (swimlanes && Array.isArray(swimlanes)) {
-          // Soft delete swimlanes cũ
+          
           await swimlaneRepo.softDeleteManyByBoard(boardId, session);
           
           // Tạo swimlanes mới
@@ -253,7 +244,6 @@ async cloneBoard(id_template, { title, description, userId }) {
         await session.commitTransaction();
         session.endSession();
 
-        console.log(`✅ [BoardService] Configured board settings for ${boardId}`);
         return result;
       } catch (txErr) {
         await session.abortTransaction();
@@ -266,24 +256,21 @@ async cloneBoard(id_template, { title, description, userId }) {
     }
   }
 
-  // Thu gọn/mở rộng Swimlane - Story 26
+
   async toggleSwimlaneCollapse(boardId, swimlaneId, collapsed, userId) {
     try {
-      // Kiểm tra quyền truy cập
+
       const board = await this.getBoardIfPermitted(boardId, userId);
       if (board === null) throw new Error('Board không tồn tại');
       if (board === 'forbidden') throw new Error('Không có quyền thao tác trên board này');
 
-      // Kiểm tra swimlane tồn tại
       const swimlane = await swimlaneRepo.findById(swimlaneId);
       if (!swimlane || swimlane.board_id.toString() !== boardId) {
         throw new Error('Swimlane không tồn tại hoặc không thuộc board này');
       }
 
-      // Cập nhật trạng thái collapsed
       const updatedSwimlane = await swimlaneRepo.update(swimlaneId, { collapsed: collapsed });
       
-      console.log(`✅ [BoardService] Toggled swimlane ${swimlaneId} collapse to ${collapsed}`);
       return updatedSwimlane;
     } catch (error) {
       console.error('❌ [BoardService] toggleSwimlaneCollapse error:', error);

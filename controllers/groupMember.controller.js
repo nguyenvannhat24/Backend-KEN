@@ -61,12 +61,10 @@ class GroupMemberController {
   async getMembersByGroup(req, res) {
     try {
       const { group_id } = req.params;
-      console.log('🔍 [DEBUG] getMembersByGroup - group_id:', group_id);
-      
       const members = await groupMemberService.getMembers(group_id);
-      console.log('🔍 [DEBUG] getMembersByGroup - members:', members);
-      
+
       res.json({ success: true, data: members });
+
     } catch (err) {
       console.error('❌ [getMembersByGroup ERROR]:', err.message);
       res.status(400).json({ success: false, message: err.message });
@@ -79,7 +77,6 @@ class GroupMemberController {
       const requester_id = req.user?.id;
       const { user_id, group_id, ...updateData } = req.body;
 
-      // Validate input
       if (!user_id || !group_id) {
         return res.status(400).json({ 
           success: false, 
@@ -118,7 +115,7 @@ class GroupMemberController {
   // Xóa thành viên
   async removeMember(req, res) {
     try {
-      const requester_id = req.user?.id; // Lấy từ token
+      const requester_id = req.user?.id; 
       const { user_id, group_id } = req.body;
 
       await groupMemberService.removeMember({
@@ -170,9 +167,7 @@ async selecGroupUser(req, res) {
     if (!id_user) {
       id_user = req.user.id;
     }
-    console.log(id_user);
-    console.log("idSSO (keycloak):", req.user.idSSO);
-
+   
     if (!id_user) {
       return res.status(400).json({ success: false, message: "id_user is required" });
     }

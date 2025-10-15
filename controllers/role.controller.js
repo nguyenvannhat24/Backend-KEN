@@ -13,8 +13,7 @@ class RoleController {
    */
   async getAllRoles(req, res) {
     try {
-      console.log('📋 [RoleController] getAllRoles - Getting all roles');
-      
+
       const result = await roleService.getAllRoles();
       
       res.status(200).json({
@@ -41,7 +40,6 @@ class RoleController {
   async getRoleById(req, res) {
     try {
       const { id } = req.params;
-      console.log(`📋 [RoleController] getRoleById - Getting role with ID: ${id}`);
       
       if (!id) {
         return res.status(400).json({
@@ -84,9 +82,7 @@ class RoleController {
   async createRole(req, res) {
     try {
       const roleData = req.body;
-      console.log('📋 [RoleController] createRole - Creating new role:', roleData);
-      
-      // Validate input
+
       if (!roleData.name) {
         return res.status(400).json({
           success: false,
@@ -130,8 +126,7 @@ class RoleController {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      console.log(`📋 [RoleController] updateRole - Updating role ID: ${id}`, updateData);
-      
+
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -175,15 +170,13 @@ class RoleController {
   }
 
   /**
-   * Xóa role
-   * @param {Object} req - Request object
-   * @param {Object} res - Response object
+   * @param {Object} req 
+   * @param {Object} res 
    */
   async deleteRole(req, res) {
     try {
       const { id } = req.params;
-      console.log(`📋 [RoleController] deleteRole - Deleting role ID: ${id}`);
-      
+
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -225,7 +218,6 @@ class RoleController {
   async getRoleByName(req, res) {
     try {
       const { name } = req.params;
-      console.log(`📋 [RoleController] getRoleByName - Getting role with name: ${name}`);
       
       if (!name) {
         return res.status(400).json({
@@ -268,8 +260,7 @@ class RoleController {
   async getUserRole(req, res) {
     try {
       const userId = req.user?.id || req.user?.userId || req.params.userId;
-      console.log(`📋 [RoleController] getUserRole - Getting role for user ID: ${userId}`);
-      
+
       if (!userId) {
         return res.status(400).json({
           success: false,

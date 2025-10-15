@@ -3,12 +3,10 @@ const groupService = require('../services/group.service');
 class GroupController {
   async create(req, res) {
     try {
-      console.log('🔍 [DEBUG] req.user:', req.user);
+      
       const userId = req.user?.id;
-      console.log('🔍 [DEBUG] extracted userId:', userId);
       const { center_id, name, description } = req.body;
-      console.log("DEBUG center_id:", center_id, "typeof:", typeof center_id);
-console.log("DEBUG userId:", userId, "typeof:", typeof userId);
+      
       const group = await groupService.createGroup({ 
         center_id, 
         name, 

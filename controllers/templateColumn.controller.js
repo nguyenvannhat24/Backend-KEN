@@ -13,14 +13,15 @@ class TemplateColumnController {
   async create(req, res) {
     try {
       const { template_id } = req.body;
-      const row = await service.create(template_id, req.body);
+      const user = req.user;
+      console.log(user) // lấy từ middleware JWT
+      const row = await service.create(template_id, req.body, user);
       res.status(201).json({ success: true, data: row });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
   }
 
-  // Thêm các methods còn thiếu
   async getAll(req, res) {
     try {
       const rows = await service.findAll();
@@ -50,7 +51,8 @@ class TemplateColumnController {
 
   async update(req, res) {
     try {
-      const row = await service.update(req.params.id, req.body);
+      const user = req.user; // lấy từ middleware JWT
+      const row = await service.update(req.params.id, req.body, user);
       res.json({ success: true, data: row });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -59,7 +61,8 @@ class TemplateColumnController {
 
   async delete(req, res) {
     try {
-      await service.remove(req.params.id);
+      const user = req.user; // lấy từ middleware JWT
+      await service.remove(req.params.id, user);
       res.json({ success: true, message: 'Xóa TemplateColumn thành công' });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });

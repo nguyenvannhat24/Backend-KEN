@@ -1,39 +1,85 @@
 const mongoose = require('mongoose');
 const TemplateColumn = require('../models/templateColumn.model');
+const Template = require('../models/template.model');
+const templateColumnRepo = require('../repositories/templateColumn.repository');
 
 class TemplateColumnService {
+  // List columns của template
   async list(template_id) {
     if (!mongoose.Types.ObjectId.isValid(template_id)) throw new Error('template_id không hợp lệ');
     return TemplateColumn.find({ template_id }).sort({ order_index: 1 }).lean();
   }
 
-  async create(template_id, { name, order_index }) {
+  // Kiểm tra quyền: creator, Admin, System_Manager
+  checkPermission(template, user) {
+    const allowedRoles = ['admin', 'System_Manager'];
+    const isCreator = template.created_by.toString() === user.id.toString();
+    console.log('template' , template);
+    console.log('user' , user);
+    const hasRole = user.roles.some(r => allowedRoles.includes(r));
+    if (!isCreator && !hasRole) {
+      throw new Error('Không có quyền thực hiện thao tác này');
+    }
+  }
+
+  // Tạo column
+  async create(template_id, { name, order_index }, user) {
     if (!mongoose.Types.ObjectId.isValid(template_id)) throw new Error('template_id không hợp lệ');
     if (!name || !name.trim()) throw new Error('name là bắt buộc');
-    const doc = await TemplateColumn.create({ template_id, name: name.trim(), order_index: Number(order_index) || 0 });
+
+    const template = await Template.findById(template_id).lean();
+    if (!template) throw new Error('Template không tồn tại');
+
+    this.checkPermission(template, user);
+
+    const doc = await TemplateColumn.create({
+      template_id,
+      name: name.trim(),
+      order_index: Number(order_index) || 0,
+    });
+
     return doc;
   }
 
-  async update(id, data) {
+  // Cập nhật column
+  async update(id, data, user) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
+
+    const column = await TemplateColumn.findById(id).lean();
+    if (!column) throw new Error('Không tìm thấy TemplateColumn');
+
+    const template = await Template.findById(column.template_id).lean();
+    if (!template) throw new Error('Template không tồn tại');
+
+    this.checkPermission(template, user);
+
     const update = {};
     if (typeof data.name === 'string') update.name = data.name.trim();
     if (data.order_index !== undefined) update.order_index = Number(data.order_index) || 0;
+
     const doc = await TemplateColumn.findByIdAndUpdate(id, update, { new: true }).lean();
-    if (!doc) throw new Error('Không tìm thấy TemplateColumn');
+    if (!doc) throw new Error('Cập nhật thất bại');
     return doc;
   }
 
-  async remove(id) {
+  // Xóa column (soft delete)
+  async remove(id, user) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('id không hợp lệ');
-    const templateColumnRepo = require('../repositories/templateColumn.repository');
-    // Soft delete instead of hard delete
+
+    const column = await TemplateColumn.findById(id).lean();
+    if (!column) throw new Error('Không tìm thấy TemplateColumn');
+
+    const template = await Template.findById(column.template_id).lean();
+    if (!template) throw new Error('Template không tồn tại');
+
+    this.checkPermission(template, user);
+
     const res = await templateColumnRepo.softDelete(id);
-    if (!res) throw new Error('Không tìm thấy TemplateColumn');
+    if (!res) throw new Error('Xóa thất bại');
     return true;
   }
 
-  // Thêm các methods còn thiếu
+  // Lấy tất cả column
   async findAll() {
     return TemplateColumn.find().sort({ order_index: 1 }).lean();
   }

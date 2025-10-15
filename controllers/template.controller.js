@@ -3,9 +3,9 @@ const templateService = require('../services/template.service');
 class TemplateController {
   async create(req, res) {
     try {
-      const userId = req.user?.id;
+      const user = req.user; // user từ token
       const { name, description } = req.body;
-      const tpl = await templateService.createTemplate({ name, description, userId });
+      const tpl = await templateService.createTemplate({ name, description, userId: user.id });
       res.status(201).json({ success: true, data: tpl });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -14,12 +14,8 @@ class TemplateController {
 
   async list(req, res) {
     try {
-      const id_user = req.user?.id;
-      if(!id_user){
-        return;
-      }
-
-      const tpls = await templateService.listTemplates(id_user);
+      const user = req.user;
+      const tpls = await templateService.listTemplates(user.id);
       res.json({ success: true, data: tpls });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -37,8 +33,8 @@ class TemplateController {
 
   async update(req, res) {
     try {
-      const userId = req.user?.id;
-      const updated = await templateService.updateTemplate(req.params.id, req.body, userId);
+      const user = req.user;
+      const updated = await templateService.updateTemplate(req.params.id, req.body, user);
       res.json({ success: true, data: updated });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -47,8 +43,8 @@ class TemplateController {
 
   async remove(req, res) {
     try {
-      const userId = req.user?.id;
-      await templateService.deleteTemplate(req.params.id, userId);
+      const user = req.user;
+      await templateService.deleteTemplate(req.params.id, user);
       res.json({ success: true, message: 'Xóa template thành công' });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });

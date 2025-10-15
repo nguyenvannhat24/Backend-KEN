@@ -41,14 +41,22 @@ async listTemplates(id_user) {
     if (!tpl) throw new Error('Template không tồn tại');
     return tpl;
   }
-
-  async updateTemplate(id, data, userId) {
+// Kiểm tra quyền update/delete: creator hoặc admin/system
+  checkPermission(template, user) {
+    const allowedRoles = ['Admin', 'System_Manager'];
+    const isCreator = template.created_by.toString() === user.id.toString();
+    const hasRole = user.roles.some(r => allowedRoles.includes(r));
+    if (!isCreator && !hasRole) {
+      throw new Error('Không có quyền thực hiện thao tác này');
+    }
+  }
+  async updateTemplate(id, data, user) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('ID không hợp lệ');
-    if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error('userId không hợp lệ');
 
     const tpl = await Template.findById(id).lean();
     if (!tpl) throw new Error('Template không tồn tại');
-    if (String(tpl.created_by) !== String(userId)) throw new Error('Chỉ creator được cập nhật template');
+
+    this.checkPermission(tpl, user);
 
     const update = {};
     if (typeof data.name === 'string' && data.name.trim() !== '') update.name = data.name.trim();
@@ -59,19 +67,19 @@ async listTemplates(id_user) {
     return updated;
   }
 
-  async deleteTemplate(id, userId) {
+  async deleteTemplate(id, user) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('ID không hợp lệ');
-    if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error('userId không hợp lệ');
 
     const tpl = await Template.findById(id).lean();
     if (!tpl) throw new Error('Template không tồn tại');
-    if (String(tpl.created_by) !== String(userId)) throw new Error('Chỉ creator được xóa template');
 
-    // Soft delete instead of hard delete
+    this.checkPermission(tpl, user);
+
     await templateRepo.softDelete(id);
     return true;
   }
 
+ 
 }
 
 module.exports = new TemplateService();

@@ -2,49 +2,49 @@ const groupMemberService = require("../services/groupMember.service");
 
 class GroupMemberController {
   // Thêm thành viên (1 hoặc nhiều thành viên)
-  async addMember(req, res) {
-    try {
-      const requester_id = req.user?.id;
-      const { user_id, group_id, role_in_group, members } = req.body;
+    async addMember(req, res) {
+      try {
+        const requester_id = req.user?.id;
+        const { user_id, group_id, role_in_group, members } = req.body;
 
-      // Nếu có members array -> thêm nhiều thành viên
-      if (members && Array.isArray(members)) {
-        const result = await groupMemberService.addBulkMembers({
-          requester_id,
-          group_id,
-          members
+        // Nếu có members array -> thêm nhiều thành viên
+        if (members && Array.isArray(members)) {
+          const result = await groupMemberService.addBulkMembers({
+            requester_id,
+            group_id,
+            members
+          });
+
+          return res.status(201).json({ 
+            success: true, 
+            message: `Đã xử lý ${result.total} thành viên`,
+            data: result
+          });
+        }
+
+        // Nếu có user_id -> thêm 1 thành viên
+        if (user_id) {
+          const member = await groupMemberService.addMember({
+            requester_id,
+            user_id,
+            group_id,
+            role_in_group,
+          });
+
+          return res.status(201).json({ success: true, data: member });
+        }
+
+        // Không có dữ liệu hợp lệ
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Cần cung cấp user_id hoặc members array' 
         });
 
-        return res.status(201).json({ 
-          success: true, 
-          message: `Đã xử lý ${result.total} thành viên`,
-          data: result
-        });
+      } catch (err) {
+        console.error('❌ [addMember ERROR]:', err.message);
+        res.status(400).json({ success: false, message: err.message });
       }
-
-      // Nếu có user_id -> thêm 1 thành viên
-      if (user_id) {
-        const member = await groupMemberService.addMember({
-          requester_id,
-          user_id,
-          group_id,
-          role_in_group,
-        });
-
-        return res.status(201).json({ success: true, data: member });
-      }
-
-      // Không có dữ liệu hợp lệ
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cần cung cấp user_id hoặc members array' 
-      });
-
-    } catch (err) {
-      console.error('❌ [addMember ERROR]:', err.message);
-      res.status(400).json({ success: false, message: err.message });
     }
-  }
 
   // Lấy danh sách thành viên theo group
   async getMembers(req, res) {

@@ -32,13 +32,16 @@ class GroupMemberService {
 
     // ✅ Cho phép System Manager hoặc Admin bỏ qua kiểm tra group
     if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
+
       const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
       if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
 
       const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
+      
       if (requesterRole !== "người tạo" && requesterRole !== "quản trị viên") {
-        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên");
+        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên :",requesterRole );
       }
+      
     }
 
     const user = await userRepo.findById(user_id);
@@ -191,12 +194,14 @@ class GroupMemberService {
     // ✅ Cho phép System Manager hoặc Admin
     if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
       const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
+
       if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
 
       const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
-      if (requesterRole !== "người tạo" && requesterRole !== "quản trị viên") {
-        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên");
-      }
+if (!["người tạo", "quản trị viên", "người quản lý"].includes(requesterRole.toLowerCase())) {
+  throw new Error("Chỉ người tạo, quản trị viên hoặc người quản lý mới có thể thêm thành viên");
+}
+
     }
 
     if (!Array.isArray(members) || members.length === 0) {

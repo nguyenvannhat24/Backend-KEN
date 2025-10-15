@@ -99,13 +99,28 @@ class CommentService {
 
       // Kiểm tra comment tồn tại và user có quyền chỉnh sửa
       const existingComment = await commentRepo.findById(id);
+
       if (!existingComment) {
         throw new Error('Comment không tồn tại');
       }
+      
+const commentUserId =
+  typeof existingComment.user_id === 'object'
+    ? existingComment.user_id._id
+    : existingComment.user_id;
 
-      if (existingComment.user_id.toString() !== userId) {
-        throw new Error('Bạn không có quyền chỉnh sửa comment này');
-      }
+if (commentUserId.toString() !== userId.toString()) {
+  console.log(
+    '❌ Không trùng user:',
+    '\n  existingComment.user_id =', existingComment.user_id,
+    '\n  userId =', userId
+  );
+  throw new Error('Bạn không có quyền chỉnh sửa comment này');
+}
+
+
+
+
 
       const updatedComment = await commentRepo.update(id, updateData);
       console.log(`✅ [CommentService] Updated comment ${id}`);

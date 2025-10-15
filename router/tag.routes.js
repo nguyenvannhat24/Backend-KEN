@@ -11,7 +11,7 @@ const router = express.Router();
 
 // ==================== AUTHENTICATED ROUTES ====================
 
-// Tạo tag mới - Story 44
+// Tạo tag cho board- Story 44
 router.post('/', authenticateAny, authorizeAny('admin System_Manager'), tagController.create);
 
 // Lấy tất cả tags - Story 43

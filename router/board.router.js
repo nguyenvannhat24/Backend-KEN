@@ -12,7 +12,12 @@ router.get(
   authorizeAny('VIEW_BOARD'), // user có quyền xem board
   boardController.listMyBoards
 );
-
+router.get( 
+  '/UserBoard/:idUser',
+  authenticateAny,
+  authorizeAny('admin System_Manager'),
+  boardController.listUserBoards
+);
 // Tạo board mới
 router.post(
   '/',

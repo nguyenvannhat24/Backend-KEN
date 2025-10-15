@@ -113,6 +113,20 @@ class TagRepository {
       throw error;
     }
   }
+
+  async findByNameAndIdBoard(name , idBoarb){
+   try {
+  const tag =  Tag.findOne({
+      name : name ,
+      board_id : idBoarb
+     }) ;
+     return tag
+   } catch (error) {
+     console.error('Error finding findByNameAndIdBoard:', error);
+      throw error;
+   }  
+
+  }
 }
 
 module.exports = new TagRepository();

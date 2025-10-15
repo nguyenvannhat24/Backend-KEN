@@ -31,6 +31,17 @@ class BoardController {
     }
   }
 
+    async listUserBoards(req, res) {
+    try {
+      const userId = req.params.idUser;
+      const boards = await boardService.listBoardsForUser(userId);
+      res.json({ success: true, count: boards.length, data: boards });
+    } catch (err) {
+      console.error('❌ listMyBoards error:', err);
+      res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+  }
+
   async createBoard(req, res) {
     try {
       const userId = req.user?.id;

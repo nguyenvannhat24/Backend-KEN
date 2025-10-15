@@ -7,22 +7,27 @@ const TaskTag = require('../models/taskTag.model');
 const TagModel = require('../models/tag.model')
 class TagService {
   // Tạo tag mới
-  async createTag({ name, color }) {
+  async createTag({ name, color , boardId}) {
     try {
       // Validate input
       if (!name || name.trim() === '') {
         throw new Error('Tên tag là bắt buộc');
       }
-
-      // Kiểm tra tag đã tồn tại chưa
-      const existingTag = await tagRepo.findByName(name);
+    if (!boardId ) {
+        throw new Error('id board tag là bắt buộc');
+      }
+      // Kiểm tra tag đã tồn tại chưa trong cùng bảng chưa
+      // bảng tag có thể trung tên 
+      // nhưng bảng tasktag ko được trùng tên
+      const existingTag = await tagRepo.findByNameAndIdBoard(name ,boardId);
       if (existingTag) {
-        throw new Error('Tag với tên này đã tồn tại');
+        throw new Error('Tag của board đã có với tên này rồi');
       }
 
       const tagData = {
         name: name.trim(),
-        color: color || '#007bff' // Màu mặc định
+        color: color || '#007bff',
+        boardId // Màu mặc định
       };
 
       const tag = await tagRepo.create(tagData);

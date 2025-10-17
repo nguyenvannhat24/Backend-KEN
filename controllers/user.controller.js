@@ -670,3 +670,20 @@ exports.getAllDeletedRecords = async (req, res) => {
 
   }
 };
+
+exports.findUsers = async (req, res) => {
+  try {
+   
+    const keyword = req.query.infor;
+    if (!keyword || keyword.trim() === "") {
+      return res.status(400).json({ message: "Thiếu từ khóa tìm kiếm" });
+    }
+
+    const result = await userService.findUsers({ infor: keyword });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Lỗi tìm kiếm người dùng gần đúng:", error);
+    return res.status(500).json({ message: "Lỗi tìm kiếm người dùng gần đúng", error: error.message });
+  }
+};

@@ -402,9 +402,18 @@ async  restoreUser(id) {
       console.error('Error in getAllDeletedRecords:', error.message);
       throw error;
     }
+  } 
+
+  async findUsers  (data){
+  if (!data?.infor) return [];
+  try {
+    const users = await userRepo.findUserSimilar(data.infor);
+    return users;
+  } catch (error) {
+    console.error('Error in findUsers:', error.message);
+    throw error;
   }
-
-
+};
 
 }
 module.exports = new UserService();

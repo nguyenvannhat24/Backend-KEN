@@ -393,6 +393,25 @@ async findbyIdSSO(idSSO) {
 async update(id, updateData) {
   return await this.updateById(id, updateData);
 }
+async findUserSimilar(infor) {
+  try {
+    const keyword = infor?.trim();
+    if (!keyword) return [];
+
+    const users = await User.find({
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { email: { $regex: keyword, $options: "i" } }
+      ]
+    }).lean();
+
+    return users;
+  } catch (error) {
+    console.error("Error finding similar users:", error);
+    throw error;
+  }
+}
+
 
 }
 

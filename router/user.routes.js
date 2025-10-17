@@ -46,6 +46,8 @@ router.get('/selectAll', authenticateAny,authorizeAny('System_Manager USER_VIEW_
 
 
 
+// tìm kiếm người dùng theo tên hoặc mail gần đúng
+router.get('/findUsers' , userController.findUsers);
 
 router.get('/admin/deleted', authenticateAny, authorizeAny('System_Manager USER_VIEW_ALL') ,userController.getAllDeletedRecords);
 
@@ -73,5 +75,6 @@ router.get('/admin/with-deleted', authenticateAny, authorizeAny('admin', 'System
 
 // Get all deleted records (admin hoặc System_Manager)
 router.get('/admin/deleted', authenticateAny, authorizeAny('admin', 'System_Manager'), userController.getAllDeletedRecords);
+
 
 module.exports = router;

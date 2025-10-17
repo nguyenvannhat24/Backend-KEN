@@ -10,15 +10,14 @@ async function checkCodeGym() {
 
     // Liệt kê collection
     const collections = await db.listCollections().toArray();
-    console.log("📂 Collections trong CodeGym:");
+
     collections.forEach(c => console.log(" -", c.name));
 
     // Ví dụ đọc thử 5 document đầu tiên từ từng collection
     for (let c of collections) {
       const col = db.collection(c.name);
       const docs = await col.find().limit(5).toArray();
-      console.log(`\n📑 Collection: ${c.name}`);
-      console.log(docs);
+     
     }
 
   } catch (err) {

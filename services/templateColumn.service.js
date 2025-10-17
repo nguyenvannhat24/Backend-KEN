@@ -14,8 +14,7 @@ class TemplateColumnService {
   checkPermission(template, user) {
     const allowedRoles = ['admin', 'System_Manager'];
     const isCreator = template.created_by.toString() === user.id.toString();
-    console.log('template' , template);
-    console.log('user' , user);
+    
     const hasRole = user.roles.some(r => allowedRoles.includes(r));
     if (!isCreator && !hasRole) {
       throw new Error('Không có quyền thực hiện thao tác này');

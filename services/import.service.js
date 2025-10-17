@@ -49,7 +49,6 @@ class ImportService {
       // Cleanup file
       fs.unlinkSync(filePath);
 
-      console.log(`✅ [ImportService] Imported ${result.successCount} tasks successfully`);
       return result;
     } catch (error) {
       console.error('❌ [ImportService] importTasksFromFile error:', error);

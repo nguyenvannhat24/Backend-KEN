@@ -132,7 +132,7 @@ async createUser(userData) {
     );
 
     // Tạo local user
-    console.log(`➕ Creating new local user: ${email}`);
+  
     const localUser = await userRepo.create({
       username,
       email,
@@ -218,7 +218,7 @@ async updateUser(idUpdate, id, updateData) {
       delete updateData.roles;
     }
 
-    console.log(`✏️ Updating user: ${id}`);
+   
     return await userRepo.update(id, updateData);
 
   } catch (error) {
@@ -244,7 +244,7 @@ async updateUser(idUpdate, id, updateData) {
    */
   async viewAll(options = {}) {
   try {
-    console.log('📋 Getting all users');
+
     const result = await userRepo.findAll(options);
 
     // Luôn trả về đúng cấu trúc
@@ -275,7 +275,7 @@ async getUserWithPassword(userId) {
 async updateProfile(userId, updateData) {
   try {
     const user = await userRepo.update(userId, updateData);
-    console.log(`✅ [UserService] Updated profile for user: ${userId}`);
+   
     return user;
   } catch (error) {
     console.error('❌ [UserService] updateProfile error:', error);
@@ -291,13 +291,9 @@ async changePassword(userId, currentPassword, newPassword) {
       throw new Error('User không tồn tại');
     }
 
-    console.log(`🔍 [UserService] Change password for user: ${userId}`);
-    console.log(`🔍 [UserService] User has password_hash: ${!!user.password_hash}`);
-    console.log(`🔍 [UserService] Current password provided: ${currentPassword}`);
-
     // Kiểm tra mật khẩu hiện tại
     if (user.password_hash && user.password_hash !== null && user.password_hash !== undefined) {
-      console.log(`🔍 [UserService] User has password_hash, validating current password`);
+     
       
       // Kiểm tra xem password_hash có phải là bcrypt hash không
       const isBcryptHash = user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2y$');
@@ -306,24 +302,22 @@ async changePassword(userId, currentPassword, newPassword) {
       
       if (isBcryptHash) {
         // Password đã được hash bằng bcrypt
-        console.log(`🔍 [UserService] Password is bcrypt hashed, using bcrypt.compare`);
+      
         isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
       } else {
         // Password được lưu dưới dạng plain text
-        console.log(`🔍 [UserService] Password is plain text, using direct comparison`);
+        
         isCurrentPasswordValid = (currentPassword === user.password_hash);
       }
       
-      console.log(`🔍 [UserService] Password comparison result: ${isCurrentPasswordValid}`);
+
       if (!isCurrentPasswordValid) {
         throw new Error('Mật khẩu hiện tại không đúng');
       }
     } else {
       // User không có password_hash - cho phép set password lần đầu
-      console.log(`🔍 [UserService] User không có mật khẩu, cho phép set password lần đầu`);
-      if (currentPassword) {
-        console.log(`🔍 [UserService] User không có mật khẩu nhưng vẫn cung cấp current_password, bỏ qua validation`);
-      }
+   
+     
     }
 
     // Hash mật khẩu mới
@@ -333,7 +327,6 @@ async changePassword(userId, currentPassword, newPassword) {
     // Cập nhật mật khẩu
     await userRepo.update(userId, { password_hash: newPasswordHash });
     
-    console.log(`✅ [UserService] Changed password for user: ${userId}`);
     return true;
   } catch (error) {
     console.error('❌ [UserService] changePassword error:', error);
@@ -381,9 +374,9 @@ async  restoreUser(id) {
   // 🔹 Nếu user có tài khoản SSO → kích hoạt lại trên Keycloak
   if (user.typeAccount === 'SSO' && user.idSSO) {
     try {
-      console.log(`🔹 Restoring Keycloak user: ${user.username} (${user.idSSO})`);
+      
       await restoreUserOnKeycloak(user.idSSO);
-      console.log('✅ Restored user on Keycloak');
+  
     } catch (kcError) {
       console.error('❌ Lỗi khôi phục trên Keycloak:', kcError);
     }

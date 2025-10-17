@@ -14,7 +14,7 @@ class TemplateColumnController {
     try {
       const { template_id } = req.body;
       const user = req.user;
-      console.log(user) // lấy từ middleware JWT
+    
       const row = await service.create(template_id, req.body, user);
       res.status(201).json({ success: true, data: row });
     } catch (err) {

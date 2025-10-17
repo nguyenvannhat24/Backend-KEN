@@ -87,6 +87,8 @@ class CenterRepository {
       throw error;
     }
   }
+
+  
 }
 
 module.exports = new CenterRepository();

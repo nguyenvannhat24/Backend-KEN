@@ -15,4 +15,5 @@ router.get('/:center_id/members',authenticateAny , centerMemberController.getMem
 // xóa thành viên khỏi trung tâm
 router.delete('/:id', authenticateAny, centerMemberController.removeMember);
 
+router.get('/', authenticateAny , centerMemberController.getAll)
 module.exports = router;

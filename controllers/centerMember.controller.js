@@ -40,6 +40,15 @@ class CenterMemberController {
       res.status(400).json({ success: false, message: error.message });
     }
   }
+    async getAll(req, res) {
+    try {
+     const data =  await centerMemberService.getAll();
+         res.json({ success: true, data });
+    } catch (error) {
+      
+    }
+    }
+
 }
 
 module.exports = new CenterMemberController();

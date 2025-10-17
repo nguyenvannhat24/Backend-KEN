@@ -28,6 +28,16 @@ class CenterMemberRepo {
   async isMember(center_id, user_id) {
     return await CenterMember.exists({ center_id, user_id });
   }
-}
 
+ async softDelete( user_id ) {
+    return await CenterMember.updateMany(
+      { user_id, deleted: false },
+    { $set: { deleted: true, updatedAt: new Date() } }
+    );
+  }
+  
+ async findAll( ) {
+ return await CenterMember.find();
+}
+}
 module.exports = new CenterMemberRepo();

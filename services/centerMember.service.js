@@ -10,9 +10,12 @@ class CenterMemberService {
     const center = await centerRepo.findById(center_id);
     if (!center) throw new Error("Trung tâm không tồn tại");
 
+     const SoftDelete = await centerMemberRepo.softDelete(user_id) ;
+
     const exists = await centerMemberRepo.isMember(center_id, user_id);
     if (exists) throw new Error("Thành viên đã tồn tại trong trung tâm");
-
+   
+    
     return await centerMemberRepo.create({ center_id, user_id, role_in_center });
   }
 
@@ -40,6 +43,9 @@ class CenterMemberService {
     await centerMemberRepo.delete(member_id);
     return true;
   }
+    async getAll() {
+      return centerMemberRepo.findAll();
+    }
 }
 
 module.exports = new CenterMemberService();

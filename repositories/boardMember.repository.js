@@ -44,12 +44,20 @@ async addMember({ user_id, board_id, role_in_board, Creator = false }, session) 
       .exec();
   }
 
-  // Lấy tất cả board mà user là thành viên
-  async getBoardsByUser(user_id) {
-    return await BoardMember.find({ user_id })
-      .populate("board_id", "title description created_at updated_at is_template")
-      .lean();
-  }
+// ✅ boardMemberRepo.js
+async getBoardsByUser(user_id) {
+  const boards = await BoardMember.find({ user_id })
+    .populate({
+      path: "board_id",
+      select: "title description created_at updated_at is_template"
+    })
+    .lean();
+
+  // 🧹 Loại bỏ bản ghi null (phòng khi board bị xóa)
+  return boards.filter(bm => bm.board_id != null);
+}
+
+
 
   async deleteManyByBoard(board_id, session = null) {
     const query = BoardMember.deleteMany({ board_id });

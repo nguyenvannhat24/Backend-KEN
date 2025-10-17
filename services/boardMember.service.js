@@ -3,6 +3,7 @@ const boardMemberRepo = require("../repositories/boardMember.repository");
 const userRepo = require("../repositories/user.repository");
 const boardRepo = require("../repositories/board.repository");
 
+
 class BoardMemberService {
   // Xem tất cả BoardMember
   async selectAll() {
@@ -92,24 +93,23 @@ class BoardMemberService {
 
 
  
+// ✅ boardMemberService.js
 async getBoardsByUser(user_id, roles = []) {
+  const idUser = typeof user_id === 'object' ? user_id.toString() : user_id;
 
-  const user = await userRepo.findById(user_id);
-  if (!user) {
-    throw new Error("Người dùng không tồn tại");
-  }
+  const user = await userRepo.findById(idUser);
+  if (!user) throw new Error("Người dùng không tồn tại");
 
-  // Tạo filter
-  const filter = { user_id };
-  if (roles.length > 0) {
-    filter.role_in_board = { $in: roles };
-  }
+  const boards = await boardMemberRepo.getBoardsByUser(idUser);
 
-
-  const boards = await boardMemberRepo.getBoardsByUser(filter);
-
-  return boards.map(bm => bm.board_id); 
+  // Trả về danh sách board kèm vai trò
+  return boards.map(bm => ({
+    ...bm.board_id,           // dữ liệu từ bảng Board
+    role_in_board: bm.role_in_board,
+    idBoarMenber:bm._id  // thêm vai trò
+  }));
 }
+
 
 }
 

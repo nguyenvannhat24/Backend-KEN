@@ -47,7 +47,7 @@ router.delete(
 
 // Lấy boards mà user có quyền
 router.get(
-  "/user/:user_id/boards",
+  "/user/boards",
   authenticateAny,
   authorizeAny('VIEW_BOARD System_Manager admin'), // quyền xem board
   boardMemberController.getBoardsByUser

@@ -3,23 +3,24 @@ const boardMemberService = require("../services/boardMember.service");
 class BoardMemberController {
 
 // Xem danh sách board mà user có quyền
-  // Xem danh sách board mà user có quyền (dùng POST)
-async getBoardsByUser(req, res) {
-  try {
-    const user_id = req.params.user_id;
-    const { roles = [] } = req.query; // Query params thay vì body
+    // Xem danh sách board mà user có quyền (dùng POST)
+  async getBoardsByUser(req, res) {
+    try {
+      const user_id = req.user?.id || req.user?._id;
+      console.log(req.user)
+      const { roles = [] } = req.query; // Query params thay vì body
 
-    const boards = await boardMemberService.getBoardsByUser(
-      user_id,
-      Array.isArray(roles) ? roles : []
-    );
+      const boards = await boardMemberService.getBoardsByUser(
+        user_id,
+        Array.isArray(roles) ? roles : []
+      );
 
-    res.json({ success: true, data: boards });
-  } catch (error) {
-    console.error("❌ Lỗi getBoardsByUser:", error);
-    res.status(400).json({ success: false, message: error.message });
+      res.json({ success: true, data: boards });
+    } catch (error) {
+      console.error("❌ Lỗi getBoardsByUser:", error);
+      res.status(400).json({ success: false, message: error.message });
+    }
   }
-}
 
 
 

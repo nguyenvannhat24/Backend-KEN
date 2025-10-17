@@ -6,7 +6,7 @@ const BoardMemberSchema = new mongoose.Schema({
   board_id: { type: Schema.Types.ObjectId, ref: 'Board', required: true, index: true },
   role_in_board: { 
     type: String, 
-    enum: ["Người tạo", "Thành viên"], 
+    enum: ["Người tạo", "Thành viên" ,"Người Xem"], 
     default: "Thành viên"
   },
   Creator: {

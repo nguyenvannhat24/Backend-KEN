@@ -31,7 +31,7 @@ const taskTag = require('./router/taskTag.routes');
 const uploadImg  =require('./router/uploadimg.router');
 const taskImportRoutes = require('./router/taskImport.routes');
 const memoryStore = new session.MemoryStore();
-
+const CenterMember =  require('./router/centerMember.route');
 app.use(session({
   secret: 'some secret',
   resave: false,
@@ -95,7 +95,7 @@ app.use('/api/taskTag',taskTag);
 
 app.use('/api/permission',permissionRoutes);
 app.use("/api/RolePermission",RolePermissionRoutes);
-
+app.use("/api/CenterMember",CenterMember);
 
 app.use('/api/user', user);
 app.use('/api/img',uploadImg); 

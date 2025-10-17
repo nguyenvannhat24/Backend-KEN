@@ -58,65 +58,114 @@ class UserRepository {
    * @param {string} options.sortOrder - Thứ tự sort: 'asc' hoặc 'desc' (default: 'desc')
    * @returns {Promise<Object>} Object chứa users và pagination info
    */
-  async findAll(options = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = 'created_at',
-        sortOrder = 'desc'
-      } = options;
+async findAll(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = options;
 
-      const skip = (page - 1) * limit;
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-      const pipeline = [
-        {
-          $match: { deleted_at: null } // ✅ chỉ lấy user chưa bị xóa mềm
-        },
-        {
-          $lookup: {
-            from: "UserRoles",
-            localField: "_id",
-            foreignField: "user_id",
-            as: "user_roles"
-          }
-        },
-        {
-          $lookup: {
-            from: "Roles",
-            localField: "user_roles.role_id",
-            foreignField: "_id",
-            as: "roles"
-          }
-        },
-        {
-          $addFields: {
-            role_name: { $arrayElemAt: ["$roles.name", 0] }
-          }
-        },
-        { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-        { $skip: skip },
-        { $limit: limit }
-      ];
+    const pipeline = [
+      {
+        $match: { deleted_at: null } // ✅ chỉ lấy user chưa bị xóa mềm
+      },
 
-      const users = await User.aggregate(pipeline);
-      const total = await User.countDocuments();
-
-      return {
-        users,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
+      // 👉 1. Lấy vai trò người dùng (UserRoles → Roles)
+      {
+        $lookup: {
+          from: "UserRoles",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "user_roles"
         }
-      };
-    } catch (error) {
-      console.error("Error finding all users:", error);
-      throw error;
-    }
+      },
+      {
+        $lookup: {
+          from: "Roles",
+          localField: "user_roles.role_id",
+          foreignField: "_id",
+          as: "roles"
+        }
+      },
+      {
+        $addFields: {
+          role_name: { $arrayElemAt: ["$roles.name", 0] }
+        }
+      },
+
+      // 👉 2. Lấy thông tin trung tâm mà user thuộc về (CenterMembers)
+      {
+        $lookup: {
+          from: "CenterMembers",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "centerMember"
+        }
+      },
+      {
+        $unwind: {
+          path: "$centerMember",
+          preserveNullAndEmptyArrays: true // vẫn hiển thị nếu user chưa thuộc trung tâm nào
+        }
+      },
+
+      // 👉 3. Lấy thông tin chi tiết trung tâm (Centers)
+      {
+        $lookup: {
+          from: "Centers",
+          localField: "centerMember.center_id",
+          foreignField: "_id",
+          as: "centerInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$centerInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+
+      // 👉 4. Thêm các trường hiển thị
+      {
+        $addFields: {
+          center_id: "$centerMember.center_id",
+          role_in_center: "$centerMember.role_in_center",
+          center_name: "$centerInfo.name",
+          center_status: "$centerInfo.status"
+        }
+      },
+
+      // 👉 5. Sắp xếp & phân trang
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // ✅ Lấy danh sách user
+    const users = await User.aggregate(pipeline);
+
+    // ✅ Đếm tổng số user chưa xóa mềm
+    const total = await User.countDocuments({ deleted_at: null });
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error("❌ Error finding all users:", error);
+    throw error;
   }
+}
 
   async create(userData) {
     try {

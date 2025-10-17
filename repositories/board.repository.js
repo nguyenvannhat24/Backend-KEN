@@ -1,5 +1,6 @@
 const Board = require('../models/board.model');
 const BoardMember = require('../models/boardMember.model');
+const mongoose = require('mongoose');
 
 class BoardRepository {
   async selectedAll() {
@@ -46,13 +47,25 @@ class BoardRepository {
   }
 
   // Kiểm tra user có phải creator thông qua BoardMember
-  async isCreatorFromMember(userId, boardId) {
-    const doc = await BoardMember.findOne({ 
+ async isCreatorFromMember(userId, boardId) {
+  const doc = await BoardMember.findOne({ 
+    user_id: userId, 
+    board_id: boardId, 
+    role_in_board: "Người tạo"
+  }).select('_id').lean();
+  return !!doc; // true nếu là người tạo, false nếu không
+}
+
+  async isRoleMember(userId, boardId) {
+      const doc = await BoardMember.findOne({ 
       user_id: userId, 
       board_id: boardId, 
-      Creator: true 
+      role_in_board: 'Thành viên' 
     }).select('_id').lean();
     return !!doc;
+  }
+  async countDocuments(){
+
   }
 
   async updateById(boardId, updateData) {

@@ -34,6 +34,12 @@ class TaskService {
       // Kiểm tra user là thành viên của board
       const isMember = await boardRepo.isMember(userId, taskData.board_id);
       if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+      
+      // kiểm tra user có quyền trong board hoặc là người tạo hoặc là thành viên
+      const isRoleMember = await boardRepo.isRoleMember(userId, taskData.board_id);
+      const isCreatorFromMember = await boardRepo.isCreatorFromMember(userId, taskData.board_id);
+
+      if(!isRoleMember && !isCreatorFromMember )throw new Error('Bạn không có quyền thao tác trên board này');
 
       // Kiểm tra column thuộc board
       const column = await columnRepo.findById(taskData.column_id);

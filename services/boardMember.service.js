@@ -51,45 +51,105 @@ class BoardMemberService {
   }
 
   // Cập nhật role
-  async updateRole(user_id, board_id, role_in_board) {
-   
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      throw new Error("user_id không hợp lệ");
-    }
-    if (!mongoose.Types.ObjectId.isValid(board_id)) {
-      throw new Error("board_id không hợp lệ");
-    }
-
-  
-    const validRoles = ["Người tạo", "Thành viên", "Khách"];
-    if (!validRoles.includes(role_in_board)) {
-      throw new Error("role_in_board không hợp lệ");
-    }
-
-    const user = await userRepo.findById(user_id);
-    if (!user) throw new Error("Người dùng không tồn tại");
-
-    const board = await boardRepo.getBoardById(board_id);
-    if (!board) throw new Error("Board không tồn tại");
-
-    const member = await boardMemberRepo.updateRole(user_id, board_id, role_in_board);
-    if (!member) throw new Error("Không tìm thấy thành viên để cập nhật");
-    return member;
+async updateRole(requester_id, user_id, board_id, role_in_board) {
+  // Validate ObjectIds
+  if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    throw new Error("user_id không hợp lệ");
+  }
+  if (!mongoose.Types.ObjectId.isValid(board_id)) {
+    throw new Error("board_id không hợp lệ");
   }
 
-  // Xoá thành viên
-  async removeMember(user_id, board_id) {
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      throw new Error("user_id không hợp lệ");
-    }
-    if (!mongoose.Types.ObjectId.isValid(board_id)) {
-      throw new Error("board_id không hợp lệ");
+  // Kiểm tra role hợp lệ
+  const validRoles = ["Người tạo", "Thành viên", "Người Xem"];
+  if (!validRoles.includes(role_in_board)) {
+    throw new Error("role_in_board không hợp lệ");
+  }
+
+  // Kiểm tra user & board tồn tại
+  const user = await userRepo.findById(user_id);
+  if (!user) throw new Error("Người dùng không tồn tại");
+
+  const board = await boardRepo.getBoardById(board_id);
+  if (!board) throw new Error("Board không tồn tại");
+
+  // Kiểm tra quyền người yêu cầu (requester)
+  const isRequesterCreator = await boardRepo.isCreatorFromMember(requester_id, board_id);
+  if (!isRequesterCreator) {
+    throw new Error("Chỉ người tạo board mới được thay đổi vai trò thành viên");
+  }
+
+  // Lấy thông tin thành viên bị đổi role
+  const targetMember = await boardMemberRepo.findMember(user_id, board_id);
+  if (!targetMember) throw new Error("Không tìm thấy thành viên trong board");
+  console.log('targetMember :',targetMember.role_in_board)
+  // Không được hạ cấp người tạo cuối cùng
+  if (targetMember.role_in_board === "Người tạo") {
+    const creatorCount = await boardMemberRepo.countCreators(board_id);
+    if (creatorCount === 1 && role_in_board !== "Người tạo") {
+      throw new Error("Không thể hạ cấp người tạo cuối cùng trong bảng");
     }
 
-    const result = await boardMemberRepo.removeMember(user_id, board_id);
-    if (result.deletedCount === 0) throw new Error("Không tìm thấy thành viên để xoá");
-    return true;
   }
+
+  // Thực hiện cập nhật
+  const member = await boardMemberRepo.updateRole(user_id, board_id, role_in_board);
+  if (!member) throw new Error("Cập nhật vai trò thất bại");
+
+  return member;
+}
+
+
+// Xoá thành viên
+async removeMember(requester_id, user_id, board_id) {
+  if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    throw new Error("user_id không hợp lệ");
+  }
+  if (!mongoose.Types.ObjectId.isValid(board_id)) {
+    throw new Error("board_id không hợp lệ");
+  }
+
+  // Đếm số lượng thành viên hiện có trong board
+  const memberCount = await boardMemberRepo.countMembers(board_id);
+  if (memberCount <= 1) {
+    throw new Error("Không thể xóa thành viên cuối cùng trong bảng");
+  }
+
+  // Cho phép người dùng tự xóa chính mình
+  if (requester_id !== user_id) {
+    // Nếu người này muốn xóa người khác => phải là người tạo hoặc admin
+    const isCreator = await boardRepo.isCreatorFromMember(requester_id, board_id);
+    const requester = await userRepo.findById(requester_id);
+
+    // kiểm tra role hệ thống (nếu có)
+    const systemRoles = requester?.roles || []; // ví dụ: ['admin', 'System_Manager']
+
+    const isSystemManagerOrAdmin =
+      systemRoles.includes("System_Manager") || systemRoles.includes("admin");
+
+    if (!isCreator && !isSystemManagerOrAdmin) {
+      throw new Error("Chỉ người tạo hoặc admin mới có quyền xóa thành viên khác");
+    }
+  }
+
+  // Không cho xóa người tạo cuối cùng
+  const targetMember = await boardMemberRepo.findMember(user_id, board_id);
+  if (!targetMember) throw new Error("Không tìm thấy thành viên để xoá");
+  if (targetMember.role_in_board === "Người tạo") {
+    const creatorCount = await boardMemberRepo.countCreators(board_id);
+    if (creatorCount === 1) {
+      throw new Error("Không thể xóa người tạo cuối cùng của bảng");
+    }
+  }
+
+  // Thực hiện xóa
+  const result = await boardMemberRepo.removeMember(user_id, board_id);
+  if (result.deletedCount === 0) {
+    throw new Error("Không tìm thấy thành viên để xoá");
+  }
+
+  return true;
+}
 
 
  

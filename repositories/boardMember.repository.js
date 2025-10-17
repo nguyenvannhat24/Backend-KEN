@@ -1,4 +1,5 @@
 const BoardMember = require("../models/boardMember.model");
+const mongoose = require('mongoose');
 
 class BoardMemberRepository {
   // Thêm 1 thành viên vào board
@@ -63,6 +64,26 @@ async getBoardsByUser(user_id) {
     const query = BoardMember.deleteMany({ board_id });
     return session ? query.session(session) : query;
   }
+
+  async countCreators(board_id) {
+  if (!mongoose.Types.ObjectId.isValid(board_id)) {
+    throw new Error("board_id không hợp lệ");
+  }
+
+  const count = await BoardMember.countDocuments({
+    board_id,
+    role_in_board: "Người tạo",
+  });
+
+  return count;
+}
+async countMembers(board_id) {
+  return BoardMember.countDocuments({
+    board_id,
+    deleted: { $ne: true } // nếu bạn có xóa mềm
+  });
+}
+
 }
 
 module.exports = new BoardMemberRepository();

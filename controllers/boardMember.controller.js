@@ -1,4 +1,5 @@
 const boardMemberService = require("../services/boardMember.service");
+const mongoose = require('mongoose');
 
 class BoardMemberController {
 
@@ -63,23 +64,26 @@ class BoardMemberController {
     }
   }
 
-  async updateRole(req, res) {
-    try {
-      const { board_id, user_id } = req.params;
-      const { role_in_board } = req.body;
-      
-      const member = await boardMemberService.updateRole(user_id, board_id, role_in_board);
-      res.json({ success: true, data: member });
-    } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
-    }
+async updateRole(req, res) {
+  try {
+    const { board_id, user_id } = req.params;
+    const { role_in_board } = req.body;
+    const requester_id = req.user.id; // người đang thực hiện hành động
+
+    const member = await boardMemberService.updateRole(requester_id, user_id, board_id, role_in_board);
+    res.json({ success: true, data: member });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
   }
+}
+
 
   async removeMember(req, res) {
     try {
+      const requester_id = req.user?.id ;
       const { board_id, user_id } = req.params;
       
-      await boardMemberService.removeMember(user_id, board_id);
+      await boardMemberService.removeMember(board_id ,user_id, board_id);
       res.json({ success: true, message: "Xoá thành viên thành công" });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });

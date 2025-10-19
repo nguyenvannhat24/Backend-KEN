@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 const groupRepo = require('../repositories/group.repository');
 const groupMemberService = require("./groupMember.service");
 const groupMemberRepo = require('../repositories/groupMember.repository');
-
+const boardMember = require('../repositories/boardMember.repository');
+const board = require('../repositories/board.repository');
 class GroupService {
   async createGroup({ center_id, name, userId, description }) {
     if (!userId) throw new Error("userId là bắt buộc");
@@ -138,6 +139,19 @@ class GroupService {
     return true;
   }
 
+  async viewBoardMember(idUser , idGroup){
+    try {
+         const UserInGroup = await groupMemberRepo.findMember(idUser , idGroup);
+         if(!UserInGroup) throw new Error('user này ko ở trong group');
+         
+         const userBoard = await boardMember.getBoardsByUser(idUser) ;
+
+         return  userBoard ;
+
+    } catch (error) {
+  throw new Error(`lỗi lấy bảng của user: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new GroupService();

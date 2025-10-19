@@ -34,10 +34,11 @@ class SwimlaneController {
   async getByBoard(req, res) {
     try {
       const userId = req.user?.id;
+          const roles = req.user?.roles || [];
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      const swimlanes = await swimlaneService.getSwimlanesByBoard(req.params.boardId, userId);
+      const swimlanes = await swimlaneService.getSwimlanesByBoard(req.params.boardId, userId,roles);
       res.json({ success: true, data: swimlanes });
     } catch (error) {
       console.error('❌ Swimlane getByBoard error:', error);

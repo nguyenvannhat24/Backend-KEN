@@ -69,4 +69,6 @@ router.get(
   }
 );
 
+router.post('/getBoarMember' , groupController.adminViewBoard);
+
 module.exports = router;

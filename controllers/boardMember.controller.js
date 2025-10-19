@@ -40,8 +40,8 @@ class BoardMemberController {
     try {
       const board_id = req.params.board_id;
       const { user_id, role_in_board } = req.body;
-      
-      const member = await boardMemberService.addMember({ user_id, board_id, role_in_board });
+      const requester_id = req.user?.id ;
+      const member = await boardMemberService.addMember({requester_id, user_id, board_id, role_in_board });
       res.status(201).json({ success: true, data: member });
     } catch (err) {
       console.error("❌ addMember error:", err);
@@ -83,7 +83,7 @@ async updateRole(req, res) {
       const requester_id = req.user?.id ;
       const { board_id, user_id } = req.params;
       
-      await boardMemberService.removeMember(board_id ,user_id, board_id);
+      await boardMemberService.removeMember(requester_id ,user_id, board_id);
       res.json({ success: true, message: "Xoá thành viên thành công" });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const boardMemberRepo = require("../repositories/boardMember.repository");
 const userRepo = require("../repositories/user.repository");
 const boardRepo = require("../repositories/board.repository");
+const UserRoleRepo = require("../repositories/userRole.repository");
 
 
 class BoardMemberService {
@@ -11,37 +12,51 @@ class BoardMemberService {
   }
 
   // Thêm user vào board
-  async addMember({ user_id, board_id, role_in_board }) {
-    
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      throw new Error("user_id không hợp lệ");
-    }
-    if (!mongoose.Types.ObjectId.isValid(board_id)) {
-      throw new Error("board_id không hợp lệ");
-    }
-
-    const validRoles = ["Người tạo", "Thành viên", "Khách"];
-    if (!validRoles.includes(role_in_board)) {
-      throw new Error("role_in_board không hợp lệ");
-    }
-
-    const user = await userRepo.findById(user_id);
-    if (!user) {
-      throw new Error("Người dùng không tồn tại");
-    }
-
-    const board = await boardRepo.getBoardById(board_id);
-    if (!board) {
-      throw new Error("Board không tồn tại");
-    }
-
-    const existing = await boardMemberRepo.findMember(user_id, board_id);
-    if (existing) {
-      throw new Error("User đã là thành viên trong board này");
-    }
-
-    return await boardMemberRepo.addMember({ user_id, board_id, role_in_board });
+ async addMember({ requester_id, user_id, board_id, role_in_board }) {
+  if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    throw new Error("user_id không hợp lệ");
   }
+  if (!mongoose.Types.ObjectId.isValid(board_id)) {
+    throw new Error("board_id không hợp lệ");
+  }
+
+  const validRoles = ["Người tạo", "Thành viên", "Khách"];
+  if (!validRoles.includes(role_in_board)) {
+    throw new Error("role_in_board không hợp lệ");
+  }
+
+  // Kiểm tra người thêm (requester)
+  const requester = await userRepo.findById(requester_id);
+  if (!requester) throw new Error("Người thực hiện không tồn tại");
+
+  // Kiểm tra board tồn tại
+  const board = await boardRepo.getBoardById(board_id);
+  if (!board) throw new Error("Board không tồn tại");
+
+  // ✅ Lấy thông tin membership của người đang thực hiện
+  const requesterMember = await boardMemberRepo.findMember(requester_id, board_id);
+  if (!requesterMember) {
+    throw new Error("Bạn không phải thành viên của board này");
+  }
+
+  // ✅ Kiểm tra quyền của người thêm
+  const allowedRoles = ["Người tạo", "Thành viên"];
+  if (!allowedRoles.includes(requesterMember.role_in_board)) {
+    throw new Error("Chỉ người tạo hoặc thành viên mới có quyền thêm thành viên");
+  }
+
+  // Kiểm tra user được thêm có tồn tại
+  const user = await userRepo.findById(user_id);
+  if (!user) throw new Error("Người dùng được thêm không tồn tại");
+
+  // Kiểm tra user đã là thành viên chưa
+  const existing = await boardMemberRepo.findMember(user_id, board_id);
+  if (existing) throw new Error("User đã là thành viên trong board này");
+
+  // ✅ Thêm thành viên
+  return await boardMemberRepo.addMember({ user_id, board_id, role_in_board });
+}
+
 
   async getMembers(board_id) {
     if (!mongoose.Types.ObjectId.isValid(board_id)) {
@@ -120,14 +135,17 @@ async removeMember(requester_id, user_id, board_id) {
     // Nếu người này muốn xóa người khác => phải là người tạo hoặc admin
     const isCreator = await boardRepo.isCreatorFromMember(requester_id, board_id);
     const requester = await userRepo.findById(requester_id);
+    if(!requester) throw new Error("Chỉ người tạo hoặc admin mới có quyền xóa thành viên khác");
+    const roles = await UserRoleRepo.findRoleByUser(requester_id);
+  
+  const systemRoles = roles.map(r => r.name);
 
-    // kiểm tra role hệ thống (nếu có)
-    const systemRoles = requester?.roles || []; // ví dụ: ['admin', 'System_Manager']
+  
+  //const isSystemManagerOrAdmin = systemRoles.includes("System_Manager") || systemRoles.includes("Admin");
 
-    const isSystemManagerOrAdmin =
-      systemRoles.includes("System_Manager") || systemRoles.includes("admin");
+  //if (!isCreator && !isSystemManagerOrAdmin) {
 
-    if (!isCreator && !isSystemManagerOrAdmin) {
+    if (!isCreator ) {
       throw new Error("Chỉ người tạo hoặc admin mới có quyền xóa thành viên khác");
     }
   }

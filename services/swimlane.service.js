@@ -18,9 +18,12 @@ class SwimlaneService {
     return sl;
   }
 
-  async getSwimlanesByBoard(boardId, userId) {
+  async getSwimlanesByBoard(boardId, userId ,roles = []) {
     const boardRepo = require('../repositories/board.repository');
     const isMember = await boardRepo.isMember(userId, boardId);
+     if (roles.includes('admin') || roles.includes('System_Manager')) {
+    return await swimlaneRepo.findAllByBoard(boardId);
+  }
     if (!isMember) throw new Error('Bạn không có quyền xem board này');
     return await swimlaneRepo.findAllByBoard(boardId);
   }

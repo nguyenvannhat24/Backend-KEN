@@ -34,10 +34,11 @@ class ColumnController {
   async getByBoard(req, res) {
     try {
       const userId = req.user?.id;
+       const roles = req.user?.roles || [];
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      const columns = await columnService.getColumnsByBoard(req.params.boardId, userId);
+      const columns = await columnService.getColumnsByBoard(req.params.boardId, userId ,roles);
       res.json({ success: true, data: columns });
     } catch (error) {
       console.error('❌ Column getByBoard error:', error);

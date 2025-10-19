@@ -55,19 +55,31 @@ class BoardController {
     }
   }
 
-  async getBoardDetail(req, res) {
-    try {
-      const userId = req.user?.id;
-      const { id } = req.params;
-      const board = await boardService.getBoardIfPermitted(id, userId);
-      if (board === null) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
-      if (board === 'forbidden') return res.status(403).json({ success: false, message: 'Không có quyền truy cập board này' });
-      res.json({ success: true, data: board });
-    } catch (err) {
-      console.error('❌ getBoardDetail error:', err);
-      res.status(500).json({ success: false, message: 'Lỗi server' });
+async getBoardDetail(req, res) {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const roles = req.user?.roles || []; // <-- lấy danh sách role
+
+    // Nếu là admin hoặc System_Manager => bỏ qua kiểm tra quyền
+    if (roles.includes('admin') || roles.includes('System_Manager')) {
+      const board = await boardService.getBoardById(id);
+      if (!board) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
+      return res.json({ success: true, data: board });
     }
+
+    // Còn lại: kiểm tra quyền như bình thường
+    const board = await boardService.getBoardIfPermitted(id, userId);
+    if (board === null) return res.status(404).json({ success: false, message: 'Board không tồn tại' });
+    if (board === 'forbidden') return res.status(403).json({ success: false, message: 'Không có quyền truy cập board này' });
+
+    res.json({ success: true, data: board });
+  } catch (err) {
+    console.error('❌ getBoardDetail error:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
   }
+}
+
 
   async updateBoard(req, res) {
     try {

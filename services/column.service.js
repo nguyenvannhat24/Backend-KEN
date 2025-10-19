@@ -19,9 +19,12 @@ class ColumnService {
     return col;
   }
 
-  async getColumnsByBoard(boardId, userId) {
+  async getColumnsByBoard(boardId, userId ,roles = []) {
     const boardRepo = require('../repositories/board.repository');
     const isMember = await boardRepo.isMember(userId, boardId);
+      if (roles.includes('admin') || roles.includes('System_Manager')) {
+    return await columnRepo.findAllByBoard(boardId);
+  }
     if (!isMember) throw new Error('Bạn không có quyền xem board này');
     return await columnRepo.findAllByBoard(boardId);
   }

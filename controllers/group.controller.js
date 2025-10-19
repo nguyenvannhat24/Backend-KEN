@@ -69,6 +69,23 @@ class GroupController {
       res.status(400).json({ success: false, message: err.message });
     }
   }
+
+  async adminViewBoard (req,res){
+try {
+      const { idUser , idGroup } = req.body ;
+    if(!idUser) throw new Error('chưa nhập idUser');
+    if(!idGroup) throw new Error('chưa nhập idGroup');
+      const BoardUser =  await groupService.viewBoardMember(idUser , idGroup );
+    return res.json(
+      {
+        success: true ,
+        data : BoardUser
+      }
+    )
+} catch (error) {
+   throw new Error(`lỗi lấy bảng của user: ${error.message}`);
+}
+  };
 }
 
 module.exports = new GroupController();

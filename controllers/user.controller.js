@@ -678,16 +678,22 @@ exports.getAllDeletedRecords = async (req, res) => {
 
 exports.findUsers = async (req, res) => {
   try {
-   
     const keyword = req.query.infor;
-    if (!keyword || keyword.trim() === "") {
-      return res.status(400).json({ message: "Thiếu từ khóa tìm kiếm" });
-    }
+    
+    // Cho phép tìm kiếm với keyword rỗng (sẽ trả về danh sách mặc định)
+    const result = await userService.findUsers({ infor: keyword || "" });
 
-    const result = await userService.findUsers({ infor: keyword });
-
-    return res.status(200).json(result);
+    return res.status(200).json({ 
+      success: true,
+      data: result,
+      total: result.length,
+      keyword: keyword || null
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Lỗi tìm kiếm người dùng gần đúng", error: error.message });
+    return res.status(500).json({ 
+      success: false,
+      message: "Lỗi tìm kiếm người dùng", 
+      error: error.message 
+    });
   }
 };

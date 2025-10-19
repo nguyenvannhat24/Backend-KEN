@@ -15,7 +15,12 @@ class GroupMemberService {
     const user = await userRepo.findById(user_id);
     if (!user) throw new Error("Người dùng không tồn tại");
 
-    if (["system_manager", "admin"].includes(user.role?.toLowerCase())) {
+    // Check system role
+    const systemUserRole = await UserRole.findOne({ user_id }).populate("role_id");
+    const isSystemAdmin = systemUserRole?.role_id?.name && 
+                         ["System_Manager", "admin"].includes(systemUserRole.role_id.name);
+
+    if (isSystemAdmin) {
       return true;
     }
 
@@ -29,17 +34,20 @@ class GroupMemberService {
     const requester = await userRepo.findById(requester_id);
     if (!requester) throw new Error("Người yêu cầu không tồn tại");
 
-    if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
+    // Check system role
+    const systemUserRole = await UserRole.findOne({ user_id: requester_id }).populate("role_id");
+    const isSystemAdmin = systemUserRole?.role_id?.name && 
+                         ["System_Manager", "admin"].includes(systemUserRole.role_id.name);
 
+    if (!isSystemAdmin) {
       const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
       if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
 
       const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
       
       if (requesterRole !== "người tạo" && requesterRole !== "quản trị viên") {
-        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên :",requesterRole );
+        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên");
       }
-      
     }
 
     const user = await userRepo.findById(user_id);
@@ -130,7 +138,12 @@ async removeMember({ requester_id, user_id, group_id }) {
     throw new Error("Không thể xóa thành viên cuối cùng của nhóm");
   }
 
-  if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
+  // Check system role
+  const systemUserRole = await UserRole.findOne({ user_id: requester_id }).populate("role_id");
+  const isSystemAdmin = systemUserRole?.role_id?.name && 
+                       ["System_Manager", "admin"].includes(systemUserRole.role_id.name);
+
+  if (!isSystemAdmin) {
     const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
     if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
 
@@ -194,16 +207,20 @@ async removeMember({ requester_id, user_id, group_id }) {
     const requester = await userRepo.findById(requester_id);
     if (!requester) throw new Error("Người yêu cầu không tồn tại");
 
-    if (!["system_manager", "admin"].includes(requester.role?.toLowerCase())) {
+    // Check system role
+    const systemUserRole = await UserRole.findOne({ user_id: requester_id }).populate("role_id");
+    const isSystemAdmin = systemUserRole?.role_id?.name && 
+                         ["System_Manager", "admin"].includes(systemUserRole.role_id.name);
+
+    if (!isSystemAdmin) {
       const requesterMember = await groupMemberRepo.findMember(requester_id, group_id);
 
       if (!requesterMember) throw new Error("Bạn không phải thành viên của group này");
 
       const requesterRole = requesterMember.role_in_group.toLowerCase().trim();
-if (!["người tạo", "quản trị viên", "người quản lý"].includes(requesterRole.toLowerCase())) {
-  throw new Error("Chỉ người tạo, quản trị viên hoặc người quản lý mới có thể thêm thành viên");
-}
-
+      if (!["người tạo", "quản trị viên"].includes(requesterRole)) {
+        throw new Error("Chỉ người tạo hoặc quản trị viên mới có thể thêm thành viên");
+      }
     }
 
     if (!Array.isArray(members) || members.length === 0) {

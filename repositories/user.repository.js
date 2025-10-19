@@ -446,15 +446,31 @@ async update(id, updateData) {
 async findUserSimilar(infor) {
   try {
     const keyword = infor?.trim();
-    if (!keyword) return [];
+    if (!keyword) {
+      // Nếu không có keyword, trả về danh sách user gần đây (limit 20)
+      const users = await User.find({ deleted_at: null })
+        .sort({ created_at: -1 })
+        .limit(20)
+        .lean();
+      return users;
+    }
 
+    // Tìm kiếm gần đúng với bất kỳ ký tự nào
     const users = await User.find({
-       deleted_at: { $ne: true }, 
+      deleted_at: null,
       $or: [
-        { name: { $regex: keyword, $options: "i" } },
-        { email: { $regex: keyword, $options: "i" } }
+        { username: { $regex: keyword, $options: "i" } },
+        { email: { $regex: keyword, $options: "i" } },
+        { full_name: { $regex: keyword, $options: "i" } }
       ]
-    }).lean();
+    })
+    .sort({ 
+      // Ưu tiên kết quả match với đầu tên
+      username: 1,
+      email: 1 
+    })
+    .limit(50) // Giới hạn 50 kết quả
+    .lean();
 
     return users;
   } catch (error) {

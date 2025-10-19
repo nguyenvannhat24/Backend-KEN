@@ -388,15 +388,15 @@ async  restoreUser(id) {
     }
   } 
 
-  async findUsers  (data){
-  if (!data?.infor) return [];
-  try {
-    const users = await userRepo.findUserSimilar(data.infor);
-    return users;
-  } catch (error) {
-    throw error;
+  async findUsers(data) {
+    try {
+      const keyword = data?.infor || "";
+      const users = await userRepo.findUserSimilar(keyword);
+      return users;
+    } catch (error) {
+      throw error;
+    }
   }
-};
 
 }
 module.exports = new UserService();

@@ -102,12 +102,12 @@ if (tasksInColumn.length > 0) {
   }
 
   // Lấy tasks của board
-  async getTasksByBoard(board_id) {
+  async getTasksByBoard(board_id, options = {}) {
     if (!mongoose.Types.ObjectId.isValid(board_id)) {
       throw new Error('Board ID không hợp lệ');
     }
 
-    return await taskRepo.findByBoard(board_id);
+    return await taskRepo.findByBoard(board_id, options);
   }
 
   // Lấy tasks của column

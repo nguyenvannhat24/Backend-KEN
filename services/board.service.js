@@ -7,20 +7,123 @@ const mongoose = require("mongoose");
 
 class BoardService {
 
-async selectedAll(){
-  return boardRepo.selectedAll();
+async selectedAll(options = {}) {
+  try {
+    const { filter, search, ...paginationOptions } = options;
+    
+    // Get all boards first
+    const allBoards = await boardRepo.selectedAll();
+    
+    // If no options, return all
+    if (Object.keys(options).length === 0) {
+      return {
+        boards: allBoards,
+        pagination: {
+          page: 1,
+          limit: allBoards.length,
+          total: allBoards.length,
+          pages: 1
+        }
+      };
+    }
+
+    // Apply filters and pagination
+    let filtered = allBoards;
+    
+    // Apply search
+    if (search) {
+      filtered = filtered.filter(b => 
+        b.title?.toLowerCase().includes(search.toLowerCase()) ||
+        b.description?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filter.is_template !== undefined) {
+      filtered = filtered.filter(b => b.is_template === filter.is_template);
+    }
+
+    const total = filtered.length;
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+    const skip = (page - 1) * limit;
+    
+    const boards = filtered.slice(skip, skip + limit);
+
+    return {
+      boards,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in selectedAll:', error);
+    throw error;
+  }
 }
 
-  async listBoardsForUser(userId) {
-    const memberships = await boardRepo.findMembersByUser(userId);
-    const memberBoardIds = memberships.map(m => m.board_id);
-    const createdBoards = await boardRepo.findByCreator(userId);
-    const allBoardIds = new Set([
-      ...memberBoardIds.map(id => String(id)),
-      ...createdBoards.map(b => String(b._id))
-    ]);
-    if (allBoardIds.size === 0) return [];
-    return boardRepo.findByIds(Array.from(allBoardIds));
+  async listBoardsForUser(userId, options = {}) {
+    try {
+      const { filter, search, ...paginationOptions } = options;
+      
+      const memberships = await boardRepo.findMembersByUser(userId);
+      const memberBoardIds = memberships.map(m => m.board_id);
+      const createdBoards = await boardRepo.findByCreator(userId);
+      const allBoardIds = new Set([
+        ...memberBoardIds.map(id => String(id)),
+        ...createdBoards.map(b => String(b._id))
+      ]);
+      
+      if (allBoardIds.size === 0) {
+        return {
+          boards: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            pages: 0
+          }
+        };
+      }
+
+      let boards = await boardRepo.findByIds(Array.from(allBoardIds));
+
+      // Apply search
+      if (search) {
+        boards = boards.filter(b => 
+          b.title?.toLowerCase().includes(search.toLowerCase()) ||
+          b.description?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      // Apply filters
+      if (filter.is_template !== undefined) {
+        boards = boards.filter(b => b.is_template === filter.is_template);
+      }
+
+      const total = boards.length;
+      const page = paginationOptions.page || 1;
+      const limit = paginationOptions.limit || 10;
+      const skip = (page - 1) * limit;
+      
+      const paginatedBoards = boards.slice(skip, skip + limit);
+
+      return {
+        boards: paginatedBoards,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error in listBoardsForUser:', error);
+      throw error;
+    }
   }
 
   async createBoard({ title, description, userId, is_template }) {

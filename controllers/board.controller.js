@@ -1,4 +1,5 @@
 const boardService = require('../services/board.service');
+const queryParser = require('../utils/queryParser');
 
 class BoardController {
   // đang xem theo kiêu người dùng 
@@ -7,11 +8,48 @@ class BoardController {
 
    async selectedAll (req, res)  {
   try {
-    const boards = await boardService.selectedAll();   // gọi service
-    res.json({
-      success: true,
-      data: boards
+    // Parse query params
+    const parsed = queryParser.parseQuery(req.query, {
+      allowedFilters: ['is_template'],
+      allowedSortFields: ['created_at', 'updated_at', 'title'],
+      maxLimit: 100,
+      defaults: {
+        page: 1,
+        limit: 10,
+        sortBy: 'created_at',
+        sortOrder: 'desc'
+      }
     });
+
+    // Get boards from service
+    const result = await boardService.selectedAll({
+      page: parsed.pagination.page,
+      limit: parsed.pagination.limit,
+      sortBy: parsed.metadata.sortBy,
+      sortOrder: parsed.metadata.sortOrder,
+      filter: parsed.filter,
+      search: parsed.search
+    });
+
+    // Build deep link response
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+    const response = queryParser.buildDeepLinkResponse(
+      result.boards,
+      req.query,
+      baseUrl,
+      {
+        page: parsed.pagination.page,
+        limit: parsed.pagination.limit,
+        total: result.pagination.total
+      },
+      {
+        filtersApplied: parsed.metadata.filtersApplied,
+        search: parsed.search,
+        viewState: parsed.viewState
+      }
+    );
+
+    res.json(response);
   } catch (error) {
     console.error("❌ Lỗi khi lấy danh sách board:", error);
     res.status(500).json({
@@ -23,8 +61,49 @@ class BoardController {
   async listMyBoards(req, res) {
     try {
       const userId = req.user?.id;
-      const boards = await boardService.listBoardsForUser(userId);
-      res.json({ success: true, count: boards.length, data: boards });
+      
+      // Parse query params
+      const parsed = queryParser.parseQuery(req.query, {
+        allowedFilters: ['is_template'],
+        allowedSortFields: ['created_at', 'updated_at', 'title'],
+        maxLimit: 100,
+        defaults: {
+          page: 1,
+          limit: 10,
+          sortBy: 'created_at',
+          sortOrder: 'desc'
+        }
+      });
+
+      // Get boards from service
+      const result = await boardService.listBoardsForUser(userId, {
+        page: parsed.pagination.page,
+        limit: parsed.pagination.limit,
+        sortBy: parsed.metadata.sortBy,
+        sortOrder: parsed.metadata.sortOrder,
+        filter: parsed.filter,
+        search: parsed.search
+      });
+
+      // Build deep link response
+      const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+      const response = queryParser.buildDeepLinkResponse(
+        result.boards,
+        req.query,
+        baseUrl,
+        {
+          page: parsed.pagination.page,
+          limit: parsed.pagination.limit,
+          total: result.pagination.total
+        },
+        {
+          filtersApplied: parsed.metadata.filtersApplied,
+          search: parsed.search,
+          viewState: parsed.viewState
+        }
+      );
+
+      res.json(response);
     } catch (err) {
       console.error('❌ listMyBoards error:', err);
       res.status(500).json({ success: false, message: 'Lỗi server' });

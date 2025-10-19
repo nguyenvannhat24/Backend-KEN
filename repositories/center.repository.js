@@ -1,8 +1,48 @@
 const Center = require('../models/center.model');
 
 class CenterRepository {
-  async findAll() {
-    return Center.find().lean();
+  async findAll(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        filter = {},
+        search = null
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      const query = { deleted_at: null };
+      if (filter.status) query.status = filter.status;
+
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const [centers, total] = await Promise.all([
+        Center.find(query).sort(sort).skip(skip).limit(limit).lean(),
+        Center.countDocuments(query)
+      ]);
+
+      return {
+        centers,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    }
   }
 
   async findById(id) {

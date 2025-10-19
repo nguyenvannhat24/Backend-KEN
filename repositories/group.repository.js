@@ -9,8 +9,54 @@ class GroupRepository {
     return await Group.findById(id).lean();
   }
 
-  async findAll() {
-    return await Group.find().lean();
+  async findAll(options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        filter = {},
+        search = null
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+      // Build query with filters
+      const query = { deleted_at: null };
+      if (filter.center_id) query.center_id = filter.center_id;
+
+      // Apply search
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const [groups, total] = await Promise.all([
+        Group.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Group.countDocuments(query)
+      ]);
+
+      return {
+        groups,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    }
   }
 
   async update(id, data) {

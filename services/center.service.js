@@ -1,8 +1,8 @@
 const centerRepo = require('../repositories/center.repository');
 
 class CenterService {
-  async viewAll() {
-    return await centerRepo.findAll();
+  async viewAll(options = {}) {
+    return await centerRepo.findAll(options);
   }
 
   async getById(id) {

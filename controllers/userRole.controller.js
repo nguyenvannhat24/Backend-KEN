@@ -1,6 +1,8 @@
 const userRoleService = require('../services/userRole.service');
 const rolePermissionService = require('../services/rolePermission.service');
 const permissionService = require('../services/permission.service');
+const queryParser = require('../utils/queryParser');
+
 /**
  * UserRole Controller - Xử lý các request liên quan đến UserRole
  */
@@ -14,6 +16,57 @@ class UserRoleController {
    */
   async SelectAlluserRole(req, res) {
     try {
+      // Check nếu có query params thì dùng deep linking
+      if (Object.keys(req.query).length > 0) {
+        const parsed = queryParser.parseQuery(req.query, {
+          allowedFilters: ['user_id', 'role_id', 'status'],
+          allowedSortFields: ['created_at', 'updated_at'],
+          maxLimit: 100,
+          defaults: {
+            page: 1,
+            limit: 10,
+            sortBy: 'created_at',
+            sortOrder: 'desc'
+          }
+        });
+
+        // Validate ObjectId fields
+        const validatedFilter = queryParser.validateObjectIdFields(
+          parsed.filter, 
+          ['user_id', 'role_id']
+        );
+
+        const result = await userRoleService.viewAll({
+          page: parsed.pagination.page,
+          limit: parsed.pagination.limit,
+          sortBy: parsed.metadata.sortBy,
+          sortOrder: parsed.metadata.sortOrder,
+          filter: validatedFilter,
+          search: parsed.search
+        });
+
+        // Build deep link response
+        const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+        const response = queryParser.buildDeepLinkResponse(
+          result.userRoles,
+          req.query,
+          baseUrl,
+          {
+            page: parsed.pagination.page,
+            limit: parsed.pagination.limit,
+            total: result.pagination.total
+          },
+          {
+            filtersApplied: parsed.metadata.filtersApplied,
+            search: parsed.search,
+            viewState: parsed.viewState
+          }
+        );
+
+        return res.json(response);
+      }
+
+      // Backward compatible - không có query params
       const userRoleAll = await userRoleService.viewAll();
       return res.json({
         success: true,

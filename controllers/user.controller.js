@@ -104,19 +104,47 @@ exports.deleteKeycloakUser = async (req, res) => {
 
 exports.SelectAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, sortBy = "created_at", sortOrder = "desc" } = req.query;
-
-    const userAll = await userService.getAllUsers({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sortBy,
-      sortOrder
+    const queryParser = require('../utils/queryParser');
+    
+    const parsed = queryParser.parseQuery(req.query, {
+      allowedFilters: ['status', 'typeAccount', 'role'],
+      allowedSortFields: ['created_at', 'updated_at', 'email', 'username', 'full_name'],
+      maxLimit: 100,
+      defaults: {
+        page: 1,
+        limit: 10,
+        sortBy: 'created_at',
+        sortOrder: 'desc'
+      }
     });
 
-    return res.json({
-      success: true,
-      ...userAll
+    const result = await userService.getAllUsers({
+      page: parsed.pagination.page,
+      limit: parsed.pagination.limit,
+      sortBy: parsed.metadata.sortBy,
+      sortOrder: parsed.metadata.sortOrder,
+      filter: parsed.filter,
+      search: parsed.search
     });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+    const response = queryParser.buildDeepLinkResponse(
+      result.users,
+      req.query,
+      baseUrl,
+      {
+        page: parsed.pagination.page,
+        limit: parsed.pagination.limit,
+        total: result.pagination.total
+      },
+      {
+        filtersApplied: parsed.metadata.filtersApplied,
+        search: parsed.search,
+        viewState: parsed.viewState
+      }
+    );
+
+    return res.json(response);
   } catch (error) {
     console.error('Error in SelectAll:', error);
     return res.status(500).json({ 

@@ -37,49 +37,103 @@ async findById(id) {
 }
 
   // Lấy tất cả tasks của board
-async findByBoard(board_id) {
-  const tasks = await Task.find({ board_id, deleted_at: null })
-    .populate('column_id', 'name order')
-    .populate('swimlane_id', 'name order')
-    .populate('created_by', 'username full_name')
-    .populate('assigned_to', 'username full_name')
-    .lean();
+async findByBoard(board_id, options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      sortBy = 'position',
+      sortOrder = 'asc',
+      filter = {},
+      search = null,
+      dateRange = {}
+    } = options;
 
-  // Sắp xếp column → swimlane → position
-  tasks.sort((a, b) => {
-    const colA = a.column_id?.name || '';
-    const colB = b.column_id?.name || '';
-    const swimA = a.swimlane_id?.name || '';
-    const swimB = b.swimlane_id?.name || '';
+    const skip = (page - 1) * limit;
 
-    if (colA < colB) return -1;
-    if (colA > colB) return 1;
-    if (swimA < swimB) return -1;
-    if (swimA > swimB) return 1;
-    return (a.position || 0) - (b.position || 0);
-  });
+    // Build query with filters
+    const query = { board_id, deleted_at: null };
+    
+    // Apply filters
+    if (filter.column_id) query.column_id = filter.column_id;
+    if (filter.swimlane_id) query.swimlane_id = filter.swimlane_id;
+    if (filter.assigned_to) query.assigned_to = filter.assigned_to;
+    if (filter.created_by) query.created_by = filter.created_by;
+    if (filter.priority) query.priority = filter.priority;
 
-  // Lấy tất cả task IDs
-  const taskIds = tasks.map(t => t._id);
+    // Apply date range filters
+    if (dateRange.from || dateRange.to) {
+      if (dateRange.from) {
+        query.due_date = query.due_date || {};
+        query.due_date.$gte = new Date(dateRange.from);
+      }
+      if (dateRange.to) {
+        query.due_date = query.due_date || {};
+        query.due_date.$lte = new Date(dateRange.to);
+      }
+    }
 
-  // Lấy tất cả TaskTags của board
-  const taskTags = await TaskTag.find({ task_id: { $in: taskIds } })
-    .populate('tag_id', 'name color')
-    .lean();
+    // Apply search
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-  // Gán tag cho task
-  const taskTagMap = {};
-  taskTags.forEach(tt => {
-    taskTagMap[tt.task_id.toString()] = tt.tag_id
-      ? { _id: tt.tag_id._id, name: tt.tag_id.name, color: tt.tag_id.color }
-      : null;
-  });
+    // Count total matching tasks
+    const total = await Task.countDocuments(query);
 
-  tasks.forEach(task => {
-    task.tag = taskTagMap[task._id.toString()] || null;
-  });
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-  return tasks;
+    // Get tasks with pagination
+    const tasks = await Task.find(query)
+      .populate('column_id', 'name order')
+      .populate('swimlane_id', 'name order')
+      .populate('created_by', 'username full_name')
+      .populate('assigned_to', 'username full_name')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Lấy task IDs
+    const taskIds = tasks.map(t => t._id);
+
+    if (taskIds.length > 0) {
+      // Lấy TaskTags
+      const taskTags = await TaskTag.find({ task_id: { $in: taskIds } })
+        .populate('tag_id', 'name color')
+        .lean();
+
+      // Map tags to tasks
+      const taskTagMap = {};
+      taskTags.forEach(tt => {
+        taskTagMap[tt.task_id.toString()] = tt.tag_id
+          ? { _id: tt.tag_id._id, name: tt.tag_id.name, color: tt.tag_id.color }
+          : null;
+      });
+
+      tasks.forEach(task => {
+        task.tag = taskTagMap[task._id.toString()] || null;
+      });
+    }
+
+    return {
+      tasks,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in findByBoard:', error);
+    throw error;
+  }
 }
 
   // Lấy tasks theo column

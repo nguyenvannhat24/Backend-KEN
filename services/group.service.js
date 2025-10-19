@@ -46,8 +46,8 @@ class GroupService {
     return group;
   }
 
-  async getAllGroups() {
-    return await groupRepo.findAll();
+  async getAllGroups(options = {}) {
+    return await groupRepo.findAll(options);
   }
 
   async getUserGroups(userId) {

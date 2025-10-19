@@ -2,6 +2,7 @@ const taskService = require('../services/task.service');
 const Task = require('../models/task.model');
 const taskTag = require('../repositories/taskTag.repository');
 const taskTagRepo = require('../repositories/taskTag.repository');
+const queryParser = require('../utils/queryParser');
 
 class TaskController {
   // Tạo task mới
@@ -56,17 +57,58 @@ class TaskController {
     }
   }
 
-  // Lấy tất cả tasks của board
+  // Lấy tất cả tasks của board với deep linking
   async getByBoard(req, res) {
     try {
       const { board_id } = req.params;
-      const tasks = await taskService.getTasksByBoard(board_id);
-      
-      res.json({
-        success: true,
-        count: tasks.length,
-        data: tasks
+
+      // Parse query params với queryParser
+      const parsed = queryParser.parseQuery(req.query, {
+        allowedFilters: ['column_id', 'swimlane_id', 'assigned_to', 'created_by', 'priority'],
+        allowedSortFields: ['position', 'created_at', 'due_date', 'priority', 'title'],
+        maxLimit: 200,
+        defaults: {
+          page: 1,
+          limit: 50,
+          sortBy: 'position',
+          sortOrder: 'asc'
+        }
       });
+
+      // Validate ObjectId filters
+      const validatedFilter = queryParser.validateObjectIdFields(parsed.filter, ['column_id', 'swimlane_id', 'assigned_to', 'created_by']);
+
+      // Get tasks from service
+      const result = await taskService.getTasksByBoard(board_id, {
+        page: parsed.pagination.page,
+        limit: parsed.pagination.limit,
+        sortBy: parsed.metadata.sortBy,
+        sortOrder: parsed.metadata.sortOrder,
+        filter: validatedFilter,
+        search: parsed.search,
+        dateRange: parsed.dateRange
+      });
+
+      // Build deep link response
+      const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+      const response = queryParser.buildDeepLinkResponse(
+        result.tasks,
+        req.query,
+        baseUrl,
+        {
+          page: parsed.pagination.page,
+          limit: parsed.pagination.limit,
+          total: result.pagination.total
+        },
+        {
+          filtersApplied: parsed.metadata.filtersApplied,
+          search: parsed.search,
+          viewState: parsed.viewState,
+          dateRange: parsed.dateRange
+        }
+      );
+      
+      res.json(response);
     } catch (error) {
       res.status(400).json({
         success: false,

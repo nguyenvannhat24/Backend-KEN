@@ -8,10 +8,16 @@ const roleRepository = require('../repositories/role.repository');
 class UserRoleService {
 
   /** Lấy tất cả user-role */
-  async viewAll() {
+  async viewAll(options = {}) {
     try {
-      const userRoles = await userRoleRepo.findAll();
-      return userRoles;
+      // If no options, return old format for backward compatibility
+      if (Object.keys(options).length === 0) {
+        const userRoles = await userRoleRepo.findAll();
+        return userRoles;
+      }
+      
+      // With options, return paginated format
+      return await userRoleRepo.findAll(options);
     } catch (error) {
       console.error('Error in viewAll userRoles:', error);
       throw error;

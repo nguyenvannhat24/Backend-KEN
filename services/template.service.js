@@ -15,23 +15,64 @@ class TemplateService {
     return doc;
   }
 
-async listTemplates(id_user) {
-  // 1️⃣ Lấy role admin
-  const adminRole = await roleRepository.findByName("admin");
-  if (!adminRole) throw new Error("Không tìm thấy role admin");
+async listTemplates(id_user, options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      filter = {},
+      search = null
+    } = options;
 
- const adminRoleId = adminRole._id;
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-  // 2️⃣ Lấy danh sách user có role admin
-  const adminUsers = await userRoleRepo.findUserByIdRole(adminRoleId);
-  const adminIds = adminUsers.map(u => u.user_id); // mảng các _id admin
+    // 1️⃣ Lấy role admin
+    const adminRole = await roleRepository.findByName("admin");
+    if (!adminRole) throw new Error("Không tìm thấy role admin");
 
-  // 3️⃣ Lấy template do user hiện tại hoặc admin tạo
-  const templates = await Template.find({
-    created_by: { $in: [id_user, ...adminIds] }
-  }).lean();
+    const adminRoleId = adminRole._id;
 
-  return templates;
+    // 2️⃣ Lấy danh sách user có role admin
+    const adminUsers = await userRoleRepo.findUserByIdRole(adminRoleId);
+    const adminIds = adminUsers.map(u => u.user_id);
+
+    // 3️⃣ Build query
+    const query = {
+      created_by: { $in: [id_user, ...adminIds] }
+    };
+
+    // Apply filters
+    if (filter.created_by) query.created_by = filter.created_by;
+
+    // Apply search
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [templates, total] = await Promise.all([
+      Template.find(query).sort(sort).skip(skip).limit(limit).lean(),
+      Template.countDocuments(query)
+    ]);
+
+    return {
+      templates,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in listTemplates:', error);
+    throw error;
+  }
 }
 
 

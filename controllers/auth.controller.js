@@ -118,7 +118,7 @@ class AuthController {
     // Nếu có refresh token thì thu hồi luôn
     if (refreshToken) {
       tokenBlacklist.add(refreshToken); 
-    
+
     }
 
     res.json({

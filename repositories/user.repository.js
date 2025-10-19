@@ -467,6 +467,7 @@ async findUserSimilar(infor) {
     if (!keyword) return [];
 
     const users = await User.find({
+       deleted_at: { $ne: true }, 
       $or: [
         { name: { $regex: keyword, $options: "i" } },
         { email: { $regex: keyword, $options: "i" } }

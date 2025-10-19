@@ -38,7 +38,7 @@ router.post(
 router.get(
   '/:id',
   authenticateAny,
-  authorizeAny('VIEW_BOARD'), // member hoặc creator có quyền xem
+  authorizeAny('VIEW_BOARD admin System_Manager'), // member hoặc creator có quyền xem
   boardController.getBoardDetail
 );
 

@@ -173,9 +173,14 @@ async selectedAll(options = {}) {
   async getBoardIfPermitted(boardId, userId) {
     const board = await boardRepo.findById(boardId);
     if (!board) return null;
-
+    
     const permitted = await boardRepo.isMember(userId, boardId);
+    
     return permitted ? board : 'forbidden';
+  }
+
+  async getBoardById(id){
+    return await boardRepo.findById(id);
   }
 
   async updateBoard(boardId, updateData, userId) {

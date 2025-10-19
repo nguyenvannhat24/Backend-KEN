@@ -20,7 +20,6 @@ class RoleRepository {
       }
       return role;
     } catch (error) {
-      console.error('❌ [RoleRepository] findById - Error:', error);
       throw error;
     }
   }
@@ -51,7 +50,6 @@ class RoleRepository {
       const roles = await roleModel.find().lean();
       return roles;
     } catch (error) {
-      console.error('❌ [RoleRepository] findAll - Error:', error);
       throw error;
     }
   }
@@ -115,7 +113,6 @@ async update(id, updateData) {
       const deletedRole = await roleModel.findByIdAndDelete(id).lean();
       return deletedRole;
     } catch (error) {
-      console.error('❌ [RoleRepository] delete - Error:', error);
       throw error;
     }
   }

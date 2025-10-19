@@ -12,7 +12,6 @@ class TaskTagController {
         data: result.data
       });
     } catch (error) {
-      console.error('❌ addTag error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }

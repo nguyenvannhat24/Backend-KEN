@@ -43,7 +43,6 @@ class TemplateSwimlaneRepository {
         { new: true }
       ).lean();
     } catch (error) {
-      console.error('Error soft deleting template swimlane:', error);
       throw error;
     }
   }
@@ -86,7 +85,6 @@ class TemplateSwimlaneRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all template swimlanes with deleted:', error);
       throw error;
     }
   }

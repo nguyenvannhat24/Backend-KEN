@@ -18,7 +18,6 @@ class CommentController {
         data: comment
       });
     } catch (error) {
-      console.error('❌ Comment create error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -38,7 +37,6 @@ class CommentController {
         data: comments
       });
     } catch (error) {
-      console.error('❌ Comment getByTask error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -64,7 +62,6 @@ class CommentController {
         data: comment
       });
     } catch (error) {
-      console.error('❌ Comment getById error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -98,7 +95,6 @@ class CommentController {
         data: updatedComment
       });
     } catch (error) {
-      console.error('❌ Comment update error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -130,7 +126,6 @@ class CommentController {
         message: 'Xóa comment thành công'
       });
     } catch (error) {
-      console.error('❌ Comment delete error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -154,7 +149,6 @@ class CommentController {
         data: comments
       });
     } catch (error) {
-      console.error('❌ Comment getByUser error:', error);
       res.status(500).json({
         success: false,
         message: error.message

@@ -88,7 +88,6 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Login error:', error);
       res.status(500).json({ 
         success: false,
         error: 'Lỗi server', 
@@ -127,7 +126,6 @@ class AuthController {
     });
 
   } catch (error) {
-    console.error('Logout error:', error);
     res.status(500).json({
       success: false,
       error: 'Lỗi server',
@@ -156,7 +154,6 @@ class AuthController {
         data: decoded?.payload
       });
     } catch (error) {
-      console.error('Keycloak token decode error:', error);
       res.status(500).json({ 
         success: false, 
         message: "Token không hợp lệ" 
@@ -258,7 +255,6 @@ async refreshToken(req, res) {
     });
 
   } catch (error) {
-    console.error('Refresh token error:', error);
     return res.status(500).json({
       success: false,
       error: 'Lỗi server',

@@ -105,7 +105,6 @@ class ColumnService {
       message: `Đã cập nhật thứ tự ${arrayData.length} cột cho board ${idBoard}.`,
     };
   } catch (error) {
-    console.error("Lỗi moveService:", error.message);
     return { success: false, message: error.message };
   }
 }

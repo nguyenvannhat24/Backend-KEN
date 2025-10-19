@@ -67,7 +67,6 @@ class CommentRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting comment:', error);
       throw error;
     }
   }
@@ -112,7 +111,6 @@ class CommentRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all comments with deleted:', error);
       throw error;
     }
   }

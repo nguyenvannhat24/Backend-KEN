@@ -38,7 +38,6 @@ class CommentService {
       const comment = await commentRepo.create(commentData);
       return comment;
     } catch (error) {
-      console.error('❌ [CommentService] createComment error:', error);
       throw error;
     }
   }
@@ -59,7 +58,6 @@ class CommentService {
       const comments = await commentRepo.findByTaskId(taskId);
       return comments;
     } catch (error) {
-      console.error('❌ [CommentService] getCommentsByTask error:', error);
       throw error;
     }
   }
@@ -74,7 +72,6 @@ class CommentService {
       const comment = await commentRepo.findById(id);
       return comment;
     } catch (error) {
-      console.error('❌ [CommentService] getCommentById error:', error);
       throw error;
     }
   }
@@ -165,7 +162,6 @@ if (commentUserId.toString() !== userId.toString()) {
       const comments = await commentRepo.findByUserId(userId);
       return comments;
     } catch (error) {
-      console.error('❌ [CommentService] getCommentsByUser error:', error);
       throw error;
     }
   }

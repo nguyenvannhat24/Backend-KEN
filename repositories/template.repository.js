@@ -42,7 +42,6 @@ async softDelete(id) {
       { new: true }
     );
   } catch (error) {
-    console.error('Error soft deleting template:', error);
     throw error;
   }
 
@@ -88,7 +87,6 @@ async softDelete(id) {
         }
       };
     } catch (error) {
-      console.error('Error finding all templates with deleted:', error);
       throw error;
     }
   }

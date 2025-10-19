@@ -146,7 +146,7 @@ exports.SelectAll = async (req, res) => {
 
     return res.json(response);
   } catch (error) {
-    console.error('Error in SelectAll:', error);
+    // Error logged
     return res.status(500).json({ 
       success: false,
       error: 'Lỗi server',
@@ -169,7 +169,6 @@ exports.getById = async (req, res) => {
       data: user 
     });
   } catch (err) {
-    console.error('Error in getById:', err);
     res.status(500).json({ 
       success: false,
       message: err.message 
@@ -189,7 +188,6 @@ exports.getByEmail = async (req, res) => {
       data: user 
     });
   } catch (err) {
-    console.error('Error in getByEmail:', err);
     res.status(500).json({ 
       success: false,
       message: err.message 
@@ -209,7 +207,6 @@ exports.getByName = async (req, res) => {
       data: user 
     });
   } catch (err) {
-    console.error('Error in getByName:', err);
     res.status(500).json({ 
       success: false,
       message: err.message 
@@ -229,7 +226,6 @@ exports.getByNumberPhone = async (req, res) => {
       data: user 
     });
   } catch (err) {
-    console.error('Error in getByNumberPhone:', err);
     res.status(500).json({ 
       success: false,
       message: err.message 
@@ -248,7 +244,6 @@ exports.create = async (req, res) => {
     for (const roleName of rolesFromBody) {
       const roleId = await roleSevive.getIdByName(roleName);
       if (!roleId) {
-        console.warn(`Role "${roleName}" không tồn tại, bỏ qua`);
         continue;
       }
 
@@ -265,8 +260,6 @@ exports.create = async (req, res) => {
       roles: rolesFromBody
     });
   } catch (err) {
-    console.error("Error in create user:", err);
-    
     // Xử lý lỗi duplicate key
     if (err.code === 11000) {
       if (err.keyPattern && err.keyPattern.email) {
@@ -336,7 +329,6 @@ exports.cloneUser = async (req, res) => {
 
     res.status(201).json(user);
   } catch (err) {
-    console.error("❌ cloneUser error:", err);
     res.status(400).json({ message: err.message });
   }
 };
@@ -352,7 +344,6 @@ exports.update = async (req, res) => {
       const checkUser = await userService.getUserById(req.params.id);
 
       if (!checkUser) {
-        console.warn("⚠️ Không tìm thấy user bạn muốn cập nhật");
         throw new Error("Không tìm thấy user bạn muốn cập nhật" + checkUser);
       }
 
@@ -401,8 +392,6 @@ exports.update = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("Error in update user:", err);
-    
     // Xử lý lỗi duplicate key
     if (err.code === 11000) {
       if (err.keyPattern && err.keyPattern.email) {
@@ -458,7 +447,6 @@ exports.delete = async (req, res) => {
 
     res.json({ success: true, message: 'User soft deleted successfully', data: user });
   } catch (err) {
-    console.error('Error soft deleting user:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -498,7 +486,6 @@ exports.getMe = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('getMe error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -532,14 +519,12 @@ exports.changePassword = async (req, res) => {
         await changeUserPassword(user.idSSO, new_password);
 
       } catch (kcError) {
-        console.error('❌ Lỗi đổi mật khẩu Keycloak:', kcError);
-      }
+        }
     }
 
     res.json({ success: true, message: 'Đổi mật khẩu thành công' });
 
   } catch (error) {
-    console.error('changePassword error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
@@ -558,7 +543,6 @@ exports.searchUsers = async (req, res) => {
 
     return res.json({ success: true, users });
   } catch (error) {
-    console.error('Search error:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -608,7 +592,6 @@ exports.updateMyProfile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ updateMyProfile error:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
@@ -624,13 +607,11 @@ exports.softDelete = async (req, res) => {
       try {
         await updateUser(user.idSSO, { enabled: false });
       } catch (err) {
-        console.error('Failed to disable Keycloak user:', err);
-      }
+        }
     }
     
     res.json({ success: true, message: 'User soft deleted successfully', data: user });
   } catch (error) {
-    console.error('Error soft deleting user:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -646,13 +627,11 @@ exports.restore = async (req, res) => {
       try {
         await updateUser(user.idSSO, { enabled: true });
       } catch (err) {
-        console.error('Failed to enable Keycloak user:', err);
-      }
+        }
     }
     
     res.json({ success: true, message: 'User restored successfully', data: user });
   } catch (error) {
-    console.error('Error restoring user:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -670,7 +649,6 @@ exports.getAllWithDeleted = async (req, res) => {
     
     res.json({ success: true, ...result });
   } catch (error) {
-    console.error('Error getting users with deleted:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -689,7 +667,6 @@ exports.getAllDeletedRecords = async (req, res) => {
     
     res.json(result);
   } catch (error) {
-    console.error('Error in getAllDeletedRecords:', error);
     return res.status(500).json({ 
       success: false, 
       message: 'Lỗi server',
@@ -711,7 +688,6 @@ exports.findUsers = async (req, res) => {
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("Lỗi tìm kiếm người dùng gần đúng:", error);
     return res.status(500).json({ message: "Lỗi tìm kiếm người dùng gần đúng", error: error.message });
   }
 };

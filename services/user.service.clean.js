@@ -25,7 +25,6 @@ class UserService {
 
       return user;
     } catch (error) {
-      console.error('Error validating user:', error.message);
       return null;
     }
   }
@@ -52,7 +51,6 @@ class UserService {
     try {
       return await userRepo.findAll(options);
     } catch (error) {
-      console.error('Error in getAllUsers:', error.message);
       throw error;
     }
   }
@@ -61,7 +59,6 @@ class UserService {
     try {
       return await userRepo.findById(id);
     } catch (error) {
-      console.error('Error in getUserById:', error.message);
       throw error;
     }
   }
@@ -70,7 +67,6 @@ class UserService {
     try {
       return await userRepo.findByEmail(email);
     } catch (error) {
-      console.error('Error in getUserByEmail:', error.message);
       throw error;
     }
   }
@@ -79,7 +75,6 @@ class UserService {
     try {
       return await userRepo.findByUsername(username);
     } catch (error) {
-      console.error('Error in getUserByUsername:', error.message);
       throw error;
     }
   }
@@ -92,7 +87,6 @@ class UserService {
       }
       return await userRepo.create(userData);
     } catch (error) {
-      console.error('Error in createUser:', error.message);
       throw error;
     }
   }
@@ -102,7 +96,6 @@ class UserService {
       userData.typeAccount = 'SSO';
       return await userRepo.create(userData);
     } catch (error) {
-      console.error('Error in createUserSSO:', error.message);
       throw error;
     }
   }
@@ -115,7 +108,6 @@ class UserService {
       }
       return await userRepo.updateById(id, updateData);
     } catch (error) {
-      console.error('Error in updateUser:', error.message);
       throw error;
     }
   }
@@ -124,7 +116,6 @@ class UserService {
     try {
       return await userRepo.deleteById(id);
     } catch (error) {
-      console.error('Error in deleteUser:', error.message);
       throw error;
     }
   }
@@ -137,7 +128,6 @@ class UserService {
       }
       return user;
     } catch (error) {
-      console.error('Error soft deleting user:', error.message);
       throw error;
     }
   }
@@ -150,7 +140,6 @@ class UserService {
       }
       return user;
     } catch (error) {
-      console.error('Error restoring user:', error.message);
       throw error;
     }
   }
@@ -159,7 +148,6 @@ class UserService {
     try {
       return await userRepo.findAllWithDeleted(options);
     } catch (error) {
-      console.error('Error in getAllUsersWithDeleted:', error.message);
       throw error;
     }
   }
@@ -168,7 +156,6 @@ class UserService {
     try {
       return await userRepo.search(keyword, options);
     } catch (error) {
-      console.error('Error in searchUsers:', error.message);
       throw error;
     }
   }
@@ -177,7 +164,6 @@ class UserService {
     try {
       return await userRepo.searchAll(keyword, page, limit);
     } catch (error) {
-      console.error('Error in searchAllUsers:', error.message);
       throw error;
     }
   }
@@ -192,7 +178,6 @@ class UserService {
       
       return await userRepo.findDeleted(options);
     } catch (error) {
-      console.error('Error in getAllDeletedRecords:', error.message);
       throw error;
     }
   }

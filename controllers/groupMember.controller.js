@@ -41,7 +41,6 @@ class GroupMemberController {
         });
 
       } catch (err) {
-        console.error('❌ [addMember ERROR]:', err.message);
         res.status(400).json({ success: false, message: err.message });
       }
     }
@@ -66,7 +65,6 @@ class GroupMemberController {
       res.json({ success: true, data: members });
 
     } catch (err) {
-      console.error('❌ [getMembersByGroup ERROR]:', err.message);
       res.status(400).json({ success: false, message: err.message });
     }
   }
@@ -104,7 +102,6 @@ class GroupMemberController {
         data: member 
       });
     } catch (err) {
-      console.error('❌ [updateMember ERROR]:', err.message);
       res.status(400).json({ 
         success: false, 
         message: err.message 

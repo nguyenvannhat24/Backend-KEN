@@ -85,7 +85,6 @@ const withDeepLink = (serviceMethod, options = {}) => {
 
       return res.json(response);
     } catch (error) {
-      console.error('Deep link handler error:', error);
       return res.status(500).json({
         success: false,
         message: error.message || 'Internal server error'

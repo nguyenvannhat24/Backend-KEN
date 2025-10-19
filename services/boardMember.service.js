@@ -97,7 +97,6 @@ async updateRole(requester_id, user_id, board_id, role_in_board) {
   // Lấy thông tin thành viên bị đổi role
   const targetMember = await boardMemberRepo.findMember(user_id, board_id);
   if (!targetMember) throw new Error("Không tìm thấy thành viên trong board");
-  console.log('targetMember :',targetMember.role_in_board)
   // Không được hạ cấp người tạo cuối cùng
   if (targetMember.role_in_board === "Người tạo") {
     const creatorCount = await boardMemberRepo.countCreators(board_id);

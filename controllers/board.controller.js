@@ -51,7 +51,6 @@ class BoardController {
 
     res.json(response);
   } catch (error) {
-    console.error("❌ Lỗi khi lấy danh sách board:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server"
@@ -105,7 +104,6 @@ class BoardController {
 
       res.json(response);
     } catch (err) {
-      console.error('❌ listMyBoards error:', err);
       res.status(500).json({ success: false, message: 'Lỗi server' });
     }
   }
@@ -116,7 +114,6 @@ class BoardController {
       const boards = await boardService.listBoardsForUser(userId);
       res.json({ success: true, count: boards.length, data: boards });
     } catch (err) {
-      console.error('❌ listMyBoards error:', err);
       res.status(500).json({ success: false, message: 'Lỗi server' });
     }
   }
@@ -129,7 +126,6 @@ class BoardController {
 
       res.status(201).json({ success: true, data: board });
     } catch (err) {
-      console.error('❌ createBoard error:', err);
       res.status(400).json({ success: false, message: err.message });
     }
   }
@@ -154,7 +150,6 @@ async getBoardDetail(req, res) {
 
     res.json({ success: true, data: board });
   } catch (err) {
-    console.error('❌ getBoardDetail error:', err);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 }
@@ -171,7 +166,6 @@ async getBoardDetail(req, res) {
       if (err.message === 'FORBIDDEN') {
         return res.status(403).json({ success: false, message: 'Không có quyền cập nhật board này' });
       }
-      console.error('❌ updateBoard error:', err);
       res.status(500).json({ success: false, message: 'Lỗi server' });
     }
   }
@@ -186,7 +180,6 @@ async getBoardDetail(req, res) {
       if (err.message === 'FORBIDDEN') {
         return res.status(403).json({ success: false, message: 'Chỉ creator được phép xóa board' });
       }
-      console.error('❌ deleteBoard error:', err);
       res.status(500).json({ success: false, message: 'Lỗi server' });
     }
   }
@@ -222,7 +215,6 @@ async getBoardDetail(req, res) {
 
       return res.status(201).json({ success: true, data: result });
     } catch (error) {
-      console.error('❌ Clone board error:', error);
       return res.status(500).json({
         success: false,
         message: error.message || 'Clone board thất bại'
@@ -254,7 +246,6 @@ async getBoardDetail(req, res) {
         data: result
       });
     } catch (error) {
-      console.error('❌ Configure board settings error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -281,7 +272,6 @@ async getBoardDetail(req, res) {
         data: result
       });
     } catch (error) {
-      console.error('❌ Toggle swimlane error:', error);
       res.status(400).json({
         success: false,
         message: error.message

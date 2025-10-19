@@ -54,7 +54,6 @@ class GroupRepository {
         }
       };
     } catch (error) {
-      console.error('Error in findAll:', error);
       throw error;
     }
   }
@@ -88,7 +87,6 @@ async softDelete(id) {
       { new: true }
     );
   } catch (error) {
-    console.error('Error soft deleting group:', error);
     throw error;
   }
 }
@@ -131,7 +129,6 @@ async findAllWithDeleted(options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error finding all groups with deleted:', error);
     throw error;
   }
 }

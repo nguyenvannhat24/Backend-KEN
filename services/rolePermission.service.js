@@ -99,7 +99,6 @@ async updateByRoleId(roleId, permissionIds) {
       const count = await UserRole.countDocuments({ role_id: role._id, status: 'active' });
       return count;
     } catch (error) {
-      console.error("❌ Lỗi khi đếm user theo role:", error);
       return 0;
     }
   }
@@ -161,7 +160,6 @@ async updateRolePermissions(userId, permissionIds) {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    console.error("❌ Lỗi khi cập nhật role/permission:", err);
     throw err;
   }
 }

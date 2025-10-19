@@ -38,8 +38,7 @@
 
 //   jwt.verify(token, getKey, {}, (err, decoded) => {
 //     if (err) {
-//       console.error('❌ Keycloak auth error:', err.message);
-//       return res.status(401).json({
+//       //       return res.status(401).json({
 //         success: false,
 //         message: 'Token không hợp lệ hoặc hết hạn'
 //       });
@@ -53,7 +52,7 @@
 //       roles: decoded.realm_access?.roles || []
 //     };
 
-//     console.log(`🔐 Authenticated Keycloak user: ${req.user.email} (${req.user.roles.join(',')})`);
+//     })`);
 //     next();
 //   });
 // };

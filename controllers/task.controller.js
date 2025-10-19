@@ -214,7 +214,6 @@ async update(req, res) {
       data: updatedTask
     });
   } catch (error) {
-    console.error("❌ update task error:", error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -407,7 +406,6 @@ tasks.sort((a, b) => {
       data: tasks
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Lỗi khi lấy task theo column trong board'

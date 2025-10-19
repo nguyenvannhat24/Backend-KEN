@@ -11,7 +11,6 @@ class ColumnController {
       const column = await columnService.createColumn({ board_id, name, order, userId });
       res.status(201).json({ success: true, data: column });
     } catch (error) {
-      console.error('❌ Column create error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -26,7 +25,6 @@ class ColumnController {
       if (!column) return res.status(404).json({ success: false, message: 'Column không tồn tại' });
       res.json({ success: true, data: column });
     } catch (error) {
-      console.error('❌ Column getOne error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -41,7 +39,6 @@ class ColumnController {
       const columns = await columnService.getColumnsByBoard(req.params.boardId, userId ,roles);
       res.json({ success: true, data: columns });
     } catch (error) {
-      console.error('❌ Column getByBoard error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -56,7 +53,6 @@ class ColumnController {
       if (!column) return res.status(404).json({ success: false, message: 'Column không tồn tại' });
       res.json({ success: true, data: column });
     } catch (error) {
-      console.error('❌ Column update error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -71,7 +67,6 @@ class ColumnController {
       if (!column) return res.status(404).json({ success: false, message: 'Column không tồn tại' });
       res.json({ success: true, message: 'Xóa column thành công' });
     } catch (error) {
-      console.error('❌ Column delete error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -101,7 +96,6 @@ class ColumnController {
         data: result 
       });
     } catch (error) {
-      console.error('❌ Column reorder error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -121,7 +115,6 @@ class ColumnController {
       }
      )
     } catch (error) {
-      console.error('❌ Column  error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }

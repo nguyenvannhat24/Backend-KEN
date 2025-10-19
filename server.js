@@ -104,5 +104,5 @@ app.use('/api/uploads', express.static('uploads'));
 
 // --- Start server ---
 app.listen(port, () => {
-  console.log(`✅ Server is running at http://localhost:${port}`);
+  // Server started successfully
 });

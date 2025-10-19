@@ -88,12 +88,10 @@ const authenticateAny = async (req, res, next) => {
 
       return next();
     } catch (errKC) {
-      console.error('❌ [AUTH] Keycloak verification failed:', errKC.response?.data || errKC.message);
       return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc hết hạn' });
     }
 
   } catch (err) {
-    console.error('❌ [AUTH] Lỗi trong authenticateAny:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -139,7 +137,6 @@ const authorizeAny = (allowed) => async (req, res, next) => {
     });
 
   } catch (err) {
-    console.error('Error in authorizeAny:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

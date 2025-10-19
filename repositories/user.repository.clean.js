@@ -5,7 +5,6 @@ class UserRepository {
     try {
       return await User.findById(id).lean();
     } catch (error) {
-      console.error('Error finding user by ID:', error);
       throw error;
     }
   }
@@ -17,7 +16,6 @@ class UserRepository {
       const { password, password_hash, ...profile } = user;
       return profile;
     } catch (error) {
-      console.error('Error getting user profile:', error);
       throw error;
     }
   }
@@ -26,7 +24,6 @@ class UserRepository {
     try {
       return await User.findOne({ email: email.toLowerCase().trim() }).exec();
     } catch (error) {
-      console.error('Error finding user by email:', error);
       throw error;
     }
   }
@@ -35,7 +32,6 @@ class UserRepository {
     try {
       return await User.findOne({ username: username.trim() }).lean();
     } catch (error) {
-      console.error('Error finding user by username:', error);
       throw error;
     }
   }
@@ -44,7 +40,6 @@ class UserRepository {
     try {
       return await User.findOne({ phone_number: phoneNumber }).lean();
     } catch (error) {
-      console.error('Error finding user by phone number:', error);
       throw error;
     }
   }
@@ -76,7 +71,6 @@ class UserRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all users:', error);
       throw error;
     }
   }
@@ -85,7 +79,6 @@ class UserRepository {
     try {
       return await User.create(userData);
     } catch (error) {
-      console.error('Error creating user:', error);
       throw error;
     }
   }
@@ -95,7 +88,6 @@ class UserRepository {
       updateData.updated_at = new Date();
       return await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).lean();
     } catch (error) {
-      console.error('Error updating user:', error);
       throw error;
     }
   }
@@ -104,7 +96,6 @@ class UserRepository {
     try {
       return await User.findByIdAndDelete(id).lean();
     } catch (error) {
-      console.error('Error deleting user:', error);
       throw error;
     }
   }
@@ -144,7 +135,6 @@ class UserRepository {
         }
       };
     } catch (error) {
-      console.error('Error searching users:', error);
       throw error;
     }
   }
@@ -178,7 +168,6 @@ class UserRepository {
         }
       };
     } catch (error) {
-      console.error('Error searching all users:', error);
       throw error;
     }
   }
@@ -194,7 +183,6 @@ class UserRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting user:', error);
       throw error;
     }
   }
@@ -210,7 +198,6 @@ class UserRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error restoring user:', error);
       throw error;
     }
   }
@@ -249,7 +236,6 @@ class UserRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all users with deleted:', error);
       throw error;
     }
   }
@@ -283,7 +269,6 @@ class UserRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding deleted users:', error);
       throw error;
     }
   }

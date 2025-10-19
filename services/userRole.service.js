@@ -19,7 +19,6 @@ class UserRoleService {
       // With options, return paginated format
       return await userRoleRepo.findAll(options);
     } catch (error) {
-      console.error('Error in viewAll userRoles:', error);
       throw error;
     }
   }
@@ -33,7 +32,6 @@ class UserRoleService {
       }
       return role;
     } catch (error) {
-      console.error('Error in getRole:', error);
       throw error;
     }
   }
@@ -44,7 +42,6 @@ class UserRoleService {
       const roles = await userRoleRepo.findRolesByUser(userId);
       return roles;
     } catch (error) {
-      console.error('Error in getRoles:', error);
       throw error;
     }
   }
@@ -68,7 +65,6 @@ async create(userRoleData) {
     const newUserRole = await userRoleRepo.create(userRoleData);
     return newUserRole;
   } catch (error) {
-    console.error('Error in create userRole:', error.message);
     throw error;
   }
 }
@@ -96,7 +92,6 @@ async create(userRoleData) {
       const updatedUserRole = await userRoleRepo.update(userRoleId, updateData);
       return updatedUserRole;
     } catch (error) {
-      console.error('Error in update userRole:', error.message);
       throw error;
     }
   }
@@ -113,7 +108,6 @@ async create(userRoleData) {
       const deleted = await userRoleRepo.delete(userRoleId);
       return deleted;
     } catch (error) {
-      console.error('Error in delete userRole:', error.message);
       throw error;
     }
   }
@@ -144,7 +138,6 @@ async create(userRoleData) {
 
       return result;
     } catch (error) {
-      console.error('Error in deleteByUser:', error.message);
       throw error;
     }
   }

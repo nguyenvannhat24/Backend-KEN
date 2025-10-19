@@ -5,7 +5,6 @@ class UserRepository {
     try {
       return await User.findById(id).lean();
     } catch (error) {
-      console.error('Error finding user by ID:', error);
       throw error;
     }
   }
@@ -17,7 +16,6 @@ class UserRepository {
       const { password, password_hash, ...profile } = user;
       return profile;
     } catch (error) {
-      console.error('Error getting user profile:', error);
       throw error;
     }
   }
@@ -26,7 +24,6 @@ class UserRepository {
     try {
       return await User.findOne({ email: email.toLowerCase().trim() }).exec();
     } catch (error) {
-      console.error('Error finding user by email:', error);
       throw error;
     }
   }
@@ -35,7 +32,6 @@ class UserRepository {
     try {
       return await User.findOne({ username: username.trim() }).lean();
     } catch (error) {
-      console.error('Error finding user by username:', error);
       throw error;
     }
   }
@@ -44,7 +40,6 @@ class UserRepository {
     try {
       return await User.findOne({ phone_number: phoneNumber }).lean();
     } catch (error) {
-      console.error('Error finding user by phone number:', error);
       throw error;
     }
   }
@@ -181,7 +176,6 @@ async findAll(options = {}) {
       }
     };
   } catch (error) {
-    console.error("Error finding all users:", error);
     throw error;
   }
 }
@@ -190,7 +184,6 @@ async findAll(options = {}) {
     try {
       return await User.create(userData);
     } catch (error) {
-      console.error('Error creating user:', error);
       throw error;
     }
   }
@@ -200,7 +193,6 @@ async findAll(options = {}) {
       updateData.updated_at = new Date();
       return await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).lean();
     } catch (error) {
-      console.error('Error updating user:', error);
       throw error;
     }
   }
@@ -209,7 +201,6 @@ async findAll(options = {}) {
     try {
       return await User.findByIdAndDelete(id).lean();
     } catch (error) {
-      console.error('Error deleting user:', error);
       throw error;
     }
   }
@@ -249,7 +240,6 @@ async findAll(options = {}) {
         }
       };
     } catch (error) {
-      console.error('Error searching users:', error);
       throw error;
     }
   }
@@ -283,7 +273,6 @@ async findAll(options = {}) {
         }
       };
     } catch (error) {
-      console.error('Error searching all users:', error);
       throw error;
     }
   }
@@ -304,7 +293,6 @@ async findAll(options = {}) {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting user:', error);
       throw error;
     }
   }
@@ -320,7 +308,6 @@ async findAll(options = {}) {
         { new: true }
       );
     } catch (error) {
-      console.error('Error restoring user:', error);
       throw error;
     }
   }
@@ -359,7 +346,6 @@ async findAll(options = {}) {
         }
       };
     } catch (error) {
-      console.error('Error finding all users with deleted:', error);
       throw error;
     }
   }
@@ -421,7 +407,6 @@ async findAll(options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error finding deleted users:', error);
     throw error;
   }
 }
@@ -433,7 +418,6 @@ async isEmailExists(email, excludeUserId = null) {
     const existingUser = await User.findOne(query).lean();
     return !!existingUser;
   } catch (error) {
-    console.error('Error checking existing email:', error);
     throw error;
   }
 }
@@ -445,7 +429,6 @@ async isUsernameExists(username, excludeUserId = null) {
     const existingUser = await User.findOne(query).lean();
     return !!existingUser;
   } catch (error) {
-    console.error('Error checking existing username:', error);
     throw error;
   }
 }
@@ -454,7 +437,6 @@ async findbyIdSSO(idSSO) {
   try {
     return await User.findOne({ idSSO }).lean();
   } catch (error) {
-    console.error('Error finding user by idSSO:', error);
     throw error;
   }
 }
@@ -476,7 +458,6 @@ async findUserSimilar(infor) {
 
     return users;
   } catch (error) {
-    console.error("Error finding similar users:", error);
     throw error;
   }
 }

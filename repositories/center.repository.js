@@ -40,7 +40,6 @@ class CenterRepository {
         }
       };
     } catch (error) {
-      console.error('Error in findAll:', error);
       throw error;
     }
   }
@@ -80,7 +79,6 @@ class CenterRepository {
         { new: true }
       ).lean();
     } catch (error) {
-      console.error('Error soft deleting center:', error);
       throw error;
     }
   }
@@ -123,7 +121,6 @@ class CenterRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all centers with deleted:', error);
       throw error;
     }
   }

@@ -108,7 +108,6 @@ class TagRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all tags with deleted:', error);
       throw error;
     }
   }
@@ -121,8 +120,7 @@ class TagRepository {
      }) ;
      return tag
    } catch (error) {
-     console.error('Error finding findByNameAndIdBoard:', error);
-      throw error;
+     throw error;
    }  
 
   }

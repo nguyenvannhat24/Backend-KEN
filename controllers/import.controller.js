@@ -67,7 +67,6 @@ class ImportController {
         }
       });
     } catch (error) {
-      console.error('❌ Import tasks error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -82,12 +81,10 @@ class ImportController {
       
       res.download(templatePath, 'task-import-template.csv', (err) => {
         if (err) {
-          console.error('❌ Download template error:', err);
           res.status(500).json({ success: false, message: 'Lỗi khi tải template' });
         }
       });
     } catch (error) {
-      console.error('❌ Get template error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -110,7 +107,6 @@ class ImportController {
         data: history
       });
     } catch (error) {
-      console.error('❌ Get import history error:', error);
       res.status(500).json({
         success: false,
         message: error.message

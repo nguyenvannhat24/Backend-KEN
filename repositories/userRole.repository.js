@@ -128,7 +128,6 @@ class UserRoleRepository {
                 }
             };
         } catch (error) {
-            console.error('Error in findAll with options:', error);
             throw error;
         }
     }
@@ -187,7 +186,6 @@ class UserRoleRepository {
 
     return count;
   } catch (error) {
-    console.error('❌ Lỗi khi đếm người dùng theo role_id:', error);
     return 0;
   }
 }
@@ -264,7 +262,6 @@ const hasSystemManager = currentRoles.some(
       const userRole = await UserRole.findById(userRoleId).lean();
       return userRole; 
     } catch (error) {
-      console.error('❌ Error in UserRoleRepository.findById:', error);
       throw error;
     }
   }
@@ -285,7 +282,6 @@ const hasSystemManager = currentRoles.some(
 
       return usersWithRole;
     } catch (error) {
-      console.error("❌ Error in findByRoleId:", error);
       throw error;
     }
   }

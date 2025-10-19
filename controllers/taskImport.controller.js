@@ -63,7 +63,6 @@ exports.importTasks = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('❌ Lỗi import:', err);
     res.status(500).json({
       message: 'Import thất bại!',
       error: err.message,

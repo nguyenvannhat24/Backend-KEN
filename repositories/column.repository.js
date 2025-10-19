@@ -45,7 +45,6 @@ class ColumnRepository {
         { new: true }
       );
     } catch (error) {
-      console.error('Error soft deleting column:', error);
       throw error;
     }
   }
@@ -88,7 +87,6 @@ class ColumnRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all columns with deleted:', error);
       throw error;
     }
   }

@@ -16,7 +16,6 @@ class RoleService {
       const roles = await RoleRepository.findAll();
       return roles;
     } catch (error) {
-      console.error('❌ [RoleService] getAllRoles - Error:', error);
       throw error;
     }
   }
@@ -34,7 +33,6 @@ class RoleService {
       }
       return role;
     } catch (error) {
-      console.error('❌ [RoleService] getRoleById - Error:', error);
       throw error;
     }
   }
@@ -52,7 +50,6 @@ class RoleService {
       }
       return role;
     } catch (error) {
-      console.error('❌ [RoleService] getRoleByName - Error:', error);
       throw error;
     }
   }
@@ -79,7 +76,6 @@ class RoleService {
       const newRole = await RoleRepository.create(roleData);
       return newRole;
     } catch (error) {
-      console.error('❌ [RoleService] createRole - Error:', error);
       throw error;
     }
   }
@@ -116,7 +112,6 @@ class RoleService {
     const updatedRole = await RoleRepository.update(id, updateData);
     return updatedRole;
   } catch (error) {
-    console.error('❌ [RoleService] updateRole - Error:', error);
     throw error;
   }
 }
@@ -150,7 +145,6 @@ async deleteRole(id) {
     const deletedRole = await RoleRepository.delete(id);
     return deletedRole;
   } catch (error) {
-    console.error('❌ [RoleService] deleteRole - Error:', error);
     throw error;
   }
 }
@@ -166,7 +160,6 @@ async getUserRoles(userId) {
     const roles = await RoleRepository.GetRoles(userId);
     return roles;
   } catch (error) {
-    console.error('❌ [RoleService] getUserRoles - Error:', error);
     throw error;
   }
 }
@@ -186,7 +179,6 @@ async getUserRoles(userId) {
          return await RoleRepository.getIdByName(nameRole);
 
     } catch (error) {
-      console.error('lỗi ở getIDByName service' + error);
       throw error;
     }
   };

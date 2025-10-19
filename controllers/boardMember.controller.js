@@ -8,7 +8,6 @@ class BoardMemberController {
   async getBoardsByUser(req, res) {
     try {
       const user_id = req.user?.id || req.user?._id;
-      console.log(req.user)
       const { roles = [] } = req.query; // Query params thay vì body
 
       const boards = await boardMemberService.getBoardsByUser(
@@ -18,7 +17,6 @@ class BoardMemberController {
 
       res.json({ success: true, data: boards });
     } catch (error) {
-      console.error("❌ Lỗi getBoardsByUser:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -31,7 +29,6 @@ class BoardMemberController {
       const member = await boardMemberService.selectAll();
       res.status(201).json({ success: true, data: member });
     } catch (err) {
-      console.error("❌ select error:", err);
       res.status(400).json({ success: false, message: err.message });
     }
   }
@@ -44,7 +41,6 @@ class BoardMemberController {
       const member = await boardMemberService.addMember({requester_id, user_id, board_id, role_in_board });
       res.status(201).json({ success: true, data: member });
     } catch (err) {
-      console.error("❌ addMember error:", err);
       res.status(400).json({ success: false, message: err.message });
     }
   }

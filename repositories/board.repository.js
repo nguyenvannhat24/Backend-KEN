@@ -91,7 +91,6 @@ async getBoardById(board_id){
 try {
       return await Board.findById(board_id).lean();
     } catch (error) {
-      console.error('Error finding user by ID:', error);
       throw error;
     }
 }
@@ -109,7 +108,6 @@ async softDelete(id) {
       { new: true }
     );
   } catch (error) {
-    console.error('Error soft deleting board:', error);
     throw error;
   }
 }
@@ -155,7 +153,6 @@ async findAllWithDeleted(options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error finding all boards with deleted:', error);
     throw error;
   }
 }
@@ -163,7 +160,6 @@ async findOne(filter) {
   try {
     return await Board.findOne(filter).lean();
   } catch (error) {
-    console.error('Error in findOne:', error);
     throw error;
   }
 }
@@ -184,7 +180,6 @@ async findAllWithDeleted(options = {}) {
         pagination: { page, limit, total, pages: Math.ceil(total / limit) }
       };
     } catch (error) {
-      console.error('Error finding all boards with deleted:', error);
       throw error;
     }
   }

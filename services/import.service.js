@@ -51,7 +51,6 @@ class ImportService {
 
       return result;
     } catch (error) {
-      console.error('❌ [ImportService] importTasksFromFile error:', error);
       throw error;
     }
   }
@@ -196,7 +195,6 @@ class ImportService {
       fs.writeFileSync(templatePath, csvContent);
       return templatePath;
     } catch (error) {
-      console.error('❌ [ImportService] generateTemplateFile error:', error);
       throw error;
     }
   }
@@ -240,7 +238,6 @@ class ImportService {
 
       return history;
     } catch (error) {
-      console.error('❌ [ImportService] getImportHistory error:', error);
       throw error;
     }
   }

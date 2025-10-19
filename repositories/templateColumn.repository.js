@@ -43,7 +43,6 @@ class TemplateColumnRepository {
         { new: true }
       ).lean();
     } catch (error) {
-      console.error('Error soft deleting template column:', error);
       throw error;
     }
   }
@@ -86,7 +85,6 @@ class TemplateColumnRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding all template columns with deleted:', error);
       throw error;
     }
   }

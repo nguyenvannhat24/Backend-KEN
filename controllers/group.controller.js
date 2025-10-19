@@ -16,7 +16,6 @@ class GroupController {
       });
       res.json({ success: true, data: group });
     } catch (err) {
-      console.error('❌ [GROUP CREATE ERROR]:', err.message);
       res.status(400).json({ success: false, message: err.message });
     }
   }

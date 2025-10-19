@@ -70,7 +70,6 @@ async listTemplates(id_user, options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error in listTemplates:', error);
     throw error;
   }
 }

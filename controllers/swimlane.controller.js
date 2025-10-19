@@ -11,7 +11,6 @@ class SwimlaneController {
       const swimlane = await swimlaneService.createSwimlane({ board_id, name, order, userId });
       res.status(201).json({ success: true, data: swimlane });
     } catch (error) {
-      console.error('❌ Swimlane create error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -26,7 +25,6 @@ class SwimlaneController {
       if (!swimlane) return res.status(404).json({ success: false, message: 'Swimlane không tồn tại' });
       res.json({ success: true, data: swimlane });
     } catch (error) {
-      console.error('❌ Swimlane getOne error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -41,7 +39,6 @@ class SwimlaneController {
       const swimlanes = await swimlaneService.getSwimlanesByBoard(req.params.boardId, userId,roles);
       res.json({ success: true, data: swimlanes });
     } catch (error) {
-      console.error('❌ Swimlane getByBoard error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -56,7 +53,6 @@ class SwimlaneController {
       if (!swimlane) return res.status(404).json({ success: false, message: 'Swimlane không tồn tại' });
       res.json({ success: true, data: swimlane });
     } catch (error) {
-      console.error('❌ Swimlane update error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -71,7 +67,6 @@ class SwimlaneController {
       if (!swimlane) return res.status(404).json({ success: false, message: 'Swimlane không tồn tại' });
       res.json({ success: true, message: 'Xóa swimlane thành công' });
     } catch (error) {
-      console.error('❌ Swimlane delete error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -103,7 +98,6 @@ class SwimlaneController {
         data: swimlane 
       });
     } catch (error) {
-      console.error('❌ Swimlane toggleCollapse error:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -136,7 +130,6 @@ async reorder(req, res) {
       data: result,
     });
   } catch (error) {
-    console.error('❌ Swimlane reorder error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 }

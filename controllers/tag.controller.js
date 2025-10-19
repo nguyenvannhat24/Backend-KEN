@@ -13,7 +13,6 @@ class TagController {
         data: tag
       });
     } catch (error) {
-      console.error('❌ Tag create error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -32,7 +31,6 @@ class TagController {
         data: tags
       });
     } catch (error) {
-      console.error('❌ Tag getAll error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -58,7 +56,6 @@ class TagController {
         data: tag
       });
     } catch (error) {
-      console.error('❌ Tag getById error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -86,7 +83,6 @@ class TagController {
         data: updatedTag
       });
     } catch (error) {
-      console.error('❌ Tag update error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -112,7 +108,6 @@ class TagController {
         message: 'Xóa tag thành công'
       });
     } catch (error) {
-      console.error('❌ Tag delete error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -132,7 +127,6 @@ class TagController {
         data: tags
       });
     } catch (error) {
-      console.error('❌ Tag getByTask error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -152,7 +146,6 @@ class TagController {
         data: result
       });
     } catch (error) {
-      console.error('❌ Tag addTagToTask error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -172,7 +165,6 @@ class TagController {
         data: result
       });
     } catch (error) {
-      console.error('❌ Tag removeTagFromTask error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -192,7 +184,6 @@ async getTagsByBoard(req, res) {
       data: tags
     });
   } catch (error) {
-    console.error('❌ getTagsByBoard error:', error);
     res.status(400).json({
       success: false,
       message: error.message

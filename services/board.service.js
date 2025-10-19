@@ -60,7 +60,6 @@ async selectedAll(options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error in selectedAll:', error);
     throw error;
   }
 }
@@ -121,7 +120,6 @@ async selectedAll(options = {}) {
         }
       };
     } catch (error) {
-      console.error('Error in listBoardsForUser:', error);
       throw error;
     }
   }
@@ -359,7 +357,6 @@ async cloneBoard(id_template, { title, description, userId }) {
         throw txErr;
       }
     } catch (error) {
-      console.error('❌ [BoardService] configureBoardSettings error:', error);
       throw error;
     }
   }
@@ -381,7 +378,6 @@ async cloneBoard(id_template, { title, description, userId }) {
       
       return updatedSwimlane;
     } catch (error) {
-      console.error('❌ [BoardService] toggleSwimlaneCollapse error:', error);
       throw error;
     }
   }

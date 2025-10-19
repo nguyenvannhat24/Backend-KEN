@@ -53,7 +53,6 @@ async update(req, res) {
 
       res.status(200).json({ success: true, data: result });
     } catch (error) {
-      console.error('❌ Error in update role permissions controller:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -71,7 +70,6 @@ async updatePermisson(req, res) {
 
       res.status(200).json({ success: true, data: result });
     } catch (error) {
-      console.error('❌ Error in update role permissions controller:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }

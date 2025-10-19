@@ -74,7 +74,6 @@ class UserRoleController {
         data: userRoleAll
       });
     } catch (error) {
-      console.error('❌ Error in SelectAlluserRole:', error);
       return res.status(500).json({ 
         success: false,
         error: 'Lỗi server',
@@ -104,7 +103,6 @@ class UserRoleController {
         data: role
       });
     } catch (err) {
-      console.error('❌ Error in getRoleByUser:', err);
       res.status(500).json({ 
         success: false,
         error: 'Lỗi server',
@@ -128,7 +126,6 @@ class UserRoleController {
         message: 'Tạo user-role thành công'
       });
     } catch (err) {
-      console.error('❌ Error in createUserRole:', err);
       res.status(400).json({ 
         success: false,
         error: 'Lỗi tạo user-role',
@@ -159,7 +156,6 @@ class UserRoleController {
         message: 'Cập nhật user-role thành công'
       });
     } catch (err) {
-      console.error('❌ Error in updateUserRole:', err);
       res.status(400).json({ 
         success: false,
         error: 'Lỗi cập nhật user-role',
@@ -189,7 +185,6 @@ class UserRoleController {
         message: 'Xóa user-role thành công' 
       });
     } catch (err) {
-      console.error('❌ Error in deleteUserRole:', err);
       res.status(500).json({ 
         success: false,
         error: 'Lỗi server',
@@ -213,7 +208,6 @@ class UserRoleController {
         deletedCount: deleted.deletedCount 
       });
     } catch (err) {
-      console.error('❌ Error in deleteRolesByUser:', err);
       res.status(500).json({ 
         success: false,
         error: 'Lỗi server',
@@ -259,7 +253,6 @@ class UserRoleController {
     });
 
   } catch (err) {
-    console.error("❌ [getpermission] Error:", err);
     return res.status(500).json({
       success: false,
       message: err.message || "Lỗi khi lấy danh sách quyền"

@@ -131,7 +131,6 @@ async findByBoard(board_id, options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error in findByBoard:', error);
     throw error;
   }
 }
@@ -259,7 +258,6 @@ async softDelete(id) {
       { new: true }
     );
   } catch (error) {
-    console.error('Error soft deleting task:', error);
     throw error;
   }
 }
@@ -302,7 +300,6 @@ async findAllWithDeleted(options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error finding all tasks with deleted:', error);
     throw error;
   }
 }

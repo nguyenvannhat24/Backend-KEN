@@ -31,7 +31,6 @@ class TagService {
       const tag = await tagRepo.create(tagData);
       return tag;
     } catch (error) {
-      console.error('❌ [TagService] createTag error:', error);
       throw error;
     }
   }
@@ -42,7 +41,6 @@ class TagService {
       const tags = await tagRepo.findAll();
       return tags;
     } catch (error) {
-      console.error('❌ [TagService] getAllTags error:', error);
       throw error;
     }
   }
@@ -61,7 +59,6 @@ class TagService {
 
       return tag;
     } catch (error) {
-      console.error('❌ [TagService] getTagById error:', error);
       throw error;
     }
   }
@@ -95,7 +92,6 @@ class TagService {
       const updatedTag = await tagRepo.update(id, updateData);
       return updatedTag;
     } catch (error) {
-      console.error('❌ [TagService] updateTag error:', error);
       throw error;
     }
   }
@@ -120,7 +116,6 @@ class TagService {
       const deleted = await tagRepo.softDelete(id);
       return deleted;
     } catch (error) {
-      console.error('❌ [TagService] deleteTag error:', error);
       throw error;
     }
   }
@@ -141,7 +136,6 @@ class TagService {
       const tags = await tagRepo.findByTaskId(taskId);
       return tags;
     } catch (error) {
-      console.error('❌ [TagService] getTagsByTask error:', error);
       throw error;
     }
   }
@@ -169,7 +163,6 @@ class TagService {
 
     return taskTag;
   } catch (error) {
-    console.error('❌ [TagService] addTagToTask error:', error);
     throw error;
   }
 }
@@ -191,7 +184,6 @@ class TagService {
       const deleted = await taskTagRepo.deleteByTaskAndTag(taskId, tagId);
       return deleted;
     } catch (error) {
-      console.error('❌ [TagService] removeTagFromTask error:', error);
       throw error;
     }
   }
@@ -205,8 +197,7 @@ async getTagsByBoard(boardId) {
     const tags = await TagModel.find({board_id : boardId});
       return tags;
   } catch (error) {
-     console.error('❌ [TagService] removeTagFromTask error:', error);
-      throw error;
+     throw error;
   }
    
  

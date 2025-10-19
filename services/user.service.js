@@ -30,7 +30,6 @@ class UserService {
 
       return user;
     } catch (error) {
-      console.error('Error validating user:', error.message);
       return null;
     }
   }
@@ -57,7 +56,6 @@ class UserService {
     try {
       return await userRepo.findAll(options);
     } catch (error) {
-      console.error('Error in getAllUsers:', error.message);
       throw error;
     }
   }
@@ -66,7 +64,6 @@ class UserService {
     try {
       return await userRepo.findById(id);
     } catch (error) {
-      console.error('Error in getUserById:', error.message);
       throw error;
     }
   }
@@ -75,7 +72,6 @@ class UserService {
     try {
       return await userRepo.findByEmail(email);
     } catch (error) {
-      console.error('Error in getUserByEmail:', error.message);
       throw error;
     }
   }
@@ -84,7 +80,6 @@ class UserService {
     try {
       return await userRepo.findByUsername(username);
     } catch (error) {
-      console.error('Error in getUserByUsername:', error.message);
       throw error;
     }
   }
@@ -145,7 +140,6 @@ async createUser(userData) {
 
     return localUser;
   } catch (error) {
-    console.error('❌ Error in createUser:', error.message);
     throw error;
   }
 }
@@ -155,7 +149,6 @@ async createUser(userData) {
       userData.typeAccount = 'SSO';
       return await userRepo.create(userData);
     } catch (error) {
-      console.error('Error in createUserSSO:', error.message);
       throw error;
     }
   }
@@ -222,7 +215,6 @@ async updateUser(idUpdate, id, updateData) {
     return await userRepo.update(id, updateData);
 
   } catch (error) {
-    console.error('❌ Error in updateUser:', error.message);
     throw error;
   }
 }
@@ -232,7 +224,6 @@ async updateUser(idUpdate, id, updateData) {
     try {
       return await userRepo.deleteById(id);
     } catch (error) {
-      console.error('Error in deleteUser:', error.message);
       throw error;
     }
   }
@@ -256,7 +247,6 @@ async updateUser(idUpdate, id, updateData) {
       limit: result.pagination.limit
     };
   } catch (error) {
-    console.error('❌ Error in viewAll:', error.message);
     throw error;
   }
 }
@@ -278,7 +268,6 @@ async updateProfile(userId, updateData) {
    
     return user;
   } catch (error) {
-    console.error('❌ [UserService] updateProfile error:', error);
     throw error;
   }
 }
@@ -329,7 +318,6 @@ async changePassword(userId, currentPassword, newPassword) {
     
     return true;
   } catch (error) {
-    console.error('❌ [UserService] changePassword error:', error);
     throw error;
   }
 }
@@ -344,7 +332,6 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
     const result = await userRepo.find({ keyword, page, limit });
     return result; // result.users + result.pagination
   } catch (error) {
-    console.error("Search error:", error);
     throw error;
   }
 }
@@ -359,7 +346,6 @@ async searchAllUsers(keyword, page = 1, limit = 10) {
       }
       return user;
     } catch (error) {
-      console.error('Error soft deleting user:', error.message);
       throw error;
     }
   }
@@ -378,8 +364,7 @@ async  restoreUser(id) {
       await restoreUserOnKeycloak(user.idSSO);
   
     } catch (kcError) {
-      console.error('❌ Lỗi khôi phục trên Keycloak:', kcError);
-    }
+      }
   }
 
   return user;
@@ -399,7 +384,6 @@ async  restoreUser(id) {
       
       return await userRepo.findDeleted(options);
     } catch (error) {
-      console.error('Error in getAllDeletedRecords:', error.message);
       throw error;
     }
   } 
@@ -410,7 +394,6 @@ async  restoreUser(id) {
     const users = await userRepo.findUserSimilar(data.infor);
     return users;
   } catch (error) {
-    console.error('Error in findUsers:', error.message);
     throw error;
   }
 };

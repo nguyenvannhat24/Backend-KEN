@@ -23,7 +23,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] getAllRoles - Error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',
@@ -65,7 +64,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] getRoleById - Error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',
@@ -99,8 +97,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] createRole - Error:', error);
-      
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
@@ -151,8 +147,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] updateRole - Error:', error);
-      
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
@@ -201,7 +195,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] deleteRole - Error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',
@@ -243,7 +236,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] getRoleByName - Error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',
@@ -277,7 +269,6 @@ class RoleController {
         data: result
       });
     } catch (error) {
-      console.error('❌ [RoleController] getUserRole - Error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',

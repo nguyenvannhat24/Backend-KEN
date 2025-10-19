@@ -11,7 +11,7 @@ async function checkCodeGym() {
     // Liệt kê collection
     const collections = await db.listCollections().toArray();
 
-    collections.forEach(c => console.log(" -", c.name));
+    // collections.forEach(c => );
 
     // Ví dụ đọc thử 5 document đầu tiên từ từng collection
     for (let c of collections) {
@@ -21,8 +21,7 @@ async function checkCodeGym() {
     }
 
   } catch (err) {
-    console.error("❌ Lỗi:", err);
-  } finally {
+    } finally {
     await client.close();
   }
 }

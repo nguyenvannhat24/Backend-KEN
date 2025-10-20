@@ -94,6 +94,36 @@ class GroupController {
       await groupService.deleteGroup(req.params.id, userId);
       res.json({ success: true, message: "Xoá group thành công" });
     } catch (err) {
+      // Xử lý lỗi thân thiện hơn
+      if (err.message.includes("Chỉ người tạo group mới được xóa group")) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Bạn không có quyền xóa group này. Chỉ người tạo group mới có thể xóa." 
+        });
+      }
+      
+      if (err.message.includes("Bạn không phải thành viên của group này")) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Bạn không phải thành viên của group này" 
+        });
+      }
+      
+      if (err.message.includes("ID group không hợp lệ")) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "ID group không hợp lệ" 
+        });
+      }
+      
+      if (err.message.includes("Không tìm thấy group để xoá")) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Không tìm thấy group để xóa" 
+        });
+      }
+      
+      // Lỗi khác
       res.status(400).json({ success: false, message: err.message });
     }
   }

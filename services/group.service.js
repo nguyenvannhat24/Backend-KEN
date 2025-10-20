@@ -105,13 +105,24 @@ class GroupService {
       throw new Error("ID group không hợp lệ");
     }
 
+    // Kiểm tra group có tồn tại không
+    const group = await groupRepo.findById(id);
+    if (!group) {
+      throw new Error("Không tìm thấy group để xoá");
+    }
+
+    // Kiểm tra quyền xóa
     const groupMember = await groupMemberRepo.findMember(userId, id);
-    if (!groupMember || groupMember.role_in_group !== 'Người tạo') {
+    if (!groupMember) {
+      throw new Error("Bạn không phải thành viên của group này");
+    }
+    
+    if (groupMember.role_in_group !== 'Người tạo') {
       throw new Error("Chỉ người tạo group mới được xóa group");
     }
 
     const deleted = await groupRepo.softDelete(id);
-    if (!deleted) throw new Error("Không tìm thấy group để xoá");
+    if (!deleted) throw new Error("Không thể xóa group");
 
     await groupMemberRepo.deleteAllByGroup(id);
 
@@ -149,7 +160,7 @@ class GroupService {
          return  userBoard ;
 
     } catch (error) {
-  throw new Error(`lỗi lấy bảng của user: ${error.message}`);
+    throw new Error(`lỗi service viewBoardMember : ${error.message}`);
     }
   }
 }

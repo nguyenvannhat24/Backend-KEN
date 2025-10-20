@@ -11,7 +11,12 @@ router.get('/board/:boardId', authenticateAny, columnController.getByBoard); // 
 router.put('/:id', authenticateAny, columnController.update);                // Update
 router.delete('/:id', authenticateAny, columnController.delete);             // Delete
 router.put('/:id/move' ,authenticateAny, columnController.move);
+
 // Additional features
 router.put('/board/:boardId/reorder', authenticateAny, columnController.reorder); // Reorder columns
+
+// Done Column management
+router.put('/:id/done', authenticateAny, columnController.setDone);          // Set Done Column
+router.get('/board/:boardId/done', authenticateAny, columnController.getDoneByBoard); // Get Done Column
 
 module.exports = router;

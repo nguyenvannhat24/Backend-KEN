@@ -118,6 +118,54 @@ class ColumnController {
       res.status(400).json({ success: false, message: error.message });
     }
   }
+
+  // Set Done Column
+  async setDone(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      const { id } = req.params; // Column ID
+      const column = await columnService.setDoneColumn(id, userId);
+      
+      res.json({ 
+        success: true, 
+        message: 'Đã đặt cột Done thành công',
+        data: column 
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get Done Column by Board
+  async getDoneByBoard(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      const { boardId } = req.params;
+      const doneColumn = await columnService.getDoneColumn(boardId, userId);
+      
+      if (!doneColumn) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Board chưa có cột Done' 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        data: doneColumn 
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = new ColumnController();

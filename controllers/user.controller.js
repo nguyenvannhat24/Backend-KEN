@@ -533,17 +533,34 @@ exports.changePassword = async (req, res) => {
 
 exports.searchUsers = async (req, res) => {
   try {
-    const { q } = req.query; // từ query ?q=keyword
+    const { q, page = 1, limit = 50 } = req.query; // từ query ?q=keyword
 
     if (!q || q.trim() === '') {
-      return res.json({ success: true, users: [] });
+      return res.json({ 
+        success: true, 
+        data: [],
+        total: 0,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
     }
 
-    const users = await userService.searchAllUsers(q.trim().toLowerCase());
+    const result = await userService.searchAllUsers(q.trim(), parseInt(page), parseInt(limit));
 
-    return res.json({ success: true, users });
+    return res.json({ 
+      success: true, 
+      data: result.users,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error in searchUsers:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server khi tìm kiếm người dùng',
+      error: error.message 
+    });
   }
 };
 

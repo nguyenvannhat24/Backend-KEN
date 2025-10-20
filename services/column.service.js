@@ -44,8 +44,46 @@ class ColumnService {
     const boardRepo = require('../repositories/board.repository');
     const isMember = await boardRepo.isMember(userId, col.board_id.toString());
     if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+    
+    // ✅ Kiểm tra nếu column là Done Column
+    if (col.isDoneColumn === true) {
+      throw new Error('Không thể xóa cột Done. Vui lòng chọn cột Done khác trước khi xóa cột này.');
+    }
+    
     // Soft delete instead of hard delete
     return await columnRepo.softDelete(id);
+  }
+
+  // Set Done Column
+  async setDoneColumn(columnId, userId) {
+    try {
+      const col = await columnRepo.findById(columnId);
+      if (!col) throw new Error('Cột không tồn tại');
+      
+      const boardRepo = require('../repositories/board.repository');
+      const isMember = await boardRepo.isMember(userId, col.board_id.toString());
+      if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+      
+      // Set Done Column (will unset others automatically)
+      const updatedColumn = await columnRepo.setDoneColumn(columnId, col.board_id);
+      
+      return updatedColumn;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get Done Column for a board
+  async getDoneColumn(boardId, userId) {
+    try {
+      const boardRepo = require('../repositories/board.repository');
+      const isMember = await boardRepo.isMember(userId, boardId);
+      if (!isMember) throw new Error('Bạn không có quyền xem board này');
+      
+      return await columnRepo.getDoneColumnByBoard(boardId);
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Reorder columns

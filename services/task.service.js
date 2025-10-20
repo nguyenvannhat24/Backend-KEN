@@ -5,6 +5,55 @@ const swimlaneRepo = require('../repositories/swimlane.repository');
 const mongoose = require('mongoose');
 
 class TaskService {
+  // Helper: Calculate isOverdue for a task
+  _calculateIsOverdue(task, column) {
+    // Nếu không có due_date → không overdue
+    if (!task.due_date) return false;
+    
+    // Nếu column là Done → không overdue
+    if (column && column.isDoneColumn === true) return false;
+    
+    // So sánh due_date với current date
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    
+    // Overdue nếu due_date < now
+    return dueDate < now;
+  }
+
+  // Helper: Enrich tasks with isOverdue flag
+  async _enrichTasksWithOverdue(tasks) {
+    if (!Array.isArray(tasks) || tasks.length === 0) return [];
+    
+    // Get all column IDs
+    const columnIds = [...new Set(tasks.map(t => t.column_id?._id || t.column_id).filter(Boolean))];
+    
+    // Fetch all columns at once
+    const columns = await columnRepo.findById.bind(columnRepo);
+    const columnMap = {};
+    
+    for (const colId of columnIds) {
+      try {
+        const col = await columnRepo.findById(colId);
+        if (col) columnMap[colId.toString()] = col;
+      } catch (err) {
+        // Skip invalid columns
+      }
+    }
+    
+    // Enrich each task
+    return tasks.map(task => {
+      const taskObj = task.toObject ? task.toObject() : task;
+      const columnId = taskObj.column_id?._id || taskObj.column_id;
+      const column = columnMap[columnId?.toString()];
+      
+      return {
+        ...taskObj,
+        isOverdue: this._calculateIsOverdue(taskObj, column)
+      };
+    });
+  }
+
   // Tạo task mới
   async createTask(taskData, userId) {
     try {
@@ -116,7 +165,10 @@ if (tasksInColumn.length > 0) {
       throw new Error('Column ID không hợp lệ');
     }
 
-    return await taskRepo.findByColumn(column_id);
+    const tasks = await taskRepo.findByColumn(column_id);
+    
+    // Enrich with isOverdue flag
+    return await this._enrichTasksWithOverdue(tasks);
   }
 
   // Lấy tasks của user (assigned)
@@ -125,7 +177,10 @@ if (tasksInColumn.length > 0) {
       throw new Error('User ID không hợp lệ');
     }
 
-    return await taskRepo.findByAssignedUser(user_id);
+    const tasks = await taskRepo.findByAssignedUser(user_id);
+    
+    // Enrich with isOverdue flag
+    return await this._enrichTasksWithOverdue(tasks);
   }
 
   // Cập nhật task

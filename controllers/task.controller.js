@@ -79,15 +79,18 @@ class TaskController {
       const validatedFilter = queryParser.validateObjectIdFields(parsed.filter, ['column_id', 'swimlane_id', 'assigned_to', 'created_by']);
 
       // Get tasks from service
-      const result = await taskService.getTasksByBoard(board_id, {
-        page: parsed.pagination.page,
-        limit: parsed.pagination.limit,
-        sortBy: parsed.metadata.sortBy,
-        sortOrder: parsed.metadata.sortOrder,
-        filter: validatedFilter,
-        search: parsed.search,
-        dateRange: parsed.dateRange
-      });
+      const result = await taskService.getTasksByBoard(
+        board_id, 
+        {
+          page: parsed.pagination.page,
+          limit: parsed.pagination.limit,
+          sortBy: parsed.metadata.sortBy,
+          sortOrder: parsed.metadata.sortOrder,
+          filter: validatedFilter,
+          search: parsed.search,
+          dateRange: parsed.dateRange
+        }
+      );
 
       // Build deep link response
       const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;

@@ -329,7 +329,7 @@ async getbyIdSOO(id){
 
 async searchAllUsers(keyword, page = 1, limit = 10) {
   try {
-    const result = await userRepo.find({ keyword, page, limit });
+    const result = await userRepo.search(keyword, { page, limit });
     return result; // result.users + result.pagination
   } catch (error) {
     throw error;

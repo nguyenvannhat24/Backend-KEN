@@ -49,6 +49,65 @@ class ColumnRepository {
     }
   }
 
+  // Set Done Column
+  async setDoneColumn(columnId, boardId) {
+    try {
+      // Start transaction to ensure atomicity
+      const session = await require('mongoose').startSession();
+      session.startTransaction();
+
+      try {
+        // Unset all isDoneColumn in this board
+        await Column.updateMany(
+          { board_id: boardId, deleted_at: null },
+          { isDoneColumn: false },
+          { session }
+        );
+
+        // Set the target column as Done
+        const updatedColumn = await Column.findByIdAndUpdate(
+          columnId,
+          { isDoneColumn: true },
+          { new: true, session }
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return updatedColumn;
+      } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Check if column is Done Column
+  async isDoneColumn(columnId) {
+    try {
+      const column = await Column.findById(columnId).select('isDoneColumn').lean();
+      return column?.isDoneColumn === true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get Done Column by board
+  async getDoneColumnByBoard(boardId) {
+    try {
+      return await Column.findOne({ 
+        board_id: boardId, 
+        isDoneColumn: true,
+        deleted_at: null 
+      }).lean();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllWithDeleted(options = {}) {
     try {
       const {

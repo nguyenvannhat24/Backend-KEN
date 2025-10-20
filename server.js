@@ -30,6 +30,7 @@ const RolePermissionRoutes = require('./router/rolePermission.routes');
 const taskTag = require('./router/taskTag.routes');
 const uploadImg  =require('./router/uploadimg.router');
 const taskImportRoutes = require('./router/taskImport.routes');
+const analyticsRoutes = require('./router/analytics.routes');
 const memoryStore = new session.MemoryStore();
 const CenterMember =  require('./router/centerMember.route');
 app.use(session({
@@ -100,6 +101,7 @@ app.use("/api/CenterMember",CenterMember);
 app.use('/api/user', user);
 app.use('/api/img',uploadImg); 
 app.use('/api/tasks', taskImportRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/uploads', express.static('uploads'));
 
 // --- Start server ---

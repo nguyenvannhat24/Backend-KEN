@@ -21,7 +21,8 @@ const BoardSchema = new mongoose.Schema({
   deleted_at: { 
     type: Date, 
     default: null 
-  }
+  },
+
 }, { 
   collection: 'Boards',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

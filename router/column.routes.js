@@ -5,6 +5,7 @@ const { authenticateAny } = require('../middlewares/auth');
 const { route } = require('./user.routes');
 
 // CRUD (bảo vệ bằng auth)
+router.put('/board/:idBoard/isdoneColumn/:idcolumn' ,authenticateAny, columnController.ColumnIsDone);
 router.post('/', authenticateAny, columnController.create);                  // Create
 router.get('/:id', authenticateAny, columnController.getOne);                // Read one
 router.get('/board/:boardId', authenticateAny, columnController.getByBoard); // Read all by board
@@ -15,8 +16,5 @@ router.put('/:id/move' ,authenticateAny, columnController.move);
 // Additional features
 router.put('/board/:boardId/reorder', authenticateAny, columnController.reorder); // Reorder columns
 
-// Done Column management
-router.put('/:id/done', authenticateAny, columnController.setDone);          // Set Done Column
-router.get('/board/:boardId/done', authenticateAny, columnController.getDoneByBoard); // Get Done Column
 
 module.exports = router;

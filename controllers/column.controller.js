@@ -7,8 +7,8 @@ class ColumnController {
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      const { board_id, name, order } = req.body;
-      const column = await columnService.createColumn({ board_id, name, order, userId });
+      const { board_id, name, order , isdone} = req.body;
+      const column = await columnService.createColumn({ board_id, name, order, userId, isdone });
       res.status(201).json({ success: true, data: column });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
@@ -119,53 +119,27 @@ class ColumnController {
     }
   }
 
-  // Set Done Column
-  async setDone(req, res) {
+  async ColumnIsDone(req , res){
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+        const idColumn = req.params.idcolumn;
+       const idBoard = req.params.idBoard;
+        const iduser = req.user?.id || req.user?._id;
+  // cập nhật nhưng board nào mà mình là người tạo 
+       const result = columnService.updateIsDone(idColumn, idBoard ,iduser);
+   res.json(
+      {
+        success: true,
+        data : result
       }
-
-      const { id } = req.params; // Column ID
-      const column = await columnService.setDoneColumn(id, userId);
-      
-      res.json({ 
-        success: true, 
-        message: 'Đã đặt cột Done thành công',
-        data: column 
-      });
+     )
+  
     } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  // Get Done Column by Board
-  async getDoneByBoard(req, res) {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
-      }
-
-      const { boardId } = req.params;
-      const doneColumn = await columnService.getDoneColumn(boardId, userId);
-      
-      if (!doneColumn) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Board chưa có cột Done' 
-        });
-      }
-
-      res.json({ 
-        success: true, 
-        data: doneColumn 
-      });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
+            res.status(400).json({ success: false, message: error.message });
+    };
+  
   }
 }
+
+
 
 module.exports = new ColumnController();

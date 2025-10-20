@@ -84,6 +84,8 @@ async countMembers(board_id) {
   });
 }
 
+async findByBoardId (idBoard){
+  return BoardMember.find({board_id: idBoard}).lean();
 }
-
+}
 module.exports = new BoardMemberRepository();

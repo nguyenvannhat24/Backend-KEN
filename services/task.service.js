@@ -416,48 +416,74 @@ async moveTask(
     throw new Error(`Lỗi di chuyển task: ${error.message}`);
   }
 }
-async getData(idBoard) {
-const mongoose = require('mongoose');
-const Task = require('../models/task.model');
 
-if (!mongoose.Types.ObjectId.isValid(idBoard)) {
-  throw new Error('board_id không hợp lệ');
-}
+async  getData(idBoard) {
+  const mongoose = require('mongoose');
+  const Task = require('../models/task.model');
 
-const data = await Task.aggregate([
-  { $match: { board_id: new mongoose.Types.ObjectId(idBoard), deleted_at: null } },
-  {
-    $lookup: {
-      from: 'Columns', // chắc chắn tên collection đúng
-      localField: 'column_id',
-      foreignField: '_id',
-      as: 'column'
-    }
-  },
-  { $unwind: '$column' },
-  { $match: { 'column.isDone': true } },
-  {
-    $group: {
-      _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$updated_at" } } },
-      doneCount: { $sum: 1 },
-      avgEstimate: { $avg: '$estimate_hours' }
-    }
-  },
-  { $sort: { '_id.day': 1 } },
-  { $project: { _id: 0, date: '$_id.day', doneCount: 1, avgEstimate: 1 } }
-]);
+  if (!mongoose.Types.ObjectId.isValid(idBoard)) {
+    throw new Error('board_id không hợp lệ');
+  }
 
-
-  // Lấy tổng task trong board
+  // 1️⃣ Lấy tổng task trong board
   const totalTask = await Task.countDocuments({ board_id: idBoard, deleted_at: null });
 
-  return {
-    totalTask,
-    data
-  };
+  // 2️⃣ Lấy ngày bắt đầu nhỏ nhất theo start_date
+  const firstTask = await Task.find({ board_id: idBoard, deleted_at: null, start_date: { $ne: null } })
+    .sort({ start_date: 1 })
+    .limit(1)
+    .lean();
+
+  const minDate = firstTask.length ? new Date(firstTask[0].start_date) : new Date();
+  const today = new Date();
+
+  // 3️⃣ Tạo mảng tất cả ngày từ start_date → hôm nay
+  const allDates = [];
+  const d = new Date(minDate);
+  while (d <= today) {
+    allDates.push(d.toISOString().slice(0, 10)); // YYYY-MM-DD
+    d.setDate(d.getDate() + 1);
+  }
+
+  // 4️⃣ Lấy dữ liệu task done theo ngày (dựa trên updated_at của task khi vào cột Done)
+  const doneTasks = await Task.aggregate([
+    { $match: { board_id: new mongoose.Types.ObjectId(idBoard), deleted_at: null } },
+    {
+      $lookup: {
+        from: 'Columns', // collection Column
+        localField: 'column_id',
+        foreignField: '_id',
+        as: 'column'
+      }
+    },
+    { $unwind: '$column' },
+    { $match: { 'column.isDone': true } }, // chỉ task đã Done
+    {
+      $group: {
+        _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$updated_at" } } },
+        doneCount: { $sum: 1 },
+        avgEstimate: { $avg: '$estimate_hours' }
+      }
+    },
+    { $sort: { '_id.day': 1 } },
+    { $project: { _id: 0, date: '$_id.day', doneCount: 1, avgEstimate: 1 } }
+  ]);
+
+  // 5️⃣ Map dữ liệu doneTasks vào allDates để đảm bảo có ngày nào cũng hiển thị
+  const data = allDates.map(date => {
+    const found = doneTasks.find(t => t.date === date);
+    return {
+      date,
+      doneCount: found ? found.doneCount : 0,
+      avgEstimate: found ? found.avgEstimate : 0
+    };
+  });
+
+  return { totalTask, data };
 }
 
-}
 
+
+}
 
 module.exports = new TaskService();

@@ -16,3 +16,12 @@ Thumbs.db
 
 ## Uploads/output (optional)
 uploads/
+
+## Project docs and local debug scripts (untracked)
+Backlog.txt
+drawdb.txt
+README.md
+check-boards.js
+check-deleted-tasks.js
+debug-tasks.js
+

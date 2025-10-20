@@ -38,7 +38,7 @@ class AnalyticsService {
     // Lấy Done column của board
     const doneColumn = await Column.findOne({ 
       board_id, 
-      isDoneColumn: true 
+      isDone: true 
     });
 
     // Tạo date range theo granularity
@@ -126,7 +126,7 @@ class AnalyticsService {
     // Lấy Done column
     const doneColumn = await Column.findOne({ 
       board_id, 
-      isDoneColumn: true 
+      isDone: true 
     });
 
     // Lấy tất cả tasks

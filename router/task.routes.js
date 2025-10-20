@@ -1,7 +1,7 @@
 const express = require('express');
 const taskController = require('../controllers/task.controller');
 const { authenticateAny, authorizeAny } = require('../middlewares/auth');
-
+const { sendMail } = require ("../config/mailer");
 const router = express.Router();
 
 /**
@@ -62,5 +62,23 @@ router.put('/:id/dates', authenticateAny, taskController.updateDates);
 router.put('/:id/estimate', authenticateAny, taskController.updateEstimate);
 // Lấy tất cả tasks của column theo board
 router.get('/board/:board_id/column/:column_id', authenticateAny, taskController.getByBoardAndColumn);
+
+// lấy ra các dữ liệu để xây dựng biểu đồ linechart
+router.post('/board/:board_id/lineChart', authenticateAny, taskController.getDataLineChart);
+
+
+
+router.post("/send-mail", async (req, res) => {
+  const { email } = req.body;
+
+  await sendMail(
+    email,
+    "Xác nhận đăng ký tài khoản",
+    "<h3>Chào mừng bạn đến với hệ thống!</h3><p>Tài khoản của bạn đã được tạo thành công.</p>"
+  );
+
+  res.json({ message: "Mail đã được gửi thành công" });
+});
+
 
 module.exports = router;

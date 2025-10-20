@@ -7,8 +7,8 @@ class ColumnController {
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
       }
-      const { board_id, name, order } = req.body;
-      const column = await columnService.createColumn({ board_id, name, order, userId });
+      const { board_id, name, order , isdone} = req.body;
+      const column = await columnService.createColumn({ board_id, name, order, userId, isdone });
       res.status(201).json({ success: true, data: column });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
@@ -118,6 +118,28 @@ class ColumnController {
       res.status(400).json({ success: false, message: error.message });
     }
   }
+
+  async ColumnIsDone(req , res){
+    try {
+        const idColumn = req.params.idcolumn;
+       const idBoard = req.params.idBoard;
+        const iduser = req.user?.id || req.user?._id;
+  // cập nhật nhưng board nào mà mình là người tạo 
+       const result = columnService.updateIsDone(idColumn, idBoard ,iduser);
+   res.json(
+      {
+        success: true,
+        data : result
+      }
+     )
+  
+    } catch (error) {
+            res.status(400).json({ success: false, message: error.message });
+    };
+  
+  }
 }
+
+
 
 module.exports = new ColumnController();

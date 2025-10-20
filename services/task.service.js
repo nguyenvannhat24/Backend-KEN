@@ -2,6 +2,10 @@ const taskRepo = require('../repositories/task.repository');
 const boardRepo = require('../repositories/board.repository');
 const columnRepo = require('../repositories/column.repository');
 const swimlaneRepo = require('../repositories/swimlane.repository');
+const userService = require('../services/user.service');
+const boardMemberRepo = require('../repositories/boardMember.repository');
+const userRepo =require('../repositories/user.repository');
+const { sendNotificationToAll } = require ("../config/sendNotify");
 const mongoose = require('mongoose');
 
 class TaskService {
@@ -262,91 +266,118 @@ async moveTask(
   userId
 ) {
   try {
+   
+
     // ====== Kiểm tra ID hợp lệ ======
     if (!mongoose.Types.ObjectId.isValid(task_id))
       throw new Error("Task ID không hợp lệ");
     if (!mongoose.Types.ObjectId.isValid(new_column_id))
       throw new Error("Column ID không hợp lệ");
 
+    const userIdStr = userId?.toString();
+    if (!mongoose.Types.ObjectId.isValid(userIdStr))
+      throw new Error("User ID không hợp lệ");
+
+    // ====== Lấy thông tin người thực hiện ======
+    const user = await userService.getUserById(userIdStr);
+    const userEmail = user?.email || user?.toObject?.().email;
+    const userName =
+      user?.full_name ||
+      (user?.toObject ? user.toObject().full_name : "Người dùng");
+
+
+    // ====== Lấy thông tin task ======
     const task = await taskRepo.findById(task_id);
     if (!task) throw new Error("Task không tồn tại");
 
-    // ====== Kiểm tra column đích thuộc cùng board ======
+    const titleTask = task.title;
+ 
+    // ====== Lấy thông tin board ======
+    const boardId = task.board_id._id || task.board_id;
+    const boardDoc = await boardRepo.findById(boardId);
+    const boardName = boardDoc?.title || boardDoc?.name || "Không có tên board";
+ 
+
+    // ====== Lấy thông tin cột đích (column) ======
     const newColumn = await columnRepo.findById(new_column_id);
     if (
       !newColumn ||
-      newColumn.board_id.toString() !== task.board_id._id.toString()
+      newColumn.board_id.toString() !== boardId.toString()
     ) {
       throw new Error("Column không thuộc board này");
     }
+    const newColumnName = newColumn.name || "Không có tên cột";
+   
 
-    // ====== Kiểm tra swimlane (nếu có) ======
+    // ====== Lấy thông tin swimlane cũ và mới ======
+    let oldSwimlaneName = "Không có";
+    if (task.swimlane_id) {
+      const swimlaneDoc = await swimlaneRepo.findById(task.swimlane_id);
+      oldSwimlaneName = swimlaneDoc?.name || "Không có";
+    }
+
+    let newSwimlaneName = "Không có";
     if (new_swimlane_id) {
       if (!mongoose.Types.ObjectId.isValid(new_swimlane_id))
         throw new Error("Swimlane ID không hợp lệ");
 
       const newSwimlane = await swimlaneRepo.findById(new_swimlane_id);
-      if (
-        !newSwimlane ||
-        newSwimlane.board_id.toString() !== task.board_id._id.toString()
-      ) {
+      if (!newSwimlane) throw new Error("Swimlane không tồn tại");
+
+      if (newSwimlane.board_id.toString() !== boardId.toString())
         throw new Error("Swimlane không thuộc board này");
-      }
+
+      newSwimlaneName = newSwimlane.name;
+ 
     }
 
-    // ====== Lấy prev/next task (nếu có) ======
+    // ====== Lấy danh sách email trong board ======
+    const boardMembers = await boardMemberRepo.findByBoardId(boardId);
+    const userIds = Array.isArray(boardMembers)
+      ? boardMembers.map((m) => m.user_id)
+      : [];
+    const usersInBoard = await userRepo.findManyByIds(userIds);
+    const emails = Array.isArray(usersInBoard)
+      ? usersInBoard.map((u) => u.email)
+      : [];
+ 
+
+    // ====== Tính toán vị trí mới (position) ======
     const [prevTask, nextTask] = await Promise.all([
       prev_task_id ? taskRepo.findById(prev_task_id) : null,
       next_task_id ? taskRepo.findById(next_task_id) : null,
     ]);
 
-    // ====== Xác định column/swimlane hiện tại ======
     const isSameColumn =
       task.column_id.toString() === new_column_id.toString() &&
       ((task.swimlane_id || null)?.toString() ===
         (new_swimlane_id || null)?.toString());
 
-    // ====== Lấy tất cả task trong column/swimlane đích ======
     const tasksInTarget = await taskRepo.findByColumnAndSwimlane(
       new_column_id,
       new_swimlane_id
     );
 
-    // ====== Tính position mới ======
     let newPosition;
-
-    if (tasksInTarget.length === 0) {
-      // Column rỗng
-      newPosition = 10;
-    } else if (!prevTask && nextTask) {
-      // Kéo lên đầu
-      newPosition = nextTask.position / 2;
-    } else if (prevTask && !nextTask) {
-      // Kéo xuống cuối
-      newPosition = prevTask.position + 10;
-    } else if (prevTask && nextTask) {
-      // Kéo vào giữa
+    if (tasksInTarget.length === 0) newPosition = 10;
+    else if (!prevTask && nextTask) newPosition = nextTask.position / 2;
+    else if (prevTask && !nextTask) newPosition = prevTask.position + 10;
+    else if (prevTask && nextTask)
       newPosition = (prevTask.position + nextTask.position) / 2;
-    } else {
-      // Không xác định được thì mặc định cộng 10 vào cuối
-      newPosition = tasksInTarget[tasksInTarget.length - 1].position + 10;
-    }
+    else newPosition = tasksInTarget[tasksInTarget.length - 1].position + 10;
 
-    // ====== Cập nhật task ======
     const updateData = {
       position: newPosition,
       updated_at: Date.now(),
     };
 
     if (!isSameColumn) {
-      // Nếu di chuyển sang column/swimlane khác
       updateData.column_id = new_column_id;
       if (new_swimlane_id) updateData.swimlane_id = new_swimlane_id;
     }
 
     const movedTask = await taskRepo.update(task_id, updateData);
 
-    // ====== Reorder lại position nếu bị trùng hoặc quá sát ======
     const needReorder =
       !prevTask ||
       !nextTask ||
@@ -357,19 +388,76 @@ async moveTask(
     if (needReorder) {
       await taskRepo.reorderColumnTasks(new_column_id, new_swimlane_id);
       if (!isSameColumn) {
-        // Reorder cả column cũ nếu chuyển cột
         await taskRepo.reorderColumnTasks(task.column_id, task.swimlane_id);
       }
     }
 
+    // ====== Gửi thông báo qua mail ======
+    const recipients = emails.filter((e) => e && e !== userEmail);
+    if (recipients.length > 0) {
+      try {
+        await sendNotificationToAll(
+          recipients,       // Danh sách email
+          userName,         // Người thực hiện
+          newColumnName,    // 🟢 Cột mới
+          newSwimlaneName,  // Hàng mới
+          titleTask,        // Tên task
+          boardName         // Tên board
+        );
+       
+      } catch (mailErr) {
+        console.error("❌ Lỗi khi gửi email:", mailErr);
+      }
+    }
+
+   
     return { success: true, data: movedTask };
   } catch (error) {
     throw new Error(`Lỗi di chuyển task: ${error.message}`);
   }
 }
+async getData(idBoard) {
+const mongoose = require('mongoose');
+const Task = require('../models/task.model');
+
+if (!mongoose.Types.ObjectId.isValid(idBoard)) {
+  throw new Error('board_id không hợp lệ');
+}
+
+const data = await Task.aggregate([
+  { $match: { board_id: new mongoose.Types.ObjectId(idBoard), deleted_at: null } },
+  {
+    $lookup: {
+      from: 'Columns', // chắc chắn tên collection đúng
+      localField: 'column_id',
+      foreignField: '_id',
+      as: 'column'
+    }
+  },
+  { $unwind: '$column' },
+  { $match: { 'column.isDone': true } },
+  {
+    $group: {
+      _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$updated_at" } } },
+      doneCount: { $sum: 1 },
+      avgEstimate: { $avg: '$estimate_hours' }
+    }
+  },
+  { $sort: { '_id.day': 1 } },
+  { $project: { _id: 0, date: '$_id.day', doneCount: 1, avgEstimate: 1 } }
+]);
 
 
+  // Lấy tổng task trong board
+  const totalTask = await Task.countDocuments({ board_id: idBoard, deleted_at: null });
+
+  return {
+    totalTask,
+    data
+  };
+}
 
 }
+
 
 module.exports = new TaskService();

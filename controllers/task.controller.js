@@ -3,7 +3,7 @@ const Task = require('../models/task.model');
 const taskTag = require('../repositories/taskTag.repository');
 const taskTagRepo = require('../repositories/taskTag.repository');
 const queryParser = require('../utils/queryParser');
-
+const { sendMail } = require("../config/mailer");
 class TaskController {
   // Tạo task mới
   async create(req, res) {
@@ -16,15 +16,15 @@ class TaskController {
       const taskData = req.body;
       const task = await taskService.createTask(taskData, userId);
       // nếu gửi cả tag theo dạng tên task thì gán vào luôn 
-    if(taskData.nameTag){
-       
-      await taskTag.addTag(
-        taskData.nameTag ,
-        task._id
-      ) 
+      if (taskData.nameTag) {
 
-    }
-   
+        await taskTag.addTag(
+          taskData.nameTag,
+          task._id
+        )
+
+      }
+
 
       res.status(201).json({
         success: true,
@@ -44,7 +44,7 @@ class TaskController {
     try {
       const { id } = req.params;
       const task = await taskService.getTaskById(id);
-      
+
       res.json({
         success: true,
         data: task
@@ -107,7 +107,7 @@ class TaskController {
           dateRange: parsed.dateRange
         }
       );
-      
+
       res.json(response);
     } catch (error) {
       res.status(400).json({
@@ -122,7 +122,7 @@ class TaskController {
     try {
       const { column_id } = req.params;
       const tasks = await taskService.getTasksByColumn(column_id);
-      
+
       res.json({
         success: true,
         count: tasks.length,
@@ -145,7 +145,7 @@ class TaskController {
       }
 
       const tasks = await taskService.getTasksByUser(userId);
-      
+
       res.json({
         success: true,
         count: tasks.length,
@@ -164,14 +164,14 @@ class TaskController {
     try {
       const { user_id } = req.params;
       const currentUserId = req.user?.id;
-      
+
       // Kiểm tra quyền: chỉ admin hoặc chính user đó mới xem được
       if (currentUserId !== user_id) {
         // TODO: Kiểm tra role admin ở đây nếu cần
       }
 
       const tasks = await taskService.getTasksByUser(user_id);
-      
+
       res.json({
         success: true,
         count: tasks.length,
@@ -186,40 +186,40 @@ class TaskController {
   }
 
   // Cập nhật task
-async update(req, res) {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
-    const updateData = req.body;
+  async update(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const updateData = req.body;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      // 1️⃣ Cập nhật thông tin cơ bản của task
+      const updatedTask = await taskService.updateTask(id, updateData, userId);
+
+      // 2️⃣ Nếu có gửi kèm tag → xử lý thêm
+      if (updateData.nameTag) {
+        // Nếu mỗi task chỉ có 1 tag → xóa tag cũ trước
+        await taskTagRepo.deleteByTaskId(id);
+
+        // Sau đó thêm tag mới
+        await taskTagRepo.addTag(updateData.nameTag, id);
+      }
+
+      res.json({
+        success: true,
+        message: 'Cập nhật task thành công',
+        data: updatedTask
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
     }
-
-    // 1️⃣ Cập nhật thông tin cơ bản của task
-    const updatedTask = await taskService.updateTask(id, updateData, userId);
-
-    // 2️⃣ Nếu có gửi kèm tag → xử lý thêm
-    if (updateData.nameTag) {
-      // Nếu mỗi task chỉ có 1 tag → xóa tag cũ trước
-      await taskTagRepo.deleteByTaskId(id);
-
-      // Sau đó thêm tag mới
-      await taskTagRepo.addTag(updateData.nameTag, id);
-    }
-
-    res.json({
-      success: true,
-      message: 'Cập nhật task thành công',
-      data: updatedTask
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
   }
-}
 
   // Xóa task
   async delete(req, res) {
@@ -232,7 +232,7 @@ async update(req, res) {
       }
 
       await taskService.deleteTask(id, userId);
-      
+
       res.json({
         success: true,
         message: 'Xóa task thành công'
@@ -247,31 +247,31 @@ async update(req, res) {
 
   // Kéo thả task (drag & drop) - Story 16
   async moveTask(req, res) {
-  try {
-    const { id } = req.params;
-    const { new_column_id, new_swimlane_id, prev_task_id, next_task_id } = req.body;
-    const userId = req.user?.id;
+    try {
+      const { id } = req.params;
+      const { new_column_id, new_swimlane_id, prev_task_id, next_task_id } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
+      if (!userId) return res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
 
-    const movedTask = await taskService.moveTask(
-      id,
-      new_column_id,
-      prev_task_id,
-      next_task_id,
-      new_swimlane_id,
-      userId
-    );
+      const movedTask = await taskService.moveTask(
+        id,
+        new_column_id,
+        prev_task_id,
+        next_task_id,
+        new_swimlane_id,
+        userId
+      );
 
-    res.json({
-      success: true,
-      message: 'Di chuyển task thành công',
-      data: movedTask
-    });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+      res.json({
+        success: true,
+        message: 'Di chuyển task thành công',
+        data: movedTask
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
   }
-}
 
 
   // Tìm kiếm tasks
@@ -288,7 +288,7 @@ async update(req, res) {
       }
 
       const tasks = await taskService.searchTasks(board_id, searchQuery);
-      
+
       res.json({
         success: true,
         count: tasks.length,
@@ -307,7 +307,7 @@ async update(req, res) {
     try {
       const { board_id } = req.params;
       const stats = await taskService.getTaskStats(board_id);
-      
+
       res.json({
         success: true,
         data: stats
@@ -332,7 +332,7 @@ async update(req, res) {
       }
 
       const updatedTask = await taskService.updateTask(id, { start_date, due_date }, userId);
-      
+
       res.json({
         success: true,
         message: 'Cập nhật ngày thành công',
@@ -365,7 +365,7 @@ async update(req, res) {
       }
 
       const updatedTask = await taskService.updateTask(id, { estimate_hours }, userId);
-      
+
       res.json({
         success: true,
         message: 'Cập nhật thời gian ước tính thành công',
@@ -381,37 +381,58 @@ async update(req, res) {
 
   // controllers/task.controller.js
 
-// Lấy task theo board_id và column_id
- async getByBoardAndColumn(req, res) {
-  try {
-    const { board_id, column_id } = req.params;
+  // Lấy task theo board_id và column_id
+  async getByBoardAndColumn(req, res) {
+    try {
+      const { board_id, column_id } = req.params;
 
-    const tasks = await Task.find({
-      board_id,
-      column_id,
-      deleted_at: null // nếu bạn lưu soft delete
-    })
-      .populate('created_by', 'username full_name')
-      .populate('assigned_to', 'username full_name')
-      .populate('swimlane_id', 'name')
-      
-tasks.sort((a, b) => {
-  if (a.swimlane_id.name < b.swimlane_id.name) return -1;
-  if (a.swimlane_id.name > b.swimlane_id.name) return 1;
-  return a.position - b.position; // cùng swimlane thì sort theo position
-});
-    res.json({
-      success: true,
-      count: tasks.length,
-      data: tasks
-    });
-  } catch (error) {
+      const tasks = await Task.find({
+        board_id,
+        column_id,
+        deleted_at: null // nếu bạn lưu soft delete
+      })
+        .populate('created_by', 'username full_name')
+        .populate('assigned_to', 'username full_name')
+        .populate('swimlane_id', 'name')
+
+      tasks.sort((a, b) => {
+        if (a.swimlane_id.name < b.swimlane_id.name) return -1;
+        if (a.swimlane_id.name > b.swimlane_id.name) return 1;
+        return a.position - b.position; // cùng swimlane thì sort theo position
+      });
+      res.json({
+        success: true,
+        count: tasks.length,
+        data: tasks
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy task theo column trong board'
+      });
+    }
+  };
+  
+async getDataLineChart(req, res) {
+  const idBoard = req.params.board_id;
+  if (!idBoard) {
+    return res.status(400).json({ success: false, message: 'board_id là bắt buộc' });
+  }
+
+  try {
+    const result = await taskService.getData(idBoard);
+    res.json({ success: true, data: result });
+  } catch (error) { // nếu dùng TypeScript
+    console.error("Lỗi getDataLineChart:", error); // log ra console server
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy task theo column trong board'
+      message: 'Lỗi khi lấy task theo column trong board',
+      error: error.message || error.toString() // in chi tiết lỗi ra client
     });
   }
-};
+}
+
+
 
 }
 

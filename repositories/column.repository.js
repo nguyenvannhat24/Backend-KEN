@@ -90,7 +90,9 @@ class ColumnRepository {
       throw error;
     }
   }
-
+  async updateMany(filter, data) {
+    return await Column.updateMany(filter, { $set: data });
+  }
 }
 
 module.exports = new ColumnRepository();

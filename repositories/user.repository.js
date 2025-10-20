@@ -8,6 +8,10 @@ class UserRepository {
       throw error;
     }
   }
+  async findManyByIds(ids) {
+  return await User.find({ _id: { $in: ids } }).lean();
+}
+
 
   async getProfileById(id) {
     try {

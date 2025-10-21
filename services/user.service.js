@@ -51,11 +51,12 @@ class UserService {
 
     return false;
   }
-
+  
   async getAllUsers(options = {}) {
     try {
       return await userRepo.findAll(options);
     } catch (error) {
+      console.error('Error in getAllUsers:', error.message);
       throw error;
     }
   }

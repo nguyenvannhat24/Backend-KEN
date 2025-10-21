@@ -62,33 +62,19 @@ async findAll(options = {}) {
     const {
       page = 1,
       limit = 10,
-      sortBy = 'created_at',
-      sortOrder = 'desc',
-      filter = {},
-      search = null
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
     } = options;
 
     const skip = (page - 1) * limit;
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-    // Build match query with filters
-    const matchQuery = { deleted_at: null };
-
-    // Apply filters
-    if (filter.status) matchQuery.status = filter.status;
-    if (filter.typeAccount) matchQuery.typeAccount = filter.typeAccount;
-    
-    // Handle any other filters
-    Object.keys(filter).forEach(key => {
-      if (!['status', 'typeAccount', 'role'].includes(key)) {
-        matchQuery[key] = filter[key];
-      }
-    });
-
     const pipeline = [
-      { $match: matchQuery },
-      
-      // Lookup UserRoles and Roles
+      {
+        $match: { deleted_at: null } // ✅ chỉ lấy user chưa bị xóa mềm
+      },
+
+      // 👉 1. Lấy vai trò người dùng (UserRoles → Roles)
       {
         $lookup: {
           from: "UserRoles",
@@ -109,66 +95,61 @@ async findAll(options = {}) {
         $addFields: {
           role_name: { $arrayElemAt: ["$roles.name", 0] }
         }
-      }
+      },
+
+      // 👉 2. Lấy thông tin trung tâm mà user thuộc về (CenterMembers)
+      {
+        $lookup: {
+          from: "CenterMembers",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "centerMember"
+        }
+      },
+      {
+        $unwind: {
+          path: "$centerMember",
+          preserveNullAndEmptyArrays: true // vẫn hiển thị nếu user chưa thuộc trung tâm nào
+        }
+      },
+
+      // 👉 3. Lấy thông tin chi tiết trung tâm (Centers)
+      {
+        $lookup: {
+          from: "Centers",
+          localField: "centerMember.center_id",
+          foreignField: "_id",
+          as: "centerInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$centerInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+
+      // 👉 4. Thêm các trường hiển thị
+      {
+        $addFields: {
+          center_id: "$centerMember.center_id",
+          role_in_center: "$centerMember.role_in_center",
+          center_name: "$centerInfo.name",
+          center_status: "$centerInfo.status"
+        }
+      },
+
+      // 👉 5. Sắp xếp & phân trang
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit }
     ];
 
-    // Apply search filter AFTER lookups
-    if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { email: { $regex: search, $options: 'i' } },
-            { username: { $regex: search, $options: 'i' } },
-            { full_name: { $regex: search, $options: 'i' } }
-          ]
-        }
-      });
-    }
-
-    // Apply role filter AFTER role_name is populated
-    if (filter.role) {
-      pipeline.push({
-        $match: {
-          role_name: { $regex: `^${filter.role}$`, $options: 'i' }
-        }
-      });
-    }
-
-    // Count total BEFORE sort/skip/limit
-    const countPipeline = [...pipeline, { $count: "total" }];
-    const countResult = await User.aggregate(countPipeline);
-    const total = countResult.length > 0 ? countResult[0].total : 0;
-
-    // Add sort and pagination
-    pipeline.push({ $sort: sort });
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit });
-
-    // Project để format response rõ ràng hơn
-    pipeline.push({
-      $project: {
-        _id: 1,
-        email: 1,
-        username: 1,
-        full_name: 1,
-        avatar_url: 1,
-        status: 1,
-        typeAccount: 1,
-        created_at: 1,
-        updated_at: 1,
-        // Role info ngắn gọn
-        role: {
-          name: "$role_name",
-          id: { $arrayElemAt: ["$roles._id", 0] }
-        },
-        // Giữ lại fields cũ cho backward compatible
-        role_name: 1,
-        user_roles: 1,
-        roles: 1
-      }
-    });
-
+    // ✅ Lấy danh sách user
     const users = await User.aggregate(pipeline);
+
+    // ✅ Đếm tổng số user chưa xóa mềm
+    const total = await User.countDocuments({ deleted_at: null });
 
     return {
       users,
@@ -180,6 +161,7 @@ async findAll(options = {}) {
       }
     };
   } catch (error) {
+    console.error("❌ Error finding all users:", error);
     throw error;
   }
 }

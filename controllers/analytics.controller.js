@@ -31,11 +31,7 @@ class AnalyticsController {
       });
 
       // Log để debug
-      console.log('📊 Line Chart Data:', {
-        board_id,
-        dataPoints: data.data.length,
-        hasData: data.data.some(d => d.total > 0)
-      });
+
 
       res.json({
         success: true,

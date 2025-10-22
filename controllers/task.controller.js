@@ -64,7 +64,7 @@ class TaskController {
 
       // Parse query params với queryParser
       const parsed = queryParser.parseQuery(req.query, {
-        allowedFilters: ['column_id', 'swimlane_id', 'assigned_to', 'created_by', 'priority'],
+        allowedFilters: ['column_id', 'swimlane_id', 'assigned_to', 'created_by', 'priority' ,'assigned_to'],
         allowedSortFields: ['position', 'created_at', 'due_date', 'priority', 'title'],
         maxLimit: 200,
         defaults: {

@@ -11,7 +11,7 @@ async addMember({ user_id, board_id, role_in_board, Creator = false }, session) 
   // Tìm tất cả thành viên trong 1 board
   async getMembersByBoard(board_id) {
     return await BoardMember.find({ board_id })
-      .populate("user_id", "email username") // populate thông tin user (nếu muốn)
+      .populate("user_id", "email username avatar_url") // populate thông tin user (nếu muốn)
       .lean();
   }
 

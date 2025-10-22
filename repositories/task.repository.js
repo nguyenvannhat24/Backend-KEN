@@ -342,7 +342,27 @@ async reorderColumnTasks(column_id, swimlane_id = null) {
     return await Task.find(filter).sort({ position: 1 }).lean();
   }
 
+  async countTask(columnId , boardId){
+   try {
+    const quality = await Task.countDocuments({
+      column_id : columnId,
+      board_id: boardId
+    })
 
+    return quality;
+   } catch (error) {
+    
+   }
+  }
+
+  async findByAssignedUser(idTask){
+  try {
+    const task = await Task.findById(idTask) ;
+    return task.assigned_to ;
+  } catch (error) {
+    throw error ;
+  }  
+}
 }
 
 module.exports = new TaskRepository();

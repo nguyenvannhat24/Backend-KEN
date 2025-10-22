@@ -1,11 +1,15 @@
 const taskRepo = require('../repositories/task.repository');
 const boardRepo = require('../repositories/board.repository');
 const columnRepo = require('../repositories/column.repository');
+const columnService = require('../services/column.service');
 const swimlaneRepo = require('../repositories/swimlane.repository');
 const userService = require('../services/user.service');
 const boardMemberRepo = require('../repositories/boardMember.repository');
 const userRepo =require('../repositories/user.repository');
+const CenterMemberRepo = require('../repositories/centerMember.repo');
+const userPointRepo = require('../repositories/userPoint.repository');
 const { sendNotificationToAll } = require ("../config/sendNotify");
+
 const mongoose = require('mongoose');
 
 class TaskService {
@@ -351,7 +355,15 @@ async moveTask(
     const boardId = task.board_id._id || task.board_id;
     const boardDoc = await boardRepo.findById(boardId);
     const boardName = boardDoc?.title || boardDoc?.name || "Không có tên board";
- 
+    // tìm trong bảng cột nào là cột done
+
+    const columnDoneBoard = await columnService.findIsDone(boardId);
+    const doneColumnId = columnDoneBoard[0]._id;
+     // số lượng khi chưa lưu của cột done
+    const qualityTask = await taskRepo.countTask(doneColumnId, boardId);
+  
+    const newColumnIsDone = await columnService.findById(new_column_id);
+    const newisDone = newColumnIsDone.isDone ; // cột mới là done
 
     // ====== Lấy thông tin cột đích (column) ======
     const newColumn = await columnRepo.findById(new_column_id);
@@ -383,7 +395,6 @@ async moveTask(
         throw new Error("Swimlane không thuộc board này");
 
       newSwimlaneName = newSwimlane.name;
- 
     }
 
     // ====== Lấy danh sách email trong board ======
@@ -395,7 +406,7 @@ async moveTask(
     const emails = Array.isArray(usersInBoard)
       ? usersInBoard.map((u) => u.email)
       : [];
- 
+
 
     // ====== Tính toán vị trí mới (position) ======
     const [prevTask, nextTask] = await Promise.all([
@@ -447,23 +458,71 @@ async moveTask(
       }
     }
 
+// Lấy tổng số task hiện đang ở cột Done sau khi cập nhật
+const qualityTasknewDone = await taskRepo.countTask(doneColumnId, boardId);
+
+// ========================================
+if (newisDone && qualityTasknewDone > qualityTask) {
+
+  // Lấy user được giao task
+  const taskAssignee = await taskRepo.findByAssignedUser(task_id);
+  const userId = taskAssignee;
+
+  // Tìm trung tâm của user
+  const centerMember = await CenterMemberRepo.findByUserId(userId);
+
+  if (centerMember && centerMember.length > 0) {
+    // Lấy centerId (giả sử mỗi user chỉ thuộc 1 center)
+    const centerId = centerMember[0].center_id || centerMember[0]._id;
+
+    const addPoint = 10;
+    const updatedUserPoint = await userPointRepo.updatePoint(userId, centerId, addPoint);
+
+  } else {
+
+  }
+}
+
+// ========================================
+// 🔴 2️⃣ Trường hợp: Kéo task ra khỏi cột Done (bị hoàn tác)
+// ========================================
+else if (!newisDone && qualityTasknewDone < qualityTask) {
+
+
+  // Lấy user được giao task
+  const taskAssignee = await taskRepo.findByAssignedUser(task_id);
+  const userId = taskAssignee;
+
+  // Tìm trung tâm của user
+  const centerMember = await CenterMemberRepo.findByUserId(userId);
+
+  if (centerMember && centerMember.length > 0) {
+    const centerId = centerMember[0].center_id || centerMember[0]._id;
+
+    const minusPoint = 10;
+    const updatedUserPoint = await userPointRepo.updatePoint(userId, centerId, -minusPoint);
+  } else {
+  }
+}
+
+
     // ====== Gửi thông báo qua mail ======
     const recipients = emails.filter((e) => e && e !== userEmail);
-    if (recipients.length > 0) {
-      try {
-        await sendNotificationToAll(
-          recipients,       // Danh sách email
-          userName,         // Người thực hiện
-          newColumnName,    // 🟢 Cột mới
-          newSwimlaneName,  // Hàng mới
-          titleTask,        // Tên task
-          boardName         // Tên board
-        );
+    // if (recipients.length > 0) {
+    //   try {
+    //     await sendNotificationToAll(
+    //       recipients,       // Danh sách email
+    //       userName,         // Người thực hiện
+    //       newColumnName,    // 🟢 Cột mới
+    //       newSwimlaneName,  // Hàng mới
+    //       titleTask,        // Tên task
+    //       boardName         // Tên board
+    //     );
        
-      } catch (mailErr) {
-        console.error("❌ Lỗi khi gửi email:", mailErr);
-      }
-    }
+    //   } catch (mailErr) {
+    //     console.error("❌ Lỗi khi gửi email:", mailErr);
+    //   }
+    // }
 
    
     return { success: true, data: movedTask };

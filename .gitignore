@@ -14,8 +14,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-## Uploads/output (optional)
-uploads/
+
 
 ## Project docs and local debug scripts (untracked)
 Backlog.txt

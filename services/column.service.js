@@ -176,7 +176,35 @@ async updateIsDone(idColumn, idBoard, idUser) {
   }
 }
 
+  async findById( new_column_id ){
+   try {
+    const column = await columnRepo.findById(new_column_id);
+    return column;
+   } catch (error) {
+    console.error('❌ Lỗi findById:', error.message);
+    throw error;
+   }
+  }
+
+
+  async countTask(id_column , idBoard){
+    try {
+      const task = await columnRepo.findTasks(id_column , idBoard);
   
+    } catch (error) {
+       throw error;
+    }
+
+  }
+  async findIsDone(idBoard){
+    try {
+      const BoardColumn = await columnRepo.findBoardColumn(idBoard);
+      const doneColumns = BoardColumn.filter(col => col.isDone === true);
+      return doneColumns
+    } catch (error) {
+       throw error;
+    }
+  }
 }
 
 module.exports = new ColumnService();

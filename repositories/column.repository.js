@@ -152,6 +152,17 @@ class ColumnRepository {
   async updateMany(filter, data) {
     return await Column.updateMany(filter, { $set: data });
   }
+  async findBoardColumn(idBoard){
+   try {
+    return await Column.find({
+      board_id : idBoard
+    })
+   } catch (error) {
+       throw error;
+   }
+
+  }
+
 }
 
 module.exports = new ColumnRepository();

@@ -430,12 +430,33 @@ exports.viewProfile = async (req, res) => {
       return res.status(400).json({ success: false, message: "userId là bắt buộc" });
     }
 
+    const userService = require('../services/user.service');
+    const centerMemberService = require('../services/centerMember.service');
+    const userRoleService = require('../services/userRole.service');
+
     const profile = await userService.getUserById(userId);
     if (!profile) {
       return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
     }
 
-    res.json({ success: true, data: profile });
+    // ✅ Lấy centers mà user là member
+    const centers = await centerMemberService.getCentersByUser(userId);
+
+    // ✅ Lấy roles của user
+    const userRoles = await userRoleService.getRoles(userId);
+    const roleNames = userRoles.map(r => r.role_id?.name).filter(Boolean);
+
+    // ✅ Handle both Mongoose document and plain object
+    const profileData = profile.toObject ? profile.toObject() : profile;
+    
+    res.json({ 
+      success: true, 
+      data: {
+        ...profileData,
+        roles: roleNames,
+        centers: centers // ✅ Thêm danh sách centers
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -448,16 +469,43 @@ exports.getMe = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Chưa xác thực' });
     }
 
+    const userId = req.user.id;
+    
+    // ✅ Lấy full profile từ DB
+    const userService = require('../services/user.service');
+    const centerMemberService = require('../services/centerMember.service');
+    const userRoleService = require('../services/userRole.service');
+    
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' });
+    }
+
+    // ✅ Lấy centers mà user là member
+    const centers = await centerMemberService.getCentersByUser(userId);
+
+    // ✅ Lấy roles từ DB (chi tiết hơn req.user.roles)
+    const userRoles = await userRoleService.getRoles(userId);
+    const roleNames = userRoles.map(r => r.role_id?.name).filter(Boolean);
+
     res.json({
       success: true,
       data: {
-        _id: req.user.id,
-        username: req.user.username,
-        email: req.user.email,
-        roles: req.user.roles
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url,
+        status: user.status,
+        typeAccount: user.typeAccount,
+        roles: roleNames,
+        centers: centers, // ✅ Thêm danh sách centers
+        created_at: user.created_at,
+        updated_at: user.updated_at
       }
     });
   } catch (err) {
+    console.error('❌ Get Me Error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

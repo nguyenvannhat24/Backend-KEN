@@ -156,9 +156,9 @@ async updateIsDone(idColumn, idBoard, idUser) {
     const col = await columnRepo.findById(idColumn);
     if (!col) throw new Error('Không tìm thấy column');
 
-    // 2️⃣ Kiểm tra user có phải là member của board không
-    const isMember = await boardRepo.isMember(idUser, idBoard);
-    if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+      // 2️⃣ Kiểm tra user có phải là member của board không
+      const isMember = await boardRepo.isCreatorFromMember(idUser, idBoard);
+      if (!isMember) return;
 
     // 3️⃣ Bỏ trạng thái Done của các cột khác trong cùng board
     await columnRepo.updateMany(

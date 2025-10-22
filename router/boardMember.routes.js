@@ -25,7 +25,7 @@ router.get(
 router.post(
   "/board/:board_id",
   authenticateAny,
-  authorizeAny('BOARD_MANAGE_MEMBERS admin System_Manager '), // quyền thêm member
+  authorizeAny('BOARD_MANAGE_MEMBERS admin System_Manager BOARD_UPDATE '), // quyền thêm member
   boardMemberController.addMember
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.put(
   "/board/:board_id/user/:user_id",
   authenticateAny,
-  authorizeAny('BOARD_MANAGE_MEMBERS System_Manager admin' ), // quyền quản lý role
+  authorizeAny('BOARD_MANAGE_MEMBERS System_Manager admin BOARD_UPDATE' ), // quyền quản lý role
   boardMemberController.updateRole
 );
 

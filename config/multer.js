@@ -13,7 +13,7 @@ const avatarStorage = multer.diskStorage({
 
 const uploadAvatar = multer({
   storage: avatarStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+ limits: { fileSize: 50 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png/;
     const ext = path.extname(file.originalname).toLowerCase();

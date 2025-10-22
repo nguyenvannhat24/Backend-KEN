@@ -93,7 +93,7 @@ async findByBoard(board_id, options = {}) {
       .populate('column_id', 'name order')
       .populate('swimlane_id', 'name order')
       .populate('created_by', 'username full_name')
-      .populate('assigned_to', 'username full_name')
+      .populate('assigned_to', 'username full_name avatar_url')
       .sort(sort)
       .skip(skip)
       .limit(limit)

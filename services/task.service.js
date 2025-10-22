@@ -191,65 +191,76 @@ if (tasksInColumn.length > 0) {
     return await this._enrichTasksWithOverdue(tasks);
   }
 
-  // Cập nhật task
-  async updateTask(id, updateData, userId) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error('Task ID không hợp lệ');
-      }
-
-      // Kiểm tra task tồn tại
-      const existingTask = await taskRepo.findById(id);
-      if (!existingTask) throw new Error('Task không tồn tại');
-
-      //Kiểm tra user là thành viên của board
-      const isMember = await boardRepo.isMember(userId, existingTask.board_id._id?.toString?.() || existingTask.board_id.toString());
-      if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
-
-      // Validate nếu thay đổi column
-      if (updateData.column_id) {
-        if (!mongoose.Types.ObjectId.isValid(updateData.column_id)) {
-          throw new Error('column_id không hợp lệ');
-        }
-        
-        const column = await columnRepo.findById(updateData.column_id);
-        if (!column || column.board_id.toString() !== existingTask.board_id.toString()) {
-          throw new Error('Column không thuộc board này');
-        }
-      }
-
-      // Validate nếu thay đổi swimlane
-      if (updateData.swimlane_id) {
-        if (!mongoose.Types.ObjectId.isValid(updateData.swimlane_id)) {
-          throw new Error('swimlane_id không hợp lệ');
-        }
-        
-        const swimlane = await swimlaneRepo.findById(updateData.swimlane_id);
-        if (!swimlane || swimlane.board_id.toString() !== existingTask.board_id.toString()) {
-          throw new Error('Swimlane không thuộc board này');
-        }
-      }
-
-      // Validate dates
-      if (updateData.start_date || updateData.due_date) {
-        const startDate = updateData.start_date ? new Date(updateData.start_date) : new Date(existingTask.start_date);
-        const dueDate = updateData.due_date ? new Date(updateData.due_date) : new Date(existingTask.due_date);
-        
-        if (startDate && dueDate && startDate >= dueDate) {
-          throw new Error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
-        }
-      }
-
-      // Validate estimate_hours
-      if (updateData.estimate_hours !== undefined && updateData.estimate_hours < 0) {
-        throw new Error('Thời gian ước tính phải lớn hơn 0');
-      }
-
-      return await taskRepo.update(id, updateData);
-    } catch (error) {
-      throw new Error(`Lỗi cập nhật task: ${error.message}`);
+// Cập nhật task
+async updateTask(id, updateData, userId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error('Task ID không hợp lệ');
     }
+
+    // 1️⃣ Kiểm tra task tồn tại
+    const existingTask = await taskRepo.findById(id);
+    if (!existingTask) throw new Error('Task không tồn tại');
+
+    // 2️⃣ Kiểm tra user là member của board
+    const isMember = await boardRepo.isMember(
+      userId,
+      existingTask.board_id._id?.toString?.() || existingTask.board_id.toString()
+    );
+    if (!isMember) throw new Error('Bạn không có quyền thao tác trên board này');
+
+    // 3️⃣ Kiểm tra nếu task đang nằm trong cột Done thì không được sửa
+    const currentColumn = await columnRepo.findById(existingTask.column_id);
+    if (currentColumn?.isDone) {
+      throw new Error('Task đang ở cột hoàn thành (Done), không thể chỉnh sửa');
+    }
+
+    // 4️⃣ Nếu có thay đổi column_id -> kiểm tra hợp lệ
+    if (updateData.column_id) {
+      if (!mongoose.Types.ObjectId.isValid(updateData.column_id)) {
+        throw new Error('column_id không hợp lệ');
+      }
+
+      const newColumn = await columnRepo.findById(updateData.column_id);
+      if (!newColumn || newColumn.board_id.toString() !== existingTask.board_id.toString()) {
+        throw new Error('Column không thuộc board này');
+      }
+    }
+
+    // 5️⃣ Validate swimlane nếu thay đổi
+    if (updateData.swimlane_id) {
+      if (!mongoose.Types.ObjectId.isValid(updateData.swimlane_id)) {
+        throw new Error('swimlane_id không hợp lệ');
+      }
+
+      const swimlane = await swimlaneRepo.findById(updateData.swimlane_id);
+      if (!swimlane || swimlane.board_id.toString() !== existingTask.board_id.toString()) {
+        throw new Error('Swimlane không thuộc board này');
+      }
+    }
+
+    // 6️⃣ Kiểm tra logic ngày bắt đầu và kết thúc
+    if (updateData.start_date || updateData.due_date) {
+      const startDate = updateData.start_date ? new Date(updateData.start_date) : new Date(existingTask.start_date);
+      const dueDate = updateData.due_date ? new Date(updateData.due_date) : new Date(existingTask.due_date);
+
+      if (startDate && dueDate && startDate >= dueDate) {
+        throw new Error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+      }
+    }
+
+    // 7️⃣ Estimate hours phải dương
+    if (updateData.estimate_hours !== undefined && updateData.estimate_hours < 0) {
+      throw new Error('Thời gian ước tính phải lớn hơn 0');
+    }
+
+    // 8️⃣ Cập nhật task
+    return await taskRepo.update(id, updateData);
+  } catch (error) {
+    throw new Error(`Lỗi cập nhật task: ${error.message}`);
   }
+}
+
 
   // Xóa task
  // Xóa task
@@ -508,21 +519,21 @@ else if (!newisDone && qualityTasknewDone < qualityTask) {
 
     // ====== Gửi thông báo qua mail ======
     const recipients = emails.filter((e) => e && e !== userEmail);
-    // if (recipients.length > 0) {
-    //   try {
-    //     await sendNotificationToAll(
-    //       recipients,       // Danh sách email
-    //       userName,         // Người thực hiện
-    //       newColumnName,    // 🟢 Cột mới
-    //       newSwimlaneName,  // Hàng mới
-    //       titleTask,        // Tên task
-    //       boardName         // Tên board
-    //     );
+    if (recipients.length > 0) {
+      try {
+        await sendNotificationToAll(
+          recipients,       // Danh sách email
+          userName,         // Người thực hiện
+          newColumnName,    // 🟢 Cột mới
+          newSwimlaneName,  // Hàng mới
+          titleTask,        // Tên task
+          boardName         // Tên board
+        );
        
-    //   } catch (mailErr) {
-    //     console.error("❌ Lỗi khi gửi email:", mailErr);
-    //   }
-    // }
+      } catch (mailErr) {
+        console.error("❌ Lỗi khi gửi email:", mailErr);
+      }
+    }
 
    
     return { success: true, data: movedTask };

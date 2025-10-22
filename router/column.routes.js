@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const columnController = require('../controllers/column.controller');
-const { authenticateAny } = require('../middlewares/auth');
+const { authenticateAny ,authorizeAny } = require('../middlewares/auth');
 const { route } = require('./user.routes');
 
 // CRUD (bảo vệ bằng auth)
-router.put('/board/:idBoard/isdoneColumn/:idcolumn' ,authenticateAny, columnController.ColumnIsDone);
+router.put('/board/:idBoard/isdoneColumn/:idcolumn' ,authenticateAny,authorizeAny('BOARD_UPDATE'), columnController.ColumnIsDone);
 router.post('/', authenticateAny, columnController.create);                  // Create
 router.get('/:id', authenticateAny, columnController.getOne);                // Read one
 router.get('/board/:boardId', authenticateAny, columnController.getByBoard); // Read all by board

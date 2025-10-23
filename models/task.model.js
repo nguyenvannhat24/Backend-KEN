@@ -51,7 +51,8 @@ const TaskSchema = new mongoose.Schema({
   position: {
   type: Number,
   default: 0
-}
+},
+ done_at: { type: Date, default: null }
 
 }, { 
   collection: 'Tasks',

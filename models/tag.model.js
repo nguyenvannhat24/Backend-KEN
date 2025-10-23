@@ -5,8 +5,7 @@ const TagSchema = new mongoose.Schema({
     type: String, 
     required: true, 
     maxlength: 50, 
-    index: true, 
-    unique: true 
+    trim: true // thêm trim để tránh khoảng trắng
   },
   color: { 
     type: String, 
@@ -16,6 +15,7 @@ const TagSchema = new mongoose.Schema({
   board_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Board',
+    required: true,
     index: true
   },
   deleted_at: { 
@@ -27,11 +27,13 @@ const TagSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+// ✅ Unique theo cặp (board_id, name)
 TagSchema.index({ board_id: 1, name: 1 }, { unique: true });
+
 // Index for soft delete
 TagSchema.index({ deleted_at: 1 });
 
-// Middleware to filter soft-deleted records
+// Middleware filter soft delete
 TagSchema.pre(/^find/, function(next) {
   const query = this.getQuery();
   if (!query.hasOwnProperty('deleted_at') && !query.$or) {

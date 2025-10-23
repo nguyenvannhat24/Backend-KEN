@@ -16,7 +16,7 @@ class TagService {
     if (!boardId ) {
         throw new Error('id board tag là bắt buộc');
       }
-
+   const boardObjectId = new mongoose.Types.ObjectId(boardId);
       const existingTag = await tagRepo.findByNameAndIdBoard(name ,boardId);
       if (existingTag) {
         throw new Error('Tag của board đã có với tên này rồi');
@@ -25,7 +25,7 @@ class TagService {
       const tagData = {
         name: name.trim(),
         color: color || '#007bff',
-        board_id :  boardId// Màu mặc định
+        board_id :  boardObjectId// Màu mặc định
       };
 
       const tag = await tagRepo.create(tagData);

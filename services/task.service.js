@@ -336,14 +336,11 @@ async moveTask(
   userId
 ) {
   try {
-   
-
     // ====== Kiểm tra ID hợp lệ ======
     if (!mongoose.Types.ObjectId.isValid(task_id))
       throw new Error("Task ID không hợp lệ");
     if (!mongoose.Types.ObjectId.isValid(new_column_id))
       throw new Error("Column ID không hợp lệ");
-
     const userIdStr = userId?.toString();
     if (!mongoose.Types.ObjectId.isValid(userIdStr))
       throw new Error("User ID không hợp lệ");
@@ -355,37 +352,41 @@ async moveTask(
       user?.full_name ||
       (user?.toObject ? user.toObject().full_name : "Người dùng");
 
-
     // ====== Lấy thông tin task ======
     const task = await taskRepo.findById(task_id);
     if (!task) throw new Error("Task không tồn tại");
-
     const titleTask = task.title;
- 
+
     // ====== Lấy thông tin board ======
-    const boardId = task.board_id._id || task.board_id;
+    const boardId = task.board_id?._id || task.board_id;
+    if (!boardId) throw new Error("Task không có board_id");
+
     const boardDoc = await boardRepo.findById(boardId);
+    if (!boardDoc) throw new Error("Board không tồn tại");
     const boardName = boardDoc?.title || boardDoc?.name || "Không có tên board";
-    // tìm trong bảng cột nào là cột done
 
+    // ====== Tìm cột Done (nếu có) ======
     const columnDoneBoard = await columnService.findIsDone(boardId);
-    const doneColumnId = columnDoneBoard[0]._id;
-     // số lượng khi chưa lưu của cột done
-    const qualityTask = await taskRepo.countTask(doneColumnId, boardId);
-  
-    const newColumnIsDone = await columnService.findById(new_column_id);
-    const newisDone = newColumnIsDone.isDone ; // cột mới là done
-
-    // ====== Lấy thông tin cột đích (column) ======
-    const newColumn = await columnRepo.findById(new_column_id);
-    if (
-      !newColumn ||
-      newColumn.board_id.toString() !== boardId.toString()
-    ) {
-      throw new Error("Column không thuộc board này");
+    let doneColumnId = null;
+    if (Array.isArray(columnDoneBoard) && columnDoneBoard.length > 0) {
+      doneColumnId = columnDoneBoard[0]._id;
     }
+
+    // ====== Đếm số task Done hiện tại (nếu có) ======
+    let qualityTask = 0;
+    if (doneColumnId) {
+      qualityTask = await taskRepo.countTask(doneColumnId, boardId);
+    }
+
+    // ====== Lấy thông tin cột đích ======
+    const newColumn = await columnRepo.findById(new_column_id);
+    if (!newColumn)
+      throw new Error("Không tìm thấy cột đích trong bảng column");
+    if (newColumn.board_id.toString() !== boardId.toString())
+      throw new Error("Column không thuộc board này");
+
     const newColumnName = newColumn.name || "Không có tên cột";
-   
+    const newisDone = newColumn.isDone || false;
 
     // ====== Lấy thông tin swimlane cũ và mới ======
     let oldSwimlaneName = "Không có";
@@ -398,13 +399,10 @@ async moveTask(
     if (new_swimlane_id) {
       if (!mongoose.Types.ObjectId.isValid(new_swimlane_id))
         throw new Error("Swimlane ID không hợp lệ");
-
       const newSwimlane = await swimlaneRepo.findById(new_swimlane_id);
       if (!newSwimlane) throw new Error("Swimlane không tồn tại");
-
       if (newSwimlane.board_id.toString() !== boardId.toString())
-        throw new Error("Swimlane không thuộc board này");
-
+     throw new Error("Swimlane không thuộc board này");
       newSwimlaneName = newSwimlane.name;
     }
 
@@ -417,7 +415,6 @@ async moveTask(
     const emails = Array.isArray(usersInBoard)
       ? usersInBoard.map((u) => u.email)
       : [];
-
 
     // ====== Tính toán vị trí mới (position) ======
     const [prevTask, nextTask] = await Promise.all([
@@ -443,6 +440,7 @@ async moveTask(
       newPosition = (prevTask.position + nextTask.position) / 2;
     else newPosition = tasksInTarget[tasksInTarget.length - 1].position + 10;
 
+    // ====== Cập nhật task ======
     const updateData = {
       position: newPosition,
       updated_at: Date.now(),
@@ -455,6 +453,7 @@ async moveTask(
 
     const movedTask = await taskRepo.update(task_id, updateData);
 
+    // ====== Reorder lại task nếu cần ======
     const needReorder =
       !prevTask ||
       !nextTask ||
@@ -469,80 +468,59 @@ async moveTask(
       }
     }
 
-// Lấy tổng số task hiện đang ở cột Done sau khi cập nhật
-const qualityTasknewDone = await taskRepo.countTask(doneColumnId, boardId);
+    // ====== Nếu board có cột Done, xử lý điểm thưởng / trừ ======
+    if (doneColumnId) {
+      const qualityTasknewDone = await taskRepo.countTask(doneColumnId, boardId);
 
-// ========================================
-if (newisDone && qualityTasknewDone > qualityTask) {
-
-  // Lấy user được giao task
-  const taskAssignee = await taskRepo.findByAssignedUser(task_id);
-  const userId = taskAssignee;
-
-  // Tìm trung tâm của user
-  const centerMember = await CenterMemberRepo.findByUserId(userId);
-
-  if (centerMember && centerMember.length > 0) {
-    // Lấy centerId (giả sử mỗi user chỉ thuộc 1 center)
-    const centerId = centerMember[0].center_id || centerMember[0]._id;
-
-    const addPoint = 10;
-    const updatedUserPoint = await userPointRepo.updatePoint(userId, centerId, addPoint);
-
-  } else {
-
-  }
-}
-
-// ========================================
-// 🔴 2️⃣ Trường hợp: Kéo task ra khỏi cột Done (bị hoàn tác)
-// ========================================
+      // 🟢 Kéo task vào cột Done → cộng điểm
+      if (newisDone && qualityTasknewDone > qualityTask) {
+        const taskAssignee = await taskRepo.findByAssignedUser(task_id);
+        const userId = taskAssignee;
+        const centerMember = await CenterMemberRepo.findByUserId(userId);
+        if (centerMember?.length > 0) {
+          const centerId =
+            centerMember[0].center_id || centerMember[0]._id;
+          await userPointRepo.updatePoint(userId, centerId, 10);
+        }
+      }
 else if (!newisDone && qualityTasknewDone < qualityTask) {
-
-
-  // Lấy user được giao task
-  const taskAssignee = await taskRepo.findByAssignedUser(task_id);
-  const userId = taskAssignee;
-
-  // Tìm trung tâm của user
-  const centerMember = await CenterMemberRepo.findByUserId(userId);
-
-  if (centerMember && centerMember.length > 0) {
-    const centerId = centerMember[0].center_id || centerMember[0]._id;
-
-    const minusPoint = 10;
-    const updatedUserPoint = await userPointRepo.updatePoint(userId, centerId, -minusPoint);
-  } else {
-  }
-}
-
+        const taskAssignee = await taskRepo.findByAssignedUser(task_id);
+        const userId = taskAssignee;
+        const centerMember = await CenterMemberRepo.findByUserId(userId);
+        if (centerMember?.length > 0) {
+          const centerId =
+            centerMember[0].center_id || centerMember[0]._id;
+          await userPointRepo.updatePoint(userId, centerId, -10);
+        }
+      }
+    }
 
     // ====== Gửi thông báo qua mail ======
     const recipients = emails.filter((e) => e && e !== userEmail);
     if (recipients.length > 0) {
       try {
         await sendNotificationToAll(
-          recipients,       // Danh sách email
-          userName,         // Người thực hiện
-          newColumnName,    // 🟢 Cột mới
-          newSwimlaneName,  // Hàng mới
-          titleTask,        // Tên task
-          boardName         // Tên board
+          recipients,
+          userName,
+          newColumnName,
+          newSwimlaneName,
+          titleTask,
+          boardName
         );
-       
       } catch (mailErr) {
         console.error("❌ Lỗi khi gửi email:", mailErr);
       }
     }
 
-   
+    // ====== Trả về kết quả ======
     return { success: true, data: movedTask };
   } catch (error) {
+    console.error("🔥 Lỗi di chuyển task:", error);
     throw new Error(`Lỗi di chuyển task: ${error.message}`);
   }
 }
 
-async  getData(idBoard) {
+async getData(idBoard) {
   const mongoose = require('mongoose');
   const Task = require('../models/task.model');
 
@@ -570,22 +548,12 @@ async  getData(idBoard) {
     d.setDate(d.getDate() + 1);
   }
 
-  // 4️⃣ Lấy dữ liệu task done theo ngày (dựa trên updated_at của task khi vào cột Done)
+  // 4️⃣ Lấy dữ liệu task done theo ngày dựa trên done_at
   const doneTasks = await Task.aggregate([
-    { $match: { board_id: new mongoose.Types.ObjectId(idBoard), deleted_at: null } },
-    {
-      $lookup: {
-        from: 'Columns', // collection Column
-        localField: 'column_id',
-        foreignField: '_id',
-        as: 'column'
-      }
-    },
-    { $unwind: '$column' },
-    { $match: { 'column.isDone': true } }, // chỉ task đã Done
+    { $match: { board_id: new mongoose.Types.ObjectId(idBoard), deleted_at: null, done_at: { $ne: null } } },
     {
       $group: {
-        _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$updated_at" } } },
+        _id: { day: { $dateToString: { format: "%Y-%m-%d", date: "$done_at" } } },
         doneCount: { $sum: 1 },
         avgEstimate: { $avg: '$estimate_hours' }
       }
@@ -594,7 +562,7 @@ async  getData(idBoard) {
     { $project: { _id: 0, date: '$_id.day', doneCount: 1, avgEstimate: 1 } }
   ]);
 
-  // 5️⃣ Map dữ liệu doneTasks vào allDates để đảm bảo có ngày nào cũng hiển thị
+  // 5️⃣ Map dữ liệu doneTasks vào allDates để đảm bảo ngày nào cũng hiển thị
   const data = allDates.map(date => {
     const found = doneTasks.find(t => t.date === date);
     return {
@@ -605,7 +573,7 @@ async  getData(idBoard) {
   });
 
   return { totalTask, data };
-}
+} 
 
 
 

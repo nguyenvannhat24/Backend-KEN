@@ -130,7 +130,7 @@ async removeMember(requester_id, user_id, board_id) {
   }
 
   // Cho phép người dùng tự xóa chính mình
-  if (requester_id !== user_id) {
+  if (requester_id.toString() !== user_id) {
     // Nếu người này muốn xóa người khác => phải là người tạo hoặc admin
     const isCreator = await boardRepo.isCreatorFromMember(requester_id, board_id);
     const requester = await userRepo.findById(requester_id);
@@ -140,15 +140,15 @@ async removeMember(requester_id, user_id, board_id) {
   const systemRoles = roles.map(r => r.name);
 
   
-  //const isSystemManagerOrAdmin = systemRoles.includes("System_Manager") || systemRoles.includes("Admin");
+  const isSystemManagerOrAdmin = systemRoles.includes("System_Manager") || systemRoles.includes("admin");
 
-  //if (!isCreator && !isSystemManagerOrAdmin) {
+  if (!isCreator && !isSystemManagerOrAdmin) {
 
     if (!isCreator ) {
       throw new Error("Chỉ người tạo hoặc admin mới có quyền xóa thành viên khác");
     }
   }
-
+  }
   // Không cho xóa người tạo cuối cùng
   const targetMember = await boardMemberRepo.findMember(user_id, board_id);
   if (!targetMember) throw new Error("Không tìm thấy thành viên để xoá");

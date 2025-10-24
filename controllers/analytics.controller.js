@@ -19,18 +19,6 @@ class AnalyticsController {
         });
       }
 
-      // ✅ Audit log: Track who accessed analytics
-      console.log('📊 Analytics Access:', {
-        user_id: req.user?.id,
-        username: req.user?.username,
-        board_id,
-        board_title: req.board?.title,
-        role_in_board: req.boardMembership?.role_in_board,
-        endpoint: 'line-chart',
-        date_range: `${start_date} to ${end_date}`,
-        granularity
-      });
-
       const data = await analyticsService.getLineChartData({
         board_id,
         start_date,
@@ -60,25 +48,8 @@ class AnalyticsController {
     try {
       const { board_id } = req.params;
 
-      // ✅ Audit log
-      console.log('📊 Analytics Access:', {
-        user_id: req.user?.id,
-        username: req.user?.username,
-        board_id,
-        board_title: req.board?.title,
-        role_in_board: req.boardMembership?.role_in_board,
-        endpoint: 'dashboard'
-      });
 
       const stats = await analyticsService.getDashboardStats(board_id);
-
-      // Log stats để debug
-      console.log('📊 Dashboard Stats:', {
-        board_id,
-        totalTasks: stats.stats.totalTasks,
-        completedTasks: stats.stats.completedTasks,
-        completionRate: stats.stats.completionRate
-      });
 
       res.json({
         success: true,
@@ -112,17 +83,6 @@ class AnalyticsController {
   async getCompletionRate(req, res) {
     try {
       const { board_id, user_id, center_id, group_id } = req.query;
-
-      // ✅ Audit log
-      console.log('📊 Analytics Access:', {
-        user_id: req.user?.id,
-        username: req.user?.username,
-        board_id,
-        board_title: req.board?.title,
-        role_in_board: req.boardMembership?.role_in_board,
-        endpoint: 'completion-rate',
-        filters: { user_id, center_id, group_id }
-      });
 
       const data = await analyticsService.getCompletionRate({
         board_id,

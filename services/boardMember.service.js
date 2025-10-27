@@ -4,7 +4,7 @@ const userRepo = require("../repositories/user.repository");
 const boardRepo = require("../repositories/board.repository");
 const UserRoleRepo = require("../repositories/userRole.repository");
 const notificationService = require("../services/notification.service");
-
+const { sendNotification } = require("../config/socket");
 class BoardMemberService {
   // Xem tất cả BoardMember
   async selectAll() {
@@ -117,7 +117,14 @@ class BoardMemberService {
       role_in_board,
       "add_member"
     );
-
+    // gửi thông báo đến cho người dùng
+    sendNotification(
+      "private_Notification",
+      {
+        message: "bạn vừa được thêm vào bảng",
+      },
+      user_id
+    );
     return addMember;
   }
 
@@ -186,6 +193,13 @@ class BoardMemberService {
       role_in_board,
       "update_role"
     );
+    sendNotification(
+      "private_Notification",
+      {
+        message: "bạn vừa được thêm cập nhật quyền",
+      },
+      user_id
+    );
     return member;
   }
 
@@ -251,6 +265,14 @@ class BoardMemberService {
       board_id,
       "",
       "remove_member"
+    );
+
+    sendNotification(
+      "private_Notification",
+      {
+        message: "bạn vừa được xóa khỏi bảng",
+      },
+      user_id
     );
     return true;
   }

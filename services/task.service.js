@@ -10,7 +10,7 @@ const CenterMemberRepo = require("../repositories/centerMember.repo");
 const userPointRepo = require("../repositories/userPoint.repository");
 const notificationService = require("../services/notification.service");
 const { sendNotificationToAll } = require("../config/sendNotify");
-
+const { sendNotification } = require("../config/socket");
 const mongoose = require("mongoose");
 
 class TaskService {
@@ -297,6 +297,14 @@ class TaskService {
           title: `bạn vừa được giao nhiệm vụ: ${existingTask.title}`,
         };
         const notification = await notificationService.createNotification(data);
+
+        sendNotification(
+          "private_Notification",
+          {
+            message: `Bạn vừa có nhiệm vụ mới: ${existingTask.title}`,
+          },
+          updateData.assigned_to
+        );
       }
 
       // 8️⃣ Cập nhật task

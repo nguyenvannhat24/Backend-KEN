@@ -5,7 +5,7 @@ const port = process.env.PORT || 3005;
 const Keycloak = require("keycloak-connect");
 const session = require("express-session");
 const cors = require("cors");
-
+const http = require("http");
 const userRouter = require("./router/auth.routes");
 const user = require("./router/user.routes");
 const userRole = require("./router/userRole.router");
@@ -34,6 +34,7 @@ const analyticsRoutes = require("./router/analytics.routes");
 const memoryStore = new session.MemoryStore();
 const CenterMember = require("./router/centerMember.route");
 const notificationRouter = require("./router/notification.routes");
+const { initSocket } = require("./config/socket");
 app.use(
   session({
     secret: "some secret",
@@ -116,6 +117,8 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/uploads", express.static("uploads"));
 app.use("/api/notification", notificationRouter);
 // --- Start server ---
-app.listen(port, () => {
-  // Server started successfully
+const server = http.createServer(app); // Tạo HTTP server từ Express
+initSocket(server);
+server.listen(port, () => {
+  console.log(`✅ Server is running on port ${port}`);
 });

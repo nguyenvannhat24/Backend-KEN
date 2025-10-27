@@ -355,7 +355,6 @@ class TaskService {
         body: "task mà bạn được giao đã bị xóa hãy kiểm tra lại",
       };
       const notification = await notificationService.createNotification(data);
-      console.log(notification);
     }
     // Soft delete instead of hard delete
     return await taskRepo.softDelete(id);

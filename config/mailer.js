@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 
 async function sendMail(to, subject, html) {
   await transporter.sendMail({
-    from: `"Hệ thống CodeGym" <${process.env.EMAIL_USER}>`,
+    from: `"Hệ thống KEN" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,

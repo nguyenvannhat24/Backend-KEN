@@ -1,12 +1,11 @@
-const RoleRepository = require('../repositories/role.repository');
-const UserRoleRepository = require('../repositories/userRole.repository');
+const RoleRepository = require("../repositories/role.repository");
+const UserRoleRepository = require("../repositories/userRole.repository");
 
 /**
  * Role Service - Xử lý logic nghiệp vụ cho Role
  * Chứa các methods xử lý business logic cho Role
  */
 class RoleService {
-
   /**
    * Lấy tất cả roles
    * @returns {Array} Danh sách tất cả roles
@@ -61,16 +60,17 @@ class RoleService {
    */
   async createRole(roleData) {
     try {
-      
       // Validate input
       if (!roleData.name || !roleData.name.trim()) {
-        throw new Error('Tên role là bắt buộc');
+        throw new Error("Tên role là bắt buộc");
       }
 
       // Check if role already exists
-      const existingRole = await RoleRepository.findByName(roleData.name.trim());
+      const existingRole = await RoleRepository.findByName(
+        roleData.name.trim()
+      );
       if (existingRole) {
-        throw new Error('Tên role đã tồn tại');
+        throw new Error("Tên role đã tồn tại");
       }
 
       const newRole = await RoleRepository.create(roleData);
@@ -87,83 +87,85 @@ class RoleService {
    * @returns {Object|null} Role đã cập nhật hoặc null
    */
   async updateRole(id, updateData) {
-  try {
-    // Check if role exists
-    const existingRole = await RoleRepository.findById(id);
-    if (!existingRole) {
-      return null;
-    }
-
-    // ❌ Không cho cập nhật role System_Manager
-    if (existingRole.name === "System_Manager"  ) {
-      throw new Error("Role System_Manager không được cập nhật");
-    }
-
-    // Nếu đổi tên, kiểm tra tên mới đã tồn tại chưa
-    if (updateData.name && updateData.name !== existingRole.name) {
-      const nameExists = await RoleRepository.findByName(updateData.name.trim());
-      if (nameExists) {
-        throw new Error('Tên role đã tồn tại');
+    try {
+      // Check if role exists
+      const existingRole = await RoleRepository.findById(id);
+      if (!existingRole) {
+        return null;
       }
-      
-      if(updateData.name === 'admin' || updateData.name === 'user') throw new Error('Tên role này của hệ thống ko đc sửa');
+
+      // ❌ Không cho cập nhật role System_Manager
+      if (existingRole.name === "System_Manager") {
+        throw new Error("Role System_Manager không được cập nhật");
+      }
+
+      // Nếu đổi tên, kiểm tra tên mới đã tồn tại chưa
+      if (updateData.name && updateData.name !== existingRole.name) {
+        const nameExists = await RoleRepository.findByName(
+          updateData.name.trim()
+        );
+        if (nameExists) {
+          throw new Error("Tên role đã tồn tại");
+        }
+
+        if (updateData.name === "admin" || updateData.name === "user")
+          throw new Error("Tên role này của hệ thống ko đc sửa");
+      }
+
+      const updatedRole = await RoleRepository.update(id, updateData);
+      return updatedRole;
+    } catch (error) {
+      throw error;
     }
-
-    const updatedRole = await RoleRepository.update(id, updateData);
-    return updatedRole;
-  } catch (error) {
-    throw error;
   }
-}
-
 
   /**
    * Xóa role
    * @param {String} id - ID của role
    * @returns {Object|null} Role đã xóa hoặc null
    */
-async deleteRole(id) {
-  try {
+  async deleteRole(id) {
+    try {
+      // Check if role exists
+      const existingRole = await RoleRepository.findById(id);
+      if (!existingRole) {
+        return null;
+      }
 
-    // Check if role exists
-    const existingRole = await RoleRepository.findById(id);
-    if (!existingRole) {
-      return null;
+      // ❌ Không cho xóa role System_Manager
+      if (
+        existingRole.name === "System_Manager" ||
+        existingRole.name === "admin"
+      ) {
+        throw new Error("Role System_Manager không được xóa");
+      }
+
+      // Check if role is being used by any user
+      const usersWithRole = await UserRoleRepository.findByRoleId(id);
+      if (usersWithRole && usersWithRole.length > 0) {
+        throw new Error("Không thể xóa role đang được sử dụng bởi user");
+      }
+
+      const deletedRole = await RoleRepository.delete(id);
+      return deletedRole;
+    } catch (error) {
+      throw error;
     }
-
-    // ❌ Không cho xóa role System_Manager
-    if (existingRole.name === "System_Manager" ||existingRole.name === "admin"  )  {
-      throw new Error("Role System_Manager không được xóa");
-    }
-
-   // Check if role is being used by any user
-    const usersWithRole = await UserRoleRepository.findByRoleId(id);
-    if (usersWithRole && usersWithRole.length > 0) {
-      throw new Error('Không thể xóa role đang được sử dụng bởi user');
-    }
-
-    const deletedRole = await RoleRepository.delete(id);
-    return deletedRole;
-  } catch (error) {
-    throw error;
   }
-}
-
 
   /**
    * Lấy role của user
    * @param {String} userId - ID của user
    * @returns {String|null} Tên role hoặc null
    */
-async getUserRoles(userId) {
-  try {
-    const roles = await RoleRepository.GetRoles(userId);
-    return roles;
-  } catch (error) {
-    throw error;
+  async getUserRoles(userId) {
+    try {
+      const roles = await RoleRepository.GetRoles(userId);
+      return roles;
+    } catch (error) {
+      throw error;
+    }
   }
-}
-
 
   /**
    * Lấy role của user (legacy method - deprecated)
@@ -174,14 +176,13 @@ async getUserRoles(userId) {
   async viewRole(userId) {
     return this.getUserRole(userId);
   }
-  async getIdByName(nameRole){
+  async getIdByName(nameRole) {
     try {
-         return await RoleRepository.getIdByName(nameRole);
-
+      return await RoleRepository.getIdByName(nameRole);
     } catch (error) {
       throw error;
     }
-  };
+  }
 }
 
 module.exports = new RoleService();

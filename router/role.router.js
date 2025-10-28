@@ -1,6 +1,6 @@
-const express = require('express');
-const roleController = require('../controllers/role.controller');
-const { authenticateAny, authorizeAny } = require('../middlewares/auth');
+const express = require("express");
+const roleController = require("../controllers/role.controller");
+const { authenticateAny, authorizeAny } = require("../middlewares/auth");
 
 const router = express.Router();
 
@@ -13,9 +13,9 @@ const router = express.Router();
 
 // Lấy role của user hiện tại
 router.get(
-  '/my-role',
+  "/my-role",
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+  authorizeAny("ROLE_VIEW"),
   roleController.getUserRole
 );
 
@@ -23,49 +23,49 @@ router.get(
 
 // Lấy tất cả roles
 router.get(
-  '/',
+  "/",
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+  authorizeAny("ROLE_VIEW"),
   roleController.getAllRoles
 );
 
 // Lấy role theo ID
 router.get(
-  '/:id',
+  "/:id",
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+  authorizeAny("ROLE_VIEW"),
   roleController.getRoleById
 );
 
 // Lấy role theo tên
 router.get(
-  '/name/:name',
+  "/name/:name",
   authenticateAny,
-  authorizeAny('ROLE_VIEW'),
+  authorizeAny("ROLE_VIEW"),
   roleController.getRoleByName
 );
 
 // Tạo role mới
 router.post(
-  '/',
+  "/",
   authenticateAny,
- authorizeAny('ROLE_CREATE'),
+  authorizeAny("ROLE_CREATE"),
   roleController.createRole
 );
 
 // Cập nhật role
 router.put(
-  '/:id',
+  "/:id",
   authenticateAny,
-   authorizeAny('ROLE_UPDATE'),
+  authorizeAny("ROLE_UPDATE"),
   roleController.updateRole
 );
 
 // Xóa role
 router.delete(
-  '/:id',
+  "/:id",
   authenticateAny,
- authorizeAny('ROLE_DELETE'),
+  authorizeAny("ROLE_DELETE"),
   roleController.deleteRole
 );
 

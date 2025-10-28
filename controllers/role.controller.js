@@ -1,11 +1,10 @@
-const roleService = require('../services/role.service');
+const roleService = require("../services/role.service");
 
 /**
  * Role Controller - Xử lý logic nghiệp vụ cho Role
  * Chứa các methods xử lý request/response cho Role endpoints
  */
 class RoleController {
-
   /**
    * Lấy tất cả roles
    * @param {Object} req - Request object
@@ -13,20 +12,19 @@ class RoleController {
    */
   async getAllRoles(req, res) {
     try {
-
       const result = await roleService.getAllRoles();
-      
+
       res.status(200).json({
         success: true,
-        message: 'Lấy danh sách roles thành công',
+        message: "Lấy danh sách roles thành công",
         count: result.length,
-        data: result
+        data: result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể lấy danh sách roles'
+        error: "Internal Server Error",
+        message: "Không thể lấy danh sách roles",
       });
     }
   }
@@ -39,35 +37,35 @@ class RoleController {
   async getRoleById(req, res) {
     try {
       const { id } = req.params;
-      
+
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'ID role là bắt buộc'
+          error: "Bad Request",
+          message: "ID role là bắt buộc",
         });
       }
 
       const result = await roleService.getRoleById(id);
-      
+
       if (!result) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Không tìm thấy role với ID này'
+          error: "Not Found",
+          message: "Không tìm thấy role với ID này",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Lấy thông tin role thành công',
-        data: result
+        message: "Lấy thông tin role thành công",
+        data: result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể lấy thông tin role'
+        error: "Internal Server Error",
+        message: "Không thể lấy thông tin role",
       });
     }
   }
@@ -84,31 +82,31 @@ class RoleController {
       if (!roleData.name) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'Tên role là bắt buộc'
+          error: "Bad Request",
+          message: "Tên role là bắt buộc",
         });
       }
 
       const result = await roleService.createRole(roleData);
-      
+
       res.status(201).json({
         success: true,
-        message: 'Tạo role thành công',
-        data: result
+        message: "Tạo role thành công",
+        data: result,
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          error: 'Conflict',
-          message: 'Tên role đã tồn tại'
+          error: "Conflict",
+          message: "Tên role đã tồn tại",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể tạo role'
+        error: error.code,
+        message: "Không thể tạo role " + error.message,
       });
     }
   }
@@ -126,46 +124,46 @@ class RoleController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'ID role là bắt buộc'
+          error: "Bad Request",
+          message: "ID role là bắt buộc",
         });
       }
 
       const result = await roleService.updateRole(id, updateData);
-      
+
       if (!result) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Không tìm thấy role với ID này'
+          error: "Not Found",
+          message: "Không tìm thấy role với ID này",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Cập nhật role thành công',
-        data: result
+        message: "Cập nhật role thành công",
+        data: result,
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          error: 'Conflict',
-          message: 'Tên role đã tồn tại'
+          error: "Conflict",
+          message: "Tên role đã tồn tại",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể cập nhật role'
+        error: "Internal Server Error",
+        message: "Không thể cập nhật role",
       });
     }
   }
 
   /**
-   * @param {Object} req 
-   * @param {Object} res 
+   * @param {Object} req
+   * @param {Object} res
    */
   async deleteRole(req, res) {
     try {
@@ -174,31 +172,31 @@ class RoleController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'ID role là bắt buộc'
+          error: "Bad Request",
+          message: "ID role là bắt buộc",
         });
       }
 
       const result = await roleService.deleteRole(id);
-      
+
       if (!result) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Không tìm thấy role với ID này'
+          error: "Not Found",
+          message: "Không tìm thấy role với ID này",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Xóa role thành công',
-        data: result
+        message: "Xóa role thành công",
+        data: result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể xóa role'
+        error: "Internal Server Error",
+        message: "Không thể xóa role",
       });
     }
   }
@@ -211,35 +209,35 @@ class RoleController {
   async getRoleByName(req, res) {
     try {
       const { name } = req.params;
-      
+
       if (!name) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'Tên role là bắt buộc'
+          error: "Bad Request",
+          message: "Tên role là bắt buộc",
         });
       }
 
       const result = await roleService.getRoleByName(name);
-      
+
       if (!result) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Không tìm thấy role với tên này'
+          error: "Not Found",
+          message: "Không tìm thấy role với tên này",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Lấy thông tin role thành công',
-        data: result
+        message: "Lấy thông tin role thành công",
+        data: result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể lấy thông tin role'
+        error: "Internal Server Error",
+        message: "Không thể lấy thông tin role",
       });
     }
   }
@@ -256,23 +254,23 @@ class RoleController {
       if (!userId) {
         return res.status(400).json({
           success: false,
-          error: 'Bad Request',
-          message: 'Không xác định được user từ token'
+          error: "Bad Request",
+          message: "Không xác định được user từ token",
         });
       }
 
       const result = await roleService.getUserRole(userId);
-      
+
       res.status(200).json({
         success: true,
-        message: 'Lấy thông tin role của user thành công',
-        data: result
+        message: "Lấy thông tin role của user thành công",
+        data: result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Internal Server Error',
-        message: 'Không thể lấy thông tin role của user'
+        error: "Internal Server Error",
+        message: "Không thể lấy thông tin role của user",
       });
     }
   }

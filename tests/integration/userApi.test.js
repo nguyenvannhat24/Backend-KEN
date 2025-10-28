@@ -1,113 +1,182 @@
 // tests/integration/userApi.test.js
 const request = require("supertest");
 const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const bcrypt = require("bcrypt");
 
-// Mock các middleware
-jest.mock("../../middlewares/auth", () => ({
-  authenticateAny: (req, res, next) => {
-    req.user = { id: "user123", roles: ["admin"] };
-    next();
-  },
-  authorizeAny: () => (req, res, next) => next(),
-}));
-
-// Mock controller đầy đủ
-jest.mock("../../controllers/user.controller", () => ({
-  viewProfile: jest.fn((req, res) => res.json({ username: "nhat" })),
-  getMe: jest.fn((req, res) => res.json({ username: "user_one" })),
-  updateMyProfile: jest.fn((req, res) =>
-    res.json({ _id: req.params.id || "u789", updated: true })
-  ),
-  changePassword: jest.fn((req, res) => res.json({ success: true })),
-  getByEmail: jest.fn((req, res) => res.json({ email: req.params.email })),
-  getByName: jest.fn((req, res) => res.json({ name: req.params.name })),
-  getByNumberPhone: jest.fn((req, res) =>
-    res.json({ phone: req.params.numberphone })
-  ),
-  SelectAll: jest.fn((req, res) => res.json([{ _id: "u1", username: "nhat" }])),
-  create: jest.fn((req, res) =>
-    res.status(201).json({ _id: "new_user", ...req.body })
-  ),
-  update: jest.fn((req, res) =>
-    res.json({ _id: req.params.id || "u789", updated: true })
-  ),
-  delete: jest.fn((req, res) => res.status(204).send()),
-  softDelete: jest.fn((req, res) => res.json({ softDeleted: true })),
-  restore: jest.fn((req, res) => res.json({ restored: true })),
-  getAllWithDeleted: jest.fn((req, res) => res.json([])),
-  getAllDeletedRecords: jest.fn((req, res) => res.json([])),
-  findUsers: jest.fn((req, res) => res.json([])),
-  searchUsers: jest.fn((req, res) => res.json([])),
-  cloneUser: jest.fn((req, res) => res.json({ cloned: true })),
-  createKeycloakUser: jest.fn((req, res) => res.json({ created: true })),
-  createKeycloakUserPassword: jest.fn((req, res) =>
-    res.json({ created: true })
-  ),
-  updateKeycloakUser: jest.fn((req, res) => res.json({ updated: true })),
-  getAllKeycloakUsers: jest.fn((req, res) => res.json([])),
-  getKeycloakUserById: jest.fn((req, res) => res.json({ id: req.params.id })),
-  getKeycloakUserByName: jest.fn((req, res) =>
-    res.json({ username: req.params.username })
-  ),
-  getKeycloakUserByMail: jest.fn((req, res) =>
-    res.json({ email: req.params.email })
-  ),
-  deleteKeycloakUser: jest.fn((req, res) => res.status(204).send()),
-  getById: jest.fn((req, res) =>
-    res.json({ _id: req.params.id, username: "user_one" })
-  ),
-}));
+dotenv.config({ path: ".env.test" });
 
 const userRouter = require("../../router/user.routes");
+const roleRouter = require("../../router/role.router");
+const User = require("../../models/usersModel");
+const Role = require("../../models/role.model");
 
-describe("🔹 API /api/user", () => {
+// Mock middleware auth
+jest.mock("../../middlewares/auth", () => ({
+  authenticateAny: (req, res, next) => {
+    req.user = {
+      id: global.testUserId,
+      roles: ["admin", "System_Manager", "ROLE_CREATE", "USER_CREATE"],
+      email: "admin@example.com",
+      username: "admin",
+    };
+    next();
+  },
+  authorizeAny: (requiredRoles) => (req, res, next) => {
+    const userRoles = req.user?.roles || [];
+    const hasPermission = requiredRoles
+      .split(" ")
+      .some((role) => userRoles.includes(role));
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        message: `Yêu cầu quyền: ${requiredRoles}`,
+      });
+    }
+    next();
+  },
+}));
+
+// Mock services
+jest.mock("../../services/keycloak.service", () => ({
+  createUserWithPassword: jest.fn().mockResolvedValue({
+    id: "keycloak123",
+    username: "newbie",
+    email: "newbie@example.com",
+  }),
+  getUsers: jest
+    .fn()
+    .mockResolvedValue([
+      { id: "keycloak123", username: "newbie", email: "newbie@example.com" },
+    ]),
+}));
+
+jest.mock("../../services/userRole.service", () => ({
+  create: jest.fn().mockResolvedValue({}),
+  getRoles: jest.fn().mockResolvedValue([{ role_id: { name: "user" } }]),
+}));
+
+jest.mock("../../services/centerMember.service", () => ({
+  getCentersByUser: jest.fn().mockResolvedValue([]),
+}));
+
+// Thêm mock cho roleService
+jest.mock("../../services/role.service", () => ({
+  getIdByName: jest.fn().mockResolvedValue("role123"),
+  createRole: jest.fn().mockImplementation(async (roleData) => {
+    const Role = require("../../models/role.model");
+    return await Role.create(roleData);
+  }),
+  getRoleByName: jest.fn().mockResolvedValue({ _id: "role123", name: "user" }),
+}));
+
+// Mock node-cron to prevent open handles
+jest.mock("node-cron", () => ({
+  schedule: jest.fn(),
+}));
+
+describe("🔹 Integration Test: /api (MongoDB Cloud)", () => {
   let app;
 
-  beforeAll(() => {
-    app = express();
-    app.use(express.json());
-    app.use("/api/user", userRouter);
+  beforeAll(async () => {
+    try {
+      await mongoose.connect(process.env.MONGO_URI);
+      app = express();
+      app.use(express.json());
+      app.use("/api/user", userRouter);
+      app.use("/api/role", roleRouter);
+      console.log("✅ Đã kết nối MongoDB Cloud thành công!");
+    } catch (err) {
+      console.error("❌ Lỗi khi kết nối MongoDB:", err);
+      throw err;
+    }
   });
 
-  test("✅ GET /api/user/selectAll", async () => {
-    const res = await request(app).get("/api/user/selectAll");
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body[0].username).toBe("nhat");
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await User.deleteMany({});
+    await Role.deleteMany({});
+    const user = await User.create({
+      username: "nhat",
+      email: "nhat@example.com",
+      status: "active",
+      typeAccount: "Local",
+      password_hash: await bcrypt.hash("password123", 10),
+    });
+    global.testUserId = user._id.toString();
   });
 
-  test("✅ GET /api/user/:id", async () => {
-    const res = await request(app).get("/api/user/u123");
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe("u123");
-    expect(res.body.username).toBe("user_one");
+  afterEach(async () => {
+    await User.deleteMany({});
+    await Role.deleteMany({});
   });
 
-  test("✅ POST /api/user", async () => {
-    const newUser = { username: "newbie", email: "newbie@example.com" };
-    const res = await request(app).post("/api/user").send(newUser);
-    expect(res.status).toBe(201);
-    expect(res.body._id).toBe("new_user");
-    expect(res.body.username).toBe("newbie");
+  afterAll(async () => {
+    try {
+      await mongoose.connection.close();
+      console.log("🧹 Đã đóng kết nối MongoDB sau khi test xong.");
+    } catch (err) {
+      console.error("❌ Lỗi khi đóng kết nối MongoDB:", err);
+    }
   });
 
-  test("✅ PUT /api/user/:id", async () => {
-    const res = await request(app)
-      .put("/api/user/u789")
-      .send({ username: "updatedUser" });
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe("u789");
-    expect(res.body.updated).toBe(true);
+  describe("POST /api/user", () => {
+    test("✅ Tạo user mới", async () => {
+      const newUser = {
+        username: "newbie",
+        email: "newbie@example.com",
+        full_name: "Newbie User",
+        password: "password123",
+        status: "active",
+        roles: ["user"],
+      };
+      const res = await request(app).post("/api/user").send(newUser);
+      console.log(
+        "POST /api/user response:",
+        JSON.stringify(res.body, null, 2)
+      );
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("success", true);
+      expect(res.body.data).toHaveProperty("username", "newbie");
+      expect(res.body.data).toHaveProperty("email", "newbie@example.com");
+
+      const checkInDb = await User.findOne({ username: "newbie" });
+      expect(checkInDb).not.toBeNull();
+      expect(checkInDb.email).toBe("newbie@example.com");
+    });
   });
 
-  test("✅ DELETE /api/user/:id", async () => {
-    const res = await request(app).delete("/api/user/u999");
-    expect(res.status).toBe(204);
+  describe("GET /api/user/selectAll", () => {
+    test("✅ Trả danh sách người dùng", async () => {
+      const res = await request(app).get("/api/user/selectAll");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("success", true);
+      expect(Array.isArray(res.body.users)).toBe(true);
+      expect(res.body.users).toHaveLength(1);
+      expect(res.body.users[0]).toHaveProperty("username", "nhat");
+    });
   });
 
-  test("✅ POST /api/user/getprofile", async () => {
-    const res = await request(app).post("/api/user/getprofile");
-    expect(res.status).toBe(200);
-    expect(res.body.username).toBe("nhat");
+  describe("POST /api/role", () => {
+    test("✅ Tạo role mới", async () => {
+      const newRole = {
+        name: "test-role-" + Date.now(),
+        description: "Role người dùng",
+      };
+      const res = await request(app).post("/api/role").send(newRole);
+      console.log(
+        "POST /api/role response:",
+        JSON.stringify(res.body, null, 2)
+      );
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("success", true);
+      expect(res.body.data).toHaveProperty("name", newRole.name);
+      expect(res.body.data).toHaveProperty("description", "Role người dùng");
+
+      const checkInDb = await Role.findOne({ name: newRole.name });
+      expect(checkInDb).not.toBeNull();
+      expect(checkInDb.description).toBe("Role người dùng");
+    });
   });
 });

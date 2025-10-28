@@ -100,7 +100,6 @@ router.get(
 router.post(
   "/",
   authenticateAny,
-  authenticateAny,
   authorizeAny("USER_CREATE System_Manager admin"),
   userController.create
 );

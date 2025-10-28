@@ -49,6 +49,21 @@ class ColumnRepository {
     }
   }
 
+  async softDeleteManyByBoard(boardId, session = null) {
+    try {
+      const options = {};
+      if (session) options.session = session;
+      
+      return await Column.updateMany(
+        { board_id: boardId, deleted_at: null },
+        { deleted_at: new Date() },
+        options
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Set Done Column
   async setDoneColumn(columnId, boardId) {
     try {

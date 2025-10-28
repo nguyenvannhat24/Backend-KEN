@@ -259,7 +259,7 @@ class RoleController {
         });
       }
 
-      const result = await roleService.getUserRole(userId);
+      const result = await roleService.getUserRoles(userId);
 
       res.status(200).json({
         success: true,

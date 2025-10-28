@@ -1,22 +1,22 @@
 // router/permission.routes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const permissionController = require('../controllers/permission.controller');
-const { authenticateAny, authorizeAny } = require('../middlewares/auth');
+const permissionController = require("../controllers/permission.controller");
+const { authenticateAny, authorizeAny } = require("../middlewares/auth");
 
 // ==================== PERMISSION ROUTES ====================
 
 // Tạo permission mới (chỉ admin / manage permission)
 router.post(
-  '/',
+  "/",
   authenticateAny,
- 
+
   permissionController.create
 );
 
 // Lấy tất cả permission (xem permission)
 router.get(
-  '/',
+  "/",
   authenticateAny,
 
   permissionController.getAll
@@ -24,15 +24,15 @@ router.get(
 
 // Lấy permission theo ID
 router.get(
-  '/:id',
+  "/:id",
   authenticateAny,
- 
+
   permissionController.getById
 );
 
 // Cập nhật permission (chỉ admin / manage permission)
 router.put(
-  '/:id',
+  "/:id",
   authenticateAny,
 
   permissionController.update
@@ -40,7 +40,7 @@ router.put(
 
 // Xóa permission (chỉ admin / manage permission)
 router.delete(
-  '/:id',
+  "/:id",
   authenticateAny,
 
   permissionController.delete

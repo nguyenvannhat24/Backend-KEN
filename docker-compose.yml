@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: ken_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ken_test
+    volumes:
+      - mongo_data:/data/db
+
+  app:
+    build: .
+    container_name: ken_app
+    restart: on-failure
+    depends_on:
+      - mongo
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: test
+      PORT: 3005
+      MONGO_URI: mongodb://mongo:27017/ken_test
+      JWT_SECRET: test_secret_key
+      JWT_REFRESH_SECRET: test_refresh_key
+    command: >
+      sh -c "npm install && npx jest --detectOpenHandles --forceExit"
+
+volumes:
+  mongo_data:

@@ -1,4 +1,12 @@
-// tests/integration/userApi.test.js
+/**
+ * 📄 User API Integration Tests
+ * 
+ * Tests user API routes with a real MongoDB database.
+ * This is an INTEGRATION test - we use real database but mock auth and external services.
+ */
+
+// ==================== IMPORTS ====================
+
 const request = require("supertest");
 const express = require("express");
 const mongoose = require("mongoose");
@@ -7,12 +15,16 @@ const bcrypt = require("bcrypt");
 
 dotenv.config({ path: ".env.test" });
 
+// Routers
 const userRouter = require("../../router/user.routes");
 const roleRouter = require("../../router/role.router");
+
+// Models
 const User = require("../../models/usersModel");
 const Role = require("../../models/role.model");
 
-// Mock middleware auth
+// ==================== MOCKS ====================
+
 jest.mock("../../middlewares/auth", () => ({
   authenticateAny: (req, res, next) => {
     req.user = {
@@ -38,7 +50,7 @@ jest.mock("../../middlewares/auth", () => ({
   },
 }));
 
-// Mock services
+// Mock Keycloak SSO service
 jest.mock("../../services/keycloak.service", () => ({
   createUserWithPassword: jest.fn().mockResolvedValue({
     id: "keycloak123",
@@ -52,16 +64,18 @@ jest.mock("../../services/keycloak.service", () => ({
     ]),
 }));
 
+// Mock user role service
 jest.mock("../../services/userRole.service", () => ({
   create: jest.fn().mockResolvedValue({}),
   getRoles: jest.fn().mockResolvedValue([{ role_id: { name: "user" } }]),
 }));
 
+// Mock center member service
 jest.mock("../../services/centerMember.service", () => ({
   getCentersByUser: jest.fn().mockResolvedValue([]),
 }));
 
-// Thêm mock cho roleService
+// Mock role service
 jest.mock("../../services/role.service", () => ({
   getIdByName: jest.fn().mockResolvedValue("role123"),
   createRole: jest.fn().mockImplementation(async (roleData) => {
@@ -71,17 +85,26 @@ jest.mock("../../services/role.service", () => ({
   getRoleByName: jest.fn().mockResolvedValue({ _id: "role123", name: "user" }),
 }));
 
-// Mock node-cron to prevent open handles
+// Mock node-cron
 jest.mock("node-cron", () => ({
   schedule: jest.fn(),
 }));
 
 describe("🔹 Integration Test: /api (MongoDB Cloud)", () => {
   let app;
+  let testUser;
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(process.env.MONGO_URI);
+      // Sử dụng DB_CONNECTION_STRING giống boardApi.test.js
+      const dbUri = process.env.DB_CONNECTION_STRING || 
+                    process.env.MONGO_URI || 
+                    "mongodb+srv://phamdobanvia24h_db_user:aLJVXtyle8NV3Lai@cluster0.eufiomf.mongodb.net/KEN?retryWrites=true&w=majority&appName=Cluster0";
+      
+      if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(dbUri);
+      }
+      
       app = express();
       app.use(express.json());
       app.use("/api/user", userRouter);
@@ -95,21 +118,26 @@ describe("🔹 Integration Test: /api (MongoDB Cloud)", () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    await User.deleteMany({});
-    await Role.deleteMany({});
-    const user = await User.create({
+    
+    // ⚠️ QUAN TRỌNG: CHỈ xóa test data, KHÔNG xóa toàn bộ DB!
+    await User.deleteMany({ email: /test@|nhat@example\.com/ });
+    await Role.deleteMany({ name: /^test-role-/ });
+    
+    // Tạo test user với email có pattern test
+    testUser = await User.create({
       username: "nhat",
       email: "nhat@example.com",
       status: "active",
       typeAccount: "Local",
       password_hash: await bcrypt.hash("password123", 10),
     });
-    global.testUserId = user._id.toString();
+    global.testUserId = testUser._id.toString();
   });
 
   afterEach(async () => {
-    await User.deleteMany({});
-    await Role.deleteMany({});
+    // CHỈ xóa test data
+    await User.deleteMany({ email: /test@|nhat@example\.com|newbie@/ });
+    await Role.deleteMany({ name: /^test-role-/ });
   });
 
   afterAll(async () => {

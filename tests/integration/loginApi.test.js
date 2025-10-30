@@ -31,10 +31,16 @@ describe("🔹 Integration Test: /api/login (MongoDB Cloud)", () => {
 
   beforeAll(async () => {
     try {
-      if (!process.env.MONGO_URI) {
-        throw new Error("MONGO_URI không được định nghĩa trong .env.test");
+      // Sử dụng DB_CONNECTION_STRING giống các test khác
+      const dbUri = process.env.DB_CONNECTION_STRING || 
+                    process.env.MONGO_URI || 
+                    "mongodb+srv://phamdobanvia24h_db_user:aLJVXtyle8NV3Lai@cluster0.eufiomf.mongodb.net/KEN?retryWrites=true&w=majority&appName=Cluster0";
+      
+      // Kiểm tra connection state trước khi connect
+      if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(dbUri);
       }
-      await mongoose.connect(process.env.MONGO_URI);
+      
       app = express();
       app.use(express.json());
       app.use("/api", Login());
@@ -48,21 +54,37 @@ describe("🔹 Integration Test: /api/login (MongoDB Cloud)", () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    await User.deleteMany({});
-    // Tạo user mẫu và kiểm tra
+    
+    // ⚠️ QUAN TRỌNG: Xóa cả username và email để tránh duplicate key error
+    await User.deleteMany({ 
+      $or: [
+        { email: /testuser.*@example\.com/ },
+        { username: /^testuser/ }
+      ]
+    });
+    
+    // Tạo user mẫu với username unique
+    const timestamp = Date.now();
     const user = await User.create({
-      username: "testuser",
+      username: `testuser_login_${timestamp}`,
       email: "testuser@example.com",
       full_name: "Test User",
       status: "active",
       typeAccount: "Local",
       password_hash: await bcrypt.hash("password123", 10),
     });
-    console.log("Đã tạo user mẫu:", user); // Log để kiểm tra
+    console.log("✅ Đã tạo test user:", user.email, "username:", user.username);
   });
 
   afterEach(async () => {
-    await User.deleteMany({});
+    // CHỈ xóa test users (bao gồm cả username pattern)
+    await User.deleteMany({ 
+      $or: [
+        { email: /testuser.*@example\.com/ },
+        { email: /nonexistent@/ },
+        { username: /^testuser/ }
+      ]
+    });
   });
 
   afterAll(async () => {
